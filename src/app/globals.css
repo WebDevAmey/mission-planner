@@ -1,130 +1,407 @@
+/**
+ * Global Design System — ArduPilot Mission Planner Style
+ * Aerospace dark theme: deep black + matrix green + amber/red status colors
+ */
+
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* ============ DESIGN TOKENS ============ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+@theme {
+  /* -------- ARDUPILOT AEROSPACE PALETTE -------- */
+
+  /* Backgrounds */
+  --color-bg-base:    #0a0a0a;
+  --color-bg-panel:   #111111;
+  --color-bg-raised:  #161616;
+  --color-bg-hover:   #1e1e1e;
+  --color-bg-active:  #252525;
+
+  /* Borders */
+  --color-border:     #1e1e1e;
+  --color-border-mid: #2a2a2a;
+  --color-border-hi:  #363636;
+
+  /* Accent — Matrix Green (ArduPilot primary) */
+  --color-green:      #00ff41;
+  --color-green-dim:  #00cc33;
+  --color-green-bg:   rgba(0, 255, 65, 0.08);
+
+  /* Status colors */
+  --color-amber:      #ffaa00;
+  --color-amber-bg:   rgba(255, 170, 0, 0.10);
+  --color-red:        #ff3333;
+  --color-red-bg:     rgba(255, 51, 51, 0.10);
+  --color-blue:       #2d7dd2;
+  --color-blue-bg:    rgba(45, 125, 210, 0.10);
+  --color-cyan:       #00aaff;
+
+  /* Text */
+  --color-text:       #e0e0e0;
+  --color-text-dim:   #888888;
+  --color-text-muted: #444444;
+  --color-text-green: #00ff41;
+  --color-text-amber: #ffaa00;
+  --color-text-red:   #ff3333;
+
+  /* Legacy compat aliases */
+  --color-bg-elevated:        #161616;
+  --color-border-subtle:      rgba(255, 255, 255, 0.06);
+  --color-border-strong:      rgba(255, 255, 255, 0.18);
+  --color-accent-blue:        #2d7dd2;
+  --color-accent-blue-dim:    rgba(45, 125, 210, 0.15);
+  --color-accent-green:       #00ff41;
+  --color-accent-amber:       #ffaa00;
+  --color-accent-red:         #ff3333;
+  --color-text-primary:       #e0e0e0;
+  --color-text-secondary:     #888888;
+  --color-text-tertiary:      #444444;
+  --color-bg-panel-compat:    #111111;
+
+  /* -------- TYPOGRAPHY -------- */
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+
+  /* -------- SPACING (4px grid) -------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* -------- LAYOUT DIMENSIONS -------- */
+  --topbar-height:     40px;
+  --statusbar-height:  28px;
+  --toolbar-width:     48px;
+  --telemetry-width:   200px;
+  --wptable-height:    224px;
+  --sidebar-width:     280px;
+  --timeline-height:   180px;
+
+  /* -------- BORDER RADIUS -------- */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+
+  /* -------- ANIMATIONS -------- */
+  @keyframes pulse-green {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+  @keyframes pulse-amber {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes slideInLeft {
+    from { transform: translateX(-4px); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+  }
+  @keyframes pulse-status {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+  }
+  @keyframes scale-pulse {
+    0%, 100% { transform: scale(1);   }
+    50%       { transform: scale(1.1); }
+  }
+  @keyframes marker-flash {
+    0%        { transform: scale(1);   box-shadow: 0 1px 6px rgba(0,0,0,0.6); }
+    25%       { transform: scale(1.5); box-shadow: 0 0 20px rgba(0,255,65,0.9); }
+    75%       { transform: scale(1.2); box-shadow: 0 0 12px rgba(0,255,65,0.6); }
+    100%      { transform: scale(1);   box-shadow: 0 1px 6px rgba(0,0,0,0.6); }
+  }
+  @keyframes marker-drag-pulse {
+    0%, 100% { box-shadow: 0 2px 12px rgba(0,0,0,0.8), 0 0 0 rgba(0,255,65,0); }
+    50%      { box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 16px rgba(0,255,65,0.6); }
+  }
+  @keyframes slideInRight {
+    from { transform: translateX(8px); opacity: 0; }
+    to   { transform: translateX(0);   opacity: 1; }
+  }
 }
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
+/* ============ BASE ============ */
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { --font: var(--font-sans); }
+
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--color-bg-base);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
   }
-  html {
-    @apply font-sans;
+
+  code, kbd, pre { font-family: var(--font-mono); font-size: 11px; }
+
+  .data-value,
+  .coordinate,
+  .altitude,
+  .speed,
+  .mission-id {
+    font-family: var(--font-mono);
+    font-size: 11px;
   }
 }
+
+/* ============ COMPONENTS ============ */
+
+@layer components {
+
+  /* ---- PANELS ---- */
+  .panel {
+    background-color: var(--color-bg-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+  .panel-elevated {
+    background-color: var(--color-bg-raised);
+    border: 1px solid var(--color-border-mid);
+    border-radius: var(--radius-md);
+  }
+
+  /* ---- BUTTONS ---- */
+  .btn-base {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-2) var(--sp-4);
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 150ms ease;
+    border: 1px solid transparent;
+  }
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-2) var(--sp-4);
+    border-radius: var(--radius-md);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 150ms ease;
+    background-color: var(--color-green);
+    color: #000;
+    border: 1px solid var(--color-green);
+    font-family: var(--font-mono);
+  }
+  .btn-primary:hover { background-color: var(--color-green-dim); }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-2) var(--sp-4);
+    border-radius: var(--radius-md);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 150ms ease;
+    background-color: transparent;
+    color: var(--color-text-dim);
+    border: 1px solid var(--color-border);
+  }
+  .btn-ghost:hover {
+    background-color: var(--color-bg-hover);
+    color: var(--color-text);
+    border-color: var(--color-border-mid);
+  }
+
+  /* ---- TOOLBAR BUTTON (ArduPilot tool strip) ---- */
+  .toolbar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    background-color: transparent;
+    border: 1px solid transparent;
+    color: var(--color-text-dim);
+    cursor: pointer;
+    transition: all 150ms ease;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .toolbar-btn:hover {
+    background-color: var(--color-bg-hover);
+    color: var(--color-text);
+    border-color: var(--color-border-mid);
+  }
+  .toolbar-btn.active {
+    background-color: var(--color-green-bg);
+    border-color: var(--color-green);
+    color: var(--color-green);
+  }
+
+  /* ---- INPUTS ---- */
+  .input-base {
+    width: 100%;
+    height: 28px;
+    padding: 0 var(--sp-2);
+    background-color: var(--color-bg-panel);
+    border: 1px solid var(--color-border-mid);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    transition: border-color 150ms ease;
+  }
+  .input-base:focus {
+    outline: none;
+    border-color: var(--color-green);
+    box-shadow: 0 0 0 2px var(--color-green-bg);
+  }
+  .input-base::placeholder { color: var(--color-text-muted); }
+
+  /* ---- TABLE (Waypoint grid) ---- */
+  .wp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  .wp-table th {
+    background-color: var(--color-bg-raised);
+    color: var(--color-text-dim);
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--color-border-mid);
+    text-align: left;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .wp-table td {
+    padding: 3px 6px;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text);
+    white-space: nowrap;
+  }
+  .wp-table tr:hover td { background-color: var(--color-bg-hover); }
+  .wp-table tr.selected td { background-color: var(--color-green-bg); }
+
+  /* ---- BADGES ---- */
+  .badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .badge-green  { background-color: var(--color-green-bg);  color: var(--color-green); }
+  .badge-amber  { background-color: var(--color-amber-bg);  color: var(--color-amber); }
+  .badge-red    { background-color: var(--color-red-bg);    color: var(--color-red);   }
+  .badge-blue   { background-color: var(--color-blue-bg);   color: var(--color-blue);  }
+  .badge-accent { background-color: var(--color-blue-bg);   color: var(--color-blue);  }
+
+  /* ---- STATUS DOTS ---- */
+  .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; }
+  .status-dot-active   { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: var(--color-green); animation: pulse-green 1.5s ease-in-out infinite; }
+  .status-dot-degraded { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: var(--color-amber); }
+  .status-dot-offline  { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: var(--color-red);   }
+
+  /* ---- DATA ROWS ---- */
+  .data-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 11px;
+  }
+  .data-row:last-child { border-bottom: none; }
+  .data-row-label { color: var(--color-text-dim); font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .data-row-value { color: var(--color-green); font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
+  .data-mono      { font-family: var(--font-mono); font-size: 11px; color: var(--color-green); font-weight: 500; }
+
+  /* ---- SEPARATOR ---- */
+  .separator { height: 1px; background-color: var(--color-border); }
+
+  /* ---- CONTEXT MENU ---- */
+  .context-menu {
+    position: fixed;
+    background-color: var(--color-bg-raised);
+    border: 1px solid var(--color-border-mid);
+    border-radius: var(--radius-md);
+    padding: 4px;
+    min-width: 180px;
+    z-index: 9999;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    animation: fadeIn 100ms ease;
+  }
+  .context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background 100ms ease;
+    white-space: nowrap;
+  }
+  .context-menu-item:hover { background-color: var(--color-bg-active); color: var(--color-green); }
+  .context-menu-item.danger:hover { color: var(--color-red); }
+  .context-menu-sep { height: 1px; background-color: var(--color-border); margin: 4px 0; }
+
+  /* ---- MARKER ANIMATIONS ---- */
+  .marker-flash { animation: marker-flash 600ms ease forwards; }
+  .marker-dragging { animation: marker-drag-pulse 800ms ease infinite; }
+
+  /* ---- TABLE ALTERNATE ROWS ---- */
+  .wp-table tr.row-alt td { background-color: rgba(255,255,255,0.015); }
+  .wp-table tr.row-alt:hover td { background-color: var(--color-bg-hover); }
+  .wp-table tr.selected.row-alt td { background-color: var(--color-green-bg); }
+}
+
+/* ============ UTILITIES ============ */
+
+@layer utilities {
+  .flex-center  { display: flex; align-items: center; justify-content: center; }
+  .flex-between { display: flex; align-items: center; justify-content: space-between; }
+  .text-mono    { font-family: var(--font-mono); }
+  .text-primary { color: var(--color-text); }
+  .text-secondary { color: var(--color-text-dim); }
+  .text-tertiary  { color: var(--color-text-muted); }
+  .text-accent    { color: var(--color-green); }
+  .bg-base        { background-color: var(--color-bg-base); }
+  .bg-panel       { background-color: var(--color-bg-panel); }
+  .bg-elevated    { background-color: var(--color-bg-raised); }
+  .bg-hover       { background-color: var(--color-bg-hover); }
+  .border-subtle  { border-color: var(--color-border); }
+  .border-mid     { border-color: var(--color-border-mid); }
+  .border-strong  { border-color: var(--color-border-hi); }
+  .truncate-1     { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+}
+
+/* ============ SCROLLBARS ============ */
+
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background-color: var(--color-bg-panel); }
+::-webkit-scrollbar-thumb { background-color: var(--color-border-mid); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--color-border-hi); }
