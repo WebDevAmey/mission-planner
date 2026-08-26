@@ -58,6 +58,28 @@
   --color-text-tertiary:      #444444;
   --color-bg-panel-compat:    #111111;
 
+  /* -------- MARKETING SURFACE PALETTE --------
+   * Neutral/monochrome — for the landing + login pages (shadcn/beUI semantic
+   * tokens). Deliberately no blue/cyan glow: one considered accent (the
+   * app's own matrix green, used sparingly) instead of a decorative gradient. */
+  --color-background:          #0a0a0a;
+  --color-foreground:          #f2f1ec;
+  --color-card:                #121212;
+  --color-card-foreground:     #f2f1ec;
+  --color-primary:              #f2f1ec;
+  --color-primary-foreground:  #0a0a0a;
+  --color-secondary:           #1a1a1a;
+  --color-secondary-foreground: #f2f1ec;
+  --color-muted:                #161616;
+  --color-muted-foreground:    #8f8f89;
+  --color-accent:              #1a1a1a;
+  --color-accent-foreground:   #f2f1ec;
+  --color-destructive:         #ff3333;
+  --color-destructive-foreground: #f2f1ec;
+  /* border-border reuses --color-border (#1e1e1e) declared above — one border color, not two. */
+  --color-input:               #262626;
+  --color-ring:                #3a3a3a;
+
   /* -------- TYPOGRAPHY -------- */
   --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
@@ -140,7 +162,6 @@
     line-height: 1.45;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow: hidden;
   }
 
   code, kbd, pre { font-family: var(--font-mono); font-size: 11px; }
