@@ -137,9 +137,31 @@ export function MapView() {
     mapRef.current = map;
 
     return () => {
-      map.remove();
+      const mapInstance = mapRef.current;
       mapRef.current = null;
       markersRef.current = [];
+      if (!mapInstance) return;
+
+      let disposed = false;
+      const dispose = () => {
+        if (disposed) return;
+        disposed = true;
+        try {
+          mapInstance.remove();
+        } catch {
+          // already destroyed
+        }
+      };
+
+      // Removing the map before its initial style finishes loading makes
+      // maplibre crash in migrateProjection ("reading 'projection'"), so
+      // defer destruction until the style settles.
+      if (mapInstance.loaded()) {
+        dispose();
+      } else {
+        mapInstance.once('load', dispose);
+        mapInstance.once('error', dispose);
+      }
     };
   }, []);
 
