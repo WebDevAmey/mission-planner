@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import {
   Download, Undo2, Redo2, Wand2, AlertTriangle,
-  FolderOpen, Clock, Grid3X3,
+  FolderOpen, Clock, Grid3X3, Bot, LogOut, Route,
 } from 'lucide-react';
 import { useMissionStore } from '@/lib/store/mission-store';
 import { useMissionLibraryStore } from '@/lib/store/mission-library-store';
@@ -11,6 +11,7 @@ import { useTenantStore } from '@/lib/store/tenant-store';
 import { useUIStore } from '@/lib/store/ui-store';
 import { useConstraintsStore } from '@/lib/store/constraints-store';
 import { useGeofenceStore } from '@/lib/store/geofence-store';
+import { useAgentStore } from '@/lib/store/agent-store';
 import { MapView } from '@/components/map/map-view';
 import { MapToolbar } from '@/components/flight-plan/map-toolbar';
 import { WaypointTable } from '@/components/flight-plan/waypoint-table';
@@ -22,6 +23,8 @@ import { TemplatePicker } from '@/components/mission/template-picker';
 import { TerrainPanel } from '@/components/mission/terrain-panel';
 import { TimelinePanel } from '@/components/mission/timeline-panel';
 import { TenantSelector } from '@/components/mission/tenant-selector';
+import { MissionPromptBar } from '@/components/agent-console/mission-prompt-bar';
+import { AgentConsole } from '@/components/agent-console/agent-console';
 import { useMissionPlannerShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { missionSanityCheck, exportMissionAsV1Json, makeExportFilename } from '@/lib/services/mission-builder';
 import { optimiseRoute, generateAlternativeRoutes } from '@/lib/services/route-optimizer';
@@ -58,6 +61,85 @@ function RiskGauge({ score, level }: { score: number; level: 'LOW' | 'MEDIUM' | 
       </span>
     </div>
   );
+}
+
+type ToolbarButtonVariant = 'ghost' | 'default' | 'accent';
+
+/** One button shape for the whole top bar — every toggle, action, and icon button
+ * in TopBar renders through this so hover/active/disabled styling only lives once. */
+function ToolbarButton({
+  icon: Icon,
+  iconSize = 12,
+  iconColor,
+  label,
+  onClick,
+  active,
+  disabled,
+  title,
+  ariaLabel,
+  variant = 'default',
+  hoverColor,
+}: {
+  icon?: React.ComponentType<{ size?: number; color?: string }>;
+  iconSize?: number;
+  iconColor?: string;
+  label?: string;
+  onClick: () => void;
+  active?: boolean;
+  disabled?: boolean;
+  title?: string;
+  ariaLabel?: string;
+  variant?: ToolbarButtonVariant;
+  /** Text color to switch to on hover — for one-off cases like the destructive Logout button. */
+  hoverColor?: string;
+}) {
+  const [hover, setHover] = useState(false);
+
+  let background = 'none';
+  let border = 'transparent';
+  let color = disabled ? 'var(--color-text-muted)' : 'var(--color-text-dim)';
+
+  if (variant === 'default') {
+    background = active ? 'var(--color-bg-raised)' : hover ? 'var(--color-bg-raised)' : 'none';
+    border = active ? 'var(--color-border-hi)' : 'var(--color-border-mid)';
+    color = active || hover ? 'var(--color-text)' : 'var(--color-text-dim)';
+  } else if (variant === 'ghost') {
+    background = hover && !disabled ? 'var(--color-bg-raised)' : 'none';
+    color = disabled ? 'var(--color-text-muted)' : hover ? 'var(--color-text)' : 'var(--color-text-dim)';
+  } else if (variant === 'accent') {
+    background = hover ? 'rgba(0,255,65,0.2)' : 'var(--color-green-bg)';
+    border = 'var(--color-green)';
+    color = 'var(--color-green)';
+  }
+
+  if (hover && hoverColor && !disabled) color = hoverColor;
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      aria-label={ariaLabel}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: label ? '4px' : 0,
+        height: '24px', minWidth: label ? undefined : '24px', padding: label ? '0 8px' : '0',
+        background, border: `1px solid ${border}`, borderRadius: 'var(--radius-sm)', color,
+        fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: variant === 'accent' ? 700 : 400,
+        letterSpacing: variant === 'accent' ? '0.3px' : undefined,
+        cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 150ms ease', whiteSpace: 'nowrap',
+      }}
+    >
+      {Icon && <Icon size={iconSize} color={iconColor} />}
+      {label}
+    </button>
+  );
+}
+
+/** Vertical rule between toolbar groups. */
+function ToolbarDivider() {
+  return <div style={{ width: '1px', height: '18px', backgroundColor: 'var(--color-border)', margin: '0 3px', flexShrink: 0 }} />;
 }
 
 /** Syncs mission-store writes → library and sets up initial state. */
@@ -133,6 +215,7 @@ function TopBar() {
   const { config, nfzs } = useConstraintsStore();
   const { geofences } = useGeofenceStore();
   const { getActiveTenant } = useTenantStore();
+  const { consoleOpen, toggleConsole, status: flightDeckStatus } = useAgentStore();
 
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
@@ -239,14 +322,6 @@ function TopBar() {
     ? mission.items.filter((i) => supportsCoordinates(i.action) && i.latitude !== null && i.longitude !== null).length
     : 0;
 
-  const iconBtnStyle = (active?: boolean): React.CSSProperties => ({
-    display: 'flex', alignItems: 'center', gap: '3px', height: '24px', padding: '0 7px',
-    background: active ? 'var(--color-bg-raised)' : 'none',
-    border: `1px solid ${active ? 'var(--color-border-hi)' : 'var(--color-border-mid)'}`,
-    borderRadius: 'var(--radius-sm)', color: active ? 'var(--color-text)' : 'var(--color-text-dim)',
-    fontFamily: 'var(--font-mono)', fontSize: '10px', cursor: 'pointer', transition: 'all 150ms ease',
-  });
-
   return (
     <div style={{ backgroundColor: '#050505', borderBottom: '1px solid var(--color-border-mid)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
       {/* Warnings banner */}
@@ -261,9 +336,9 @@ function TopBar() {
         </div>
       )}
 
-      {/* Main row: TenantSelector | MissionName | ... | buttons | RiskGauge | Export */}
+      {/* Main row, grouped left→right: brand+context, command, edit history, route tools, panels, status/export/account */}
       <div style={{ display: 'flex', alignItems: 'center', height: '38px', padding: '0 8px', borderBottom: '1px solid var(--color-border)', gap: '4px' }}>
-        {/* Logo */}
+        {/* Brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '8px', flexShrink: 0 }}>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <circle cx="10" cy="10" r="3" fill="#00ff41" />
@@ -279,12 +354,9 @@ function TopBar() {
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, color: 'var(--color-green)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>MPS</span>
         </div>
 
-        {/* Tenant selector */}
+        {/* Context: tenant + mission name */}
         <TenantSelector />
-
-        <div style={{ width: '1px', height: '18px', backgroundColor: 'var(--color-border)', margin: '0 4px', flexShrink: 0 }} />
-
-        {/* Mission name */}
+        <ToolbarDivider />
         {mission && (editingName ? (
           <input type="text" value={nameValue} onChange={(e) => setNameValue(e.target.value)}
             onBlur={commitName}
@@ -302,92 +374,60 @@ function TopBar() {
           </button>
         ))}
 
+        <ToolbarDivider />
+
+        {/* Command: ask Flight Deck to plan */}
+        <MissionPromptBar />
+
         <div style={{ flex: 1 }} />
 
-        {/* Undo/Redo */}
-        <button onClick={() => { undo(); addToast('Undo', 'info'); }} disabled={!canUndo()} title="Undo (Ctrl+Z)"
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '24px', background: 'none', border: '1px solid transparent', borderRadius: 'var(--radius-sm)', color: canUndo() ? 'var(--color-text-dim)' : 'var(--color-text-muted)', cursor: canUndo() ? 'pointer' : 'not-allowed' }}
-          onMouseEnter={(e) => { if (canUndo()) { e.currentTarget.style.background = 'var(--color-bg-raised)'; e.currentTarget.style.color = 'var(--color-text)'; } }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = canUndo() ? 'var(--color-text-dim)' : 'var(--color-text-muted)'; }}>
-          <Undo2 size={13} />
-        </button>
-        <button onClick={() => { redo(); addToast('Redo', 'info'); }} disabled={!canRedo()} title="Redo (Ctrl+Y)"
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '24px', background: 'none', border: '1px solid transparent', borderRadius: 'var(--radius-sm)', color: canRedo() ? 'var(--color-text-dim)' : 'var(--color-text-muted)', cursor: canRedo() ? 'pointer' : 'not-allowed' }}
-          onMouseEnter={(e) => { if (canRedo()) { e.currentTarget.style.background = 'var(--color-bg-raised)'; e.currentTarget.style.color = 'var(--color-text)'; } }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = canRedo() ? 'var(--color-text-dim)' : 'var(--color-text-muted)'; }}>
-          <Redo2 size={13} />
-        </button>
+        {/* Edit history */}
+        <div style={{ display: 'flex', gap: '2px' }}>
+          <ToolbarButton icon={Undo2} iconSize={13} variant="ghost" title="Undo (Ctrl+Z)"
+            disabled={!canUndo()} onClick={() => { undo(); addToast('Undo', 'info'); }} />
+          <ToolbarButton icon={Redo2} iconSize={13} variant="ghost" title="Redo (Ctrl+Y)"
+            disabled={!canRedo()} onClick={() => { redo(); addToast('Redo', 'info'); }} />
+        </div>
 
-        <div style={{ width: '1px', height: '18px', backgroundColor: 'var(--color-border)', margin: '0 2px' }} />
+        <ToolbarDivider />
 
-        {/* Templates */}
-        <button onClick={toggleTemplatePicker} title="Mission templates (T)" style={iconBtnStyle(templatePickerOpen)}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = templatePickerOpen ? 'var(--color-text)' : 'var(--color-text-dim)'; }}>
-          <Grid3X3 size={11} /> Templates
-        </button>
+        {/* Route tools */}
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <ToolbarButton icon={Wand2} label="Optimise" title="Optimise route" onClick={handleOptimise} />
+          {spatialCount >= 4 && (
+            <ToolbarButton icon={Route} label="Alternatives" title="Alternative routes"
+              active={alternativeRoutes.length > 0} onClick={handleAlternatives} />
+          )}
+        </div>
 
-        {/* Missions */}
-        <button onClick={toggleMissionLibrary} title="Mission library (Ctrl+M)" style={iconBtnStyle(missionLibraryOpen)}
-          aria-label="Open mission library"
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = missionLibraryOpen ? 'var(--color-text)' : 'var(--color-text-dim)'; }}>
-          <FolderOpen size={11} /> Missions
-        </button>
+        <ToolbarDivider />
 
-        <div style={{ width: '1px', height: '18px', backgroundColor: 'var(--color-border)', margin: '0 2px' }} />
+        {/* Panels */}
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <ToolbarButton icon={Grid3X3} label="Templates" title="Mission templates (T)"
+            active={templatePickerOpen} onClick={toggleTemplatePicker} />
+          <ToolbarButton icon={FolderOpen} label="Missions" title="Mission library (Ctrl+M)" ariaLabel="Open mission library"
+            active={missionLibraryOpen} onClick={toggleMissionLibrary} />
+          <ToolbarButton icon={Clock} label="Timeline" title="Timeline (Ctrl+T)" ariaLabel="Toggle timeline"
+            active={timelineOpen} onClick={toggleTimeline} />
+          <ToolbarButton icon={Bot} label="Flight Deck" title="Flight Deck agent console"
+            iconColor={flightDeckStatus === 'running' ? 'var(--color-cyan)' : undefined}
+            active={consoleOpen} onClick={toggleConsole} />
+        </div>
 
-        {/* Optimise */}
-        <button onClick={handleOptimise} title="Optimise route" style={iconBtnStyle()}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-bg-raised)'; e.currentTarget.style.color = 'var(--color-text)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--color-text-dim)'; }}>
-          <Wand2 size={11} /> Optimise
-        </button>
+        <ToolbarDivider />
 
-        {spatialCount >= 4 && (
-          <button onClick={handleAlternatives} title="Alternative routes"
-            style={iconBtnStyle(alternativeRoutes.length > 0)}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = alternativeRoutes.length > 0 ? 'var(--color-text)' : 'var(--color-text-dim)'; }}>
-            Alternatives
-          </button>
-        )}
-
-        <div style={{ width: '1px', height: '18px', backgroundColor: 'var(--color-border)', margin: '0 2px' }} />
-
-        {/* Timeline */}
-        <button onClick={toggleTimeline} title="Timeline (Ctrl+T)" style={iconBtnStyle(timelineOpen)}
-          aria-label="Toggle timeline"
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = timelineOpen ? 'var(--color-text)' : 'var(--color-text-dim)'; }}>
-          <Clock size={11} /> Timeline
-        </button>
-
-        <div style={{ width: '1px', height: '18px', backgroundColor: 'var(--color-border)', margin: '0 2px' }} />
-
-        {/* Risk gauge */}
+        {/* Status */}
         {riskBreakdown && (
           <div style={{ marginRight: '4px' }}>
             <RiskGauge score={riskBreakdown.total} level={riskBreakdown.level} />
           </div>
         )}
 
-        {/* Export JSON */}
+        {/* Export */}
         <div ref={exportRef} style={{ position: 'relative' }}>
-          <button
-            onClick={() => setExportOpen((v) => !v)}
-            title="Export mission JSON (Ctrl+S)"
-            style={{
-              display: 'flex', alignItems: 'center', gap: '3px', height: '24px', padding: '0 8px',
-              background: 'var(--color-green-bg)', border: '1px solid var(--color-green)',
-              borderRadius: 'var(--radius-sm)', color: 'var(--color-green)',
-              fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700,
-              cursor: 'pointer', letterSpacing: '0.3px', transition: 'all 150ms ease',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,255,65,0.2)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-green-bg)'; }}>
-            <Download size={11} /> EXPORT JSON
-          </button>
+          <ToolbarButton icon={Download} label="EXPORT JSON" variant="accent" title="Export mission JSON (Ctrl+S)"
+            onClick={() => setExportOpen((v) => !v)} />
 
           {exportOpen && (
             <div style={{
@@ -414,6 +454,12 @@ function TopBar() {
             </div>
           )}
         </div>
+
+        <ToolbarDivider />
+
+        {/* Account */}
+        <ToolbarButton icon={LogOut} title="Sign out" hoverColor="var(--color-red)"
+          onClick={() => { fetch('/api/auth/logout', { method: 'POST' }).finally(() => { window.location.href = '/'; }); }} />
       </div>
 
       {/* Tabs */}
@@ -587,6 +633,7 @@ export function ArduPilotLayout() {
       </div>
       <AlternativesPanel />
       <ToastContainer />
+      <AgentConsole />
       {missionLibraryOpen && <MissionLibraryPanel />}
       {templatePickerOpen && <TemplatePicker />}
     </div>
