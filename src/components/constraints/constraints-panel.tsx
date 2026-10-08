@@ -7,8 +7,11 @@ import { useUIStore } from '@/lib/store/ui-store';
 import { useMissionStore } from '@/lib/store/mission-store';
 import { computeViolationCount, computeRiskScore } from '@/lib/services/risk-scorer';
 import { supportsCoordinates } from '@/lib/mavlink/commands';
-import { haversineDistance } from '@/lib/utils';
+import { haversineDistance, cn } from '@/lib/utils';
 import type { MissionPlan } from '@/types/mission';
+import { Input, Label } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { IconButton } from '@/components/ui/button';
 
 function totalMissionDist(mission: MissionPlan | null): number {
   if (!mission) return 0;
@@ -24,6 +27,22 @@ function totalMissionDist(mission: MissionPlan | null): number {
   }
   return d;
 }
+
+const RISK_VARIANT: Record<'LOW' | 'MEDIUM' | 'HIGH', 'green' | 'amber' | 'red'> = {
+  LOW: 'green',
+  MEDIUM: 'amber',
+  HIGH: 'red',
+};
+const RISK_TEXT_CLASS: Record<'LOW' | 'MEDIUM' | 'HIGH', string> = {
+  LOW: 'text-green',
+  MEDIUM: 'text-amber',
+  HIGH: 'text-red',
+};
+const RISK_BORDER_CLASS: Record<'LOW' | 'MEDIUM' | 'HIGH', string> = {
+  LOW: 'border-green',
+  MEDIUM: 'border-amber',
+  HIGH: 'border-red',
+};
 
 export function ConstraintsPanel() {
   const { config, updateConfig, nfzs, deleteNfz, selectNfz, selectedNfzId } =
@@ -72,101 +91,62 @@ export function ConstraintsPanel() {
     }
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '2px 5px',
-    backgroundColor: 'var(--color-bg-raised)',
-    border: '1px solid var(--color-border-mid)',
-    borderRadius: 'var(--radius-sm)',
-    color: 'var(--color-text)',
-    fontFamily: 'var(--font-mono)',
-    fontSize: '11px',
-    outline: 'none',
-  };
-
-  const labelStyle: React.CSSProperties = {
-    fontFamily: 'var(--font-mono)',
-    fontSize: '9px',
-    color: 'var(--color-text-muted)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.4px',
-    display: 'block',
-    marginBottom: '2px',
-  };
-
   if (!constraintsPanelOpen) return null;
 
   return (
-    <div style={{
-      width: '220px',
-      backgroundColor: 'var(--color-bg-panel)',
-      borderLeft: '1px solid var(--color-border)',
-      display: 'flex',
-      flexDirection: 'column',
-      flexShrink: 0,
-      overflowY: 'auto',
-    }}>
+    <div className="flex w-[220px] shrink-0 flex-col overflow-y-auto border-l border-border bg-bg-panel">
       {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '5px 8px', backgroundColor: '#0d0d0d',
-        borderBottom: '1px solid var(--color-border-mid)', flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <ShieldAlert size={13} color={violationCount > 0 ? 'var(--color-red)' : 'var(--color-green)'} />
-          <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700,
-            color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.5px',
-          }}>
+      <div className="flex shrink-0 items-center justify-between border-b border-border-mid bg-[#0d0d0d] px-2 py-1">
+        <div className="flex items-center gap-1.5">
+          <ShieldAlert size={13} className={violationCount > 0 ? 'text-red' : 'text-green'} />
+          <span className="font-mono text-[10px] font-bold uppercase tracking-wide text-text">
             Constraints
           </span>
-          {violationCount > 0 && (
-            <span className="badge badge-red">{violationCount}</span>
-          )}
+          {violationCount > 0 && <Badge variant="red">{violationCount}</Badge>}
         </div>
-        <button onClick={toggleConstraintsPanel} style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          color: 'var(--color-text-muted)', display: 'flex', padding: '2px',
-        }}>
-          <X size={12} />
-        </button>
+        <IconButton
+          icon={<X size={12} />}
+          aria-label="Close constraints panel"
+          size="xs"
+          onClick={toggleConstraintsPanel}
+        />
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+      <div className="flex-1 overflow-y-auto p-2">
         {/* Config inputs */}
-        <div style={{ marginBottom: '10px' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--color-text-dim)', marginBottom: '6px', fontWeight: 600 }}>
+        <div className="mb-2.5">
+          <div className="mb-1.5 font-mono text-[10px] font-semibold text-text-dim">
             Limits
           </div>
-          <div style={{ display: 'grid', gap: '6px' }}>
+          <div className="grid gap-1.5">
             <div>
-              <label style={labelStyle}>Max Distance (m)</label>
-              <input type="number" style={inputStyle} value={config.maxDistanceM}
+              <Label>Max Distance (m)</Label>
+              <Input type="number" value={config.maxDistanceM}
                 onChange={(e) => updateConfig({ maxDistanceM: parseFloat(e.target.value) || 0 })} />
             </div>
             <div>
-              <label style={labelStyle}>Max Altitude AGL (m)</label>
-              <input type="number" style={inputStyle} value={config.maxAltM}
+              <Label>Max Altitude AGL (m)</Label>
+              <Input type="number" value={config.maxAltM}
                 onChange={(e) => updateConfig({ maxAltM: parseFloat(e.target.value) || 0 })} />
             </div>
             <div>
-              <label style={labelStyle}>Min Altitude AGL (m)</label>
-              <input type="number" style={inputStyle} value={config.minAltM}
+              <Label>Min Altitude AGL (m)</Label>
+              <Input type="number" value={config.minAltM}
                 onChange={(e) => updateConfig({ minAltM: parseFloat(e.target.value) || 0 })} />
             </div>
             <div>
-              <label style={labelStyle}>Max Speed (m/s)</label>
-              <input type="number" style={inputStyle} value={config.maxSpeedMs}
+              <Label>Max Speed (m/s)</Label>
+              <Input type="number" value={config.maxSpeedMs}
                 onChange={(e) => updateConfig({ maxSpeedMs: parseFloat(e.target.value) || 0 })} />
             </div>
             <div>
-              <label style={labelStyle}>Default Speed (m/s)</label>
-              <input type="number" style={inputStyle} value={config.defaultSpeedMs}
+              <Label>Default Speed (m/s)</Label>
+              <Input type="number" value={config.defaultSpeedMs}
                 onChange={(e) => updateConfig({ defaultSpeedMs: parseFloat(e.target.value) || 10 })} />
             </div>
             <div>
-              <label style={labelStyle}>Min AGL Clearance (m)</label>
-              <input type="number" style={inputStyle} value={config.minAGLClearance}
+              <Label>Min AGL Clearance (m)</Label>
+              <Input type="number" value={config.minAGLClearance}
                 onChange={(e) => updateConfig({ minAGLClearance: parseFloat(e.target.value) || 0 })} />
             </div>
           </div>
@@ -174,23 +154,16 @@ export function ConstraintsPanel() {
 
         {/* Risk score */}
         {riskBreakdown && (
-          <div style={{ marginBottom: '10px' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--color-text-dim)', marginBottom: '4px', fontWeight: 600 }}>
+          <div className="mb-2.5">
+            <div className="mb-1 font-mono text-[10px] font-semibold text-text-dim">
               Risk Score
             </div>
-            <div style={{
-              padding: '6px 8px', backgroundColor: 'var(--color-bg-raised)',
-              borderRadius: 'var(--radius-sm)',
-              border: `1px solid ${riskBreakdown.level === 'LOW' ? 'var(--color-green)' : riskBreakdown.level === 'MEDIUM' ? 'var(--color-amber)' : 'var(--color-red)'}`,
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '18px', fontWeight: 700,
-                  color: riskBreakdown.level === 'LOW' ? 'var(--color-green)' : riskBreakdown.level === 'MEDIUM' ? 'var(--color-amber)' : 'var(--color-red)' }}>
+            <div className={cn('rounded-sm border bg-bg-raised px-2 py-1.5', RISK_BORDER_CLASS[riskBreakdown.level])}>
+              <div className="mb-1 flex items-center justify-between">
+                <span className={cn('font-mono text-lg font-bold', RISK_TEXT_CLASS[riskBreakdown.level])}>
                   {riskBreakdown.total.toFixed(0)}
                 </span>
-                <span className={`badge ${riskBreakdown.level === 'LOW' ? 'badge-green' : riskBreakdown.level === 'MEDIUM' ? 'badge-amber' : 'badge-red'}`}>
-                  {riskBreakdown.level}
-                </span>
+                <Badge variant={RISK_VARIANT[riskBreakdown.level]}>{riskBreakdown.level}</Badge>
               </div>
               {[
                 ['Distance', riskBreakdown.distanceScore, 40],
@@ -198,12 +171,15 @@ export function ConstraintsPanel() {
                 ['Altitude', riskBreakdown.altScore, 20],
                 ['Violations', riskBreakdown.violationScore, 10],
               ].map(([label, score, max]) => (
-                <div key={String(label)} style={{ marginBottom: '3px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--color-text-muted)', marginBottom: '1px' }}>
+                <div key={String(label)} className="mb-0.5">
+                  <div className="mb-0.5 flex justify-between font-mono text-[9px] text-text-muted">
                     <span>{label}</span><span>{Number(score).toFixed(1)}/{max}</span>
                   </div>
-                  <div style={{ height: '3px', backgroundColor: 'var(--color-bg-hover)', borderRadius: '2px' }}>
-                    <div style={{ height: '3px', borderRadius: '2px', width: `${Math.min(100, (Number(score) / Number(max)) * 100)}%`, backgroundColor: 'var(--color-amber)' }} />
+                  <div className="h-[3px] rounded-[2px] bg-bg-hover">
+                    <div
+                      className="h-[3px] rounded-[2px] bg-amber"
+                      style={{ width: `${Math.min(100, (Number(score) / Number(max)) * 100)}%` }}
+                    />
                   </div>
                 </div>
               ))}
@@ -213,17 +189,13 @@ export function ConstraintsPanel() {
 
         {/* Violations */}
         {violations.length > 0 && (
-          <div style={{ marginBottom: '10px' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--color-red)', marginBottom: '4px', fontWeight: 600 }}>
+          <div className="mb-2.5">
+            <div className="mb-1 font-mono text-[10px] font-semibold text-red">
               Violations ({violations.length})
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div className="flex flex-col gap-1">
               {violations.map((v, i) => (
-                <div key={i} style={{
-                  padding: '4px 6px', backgroundColor: 'var(--color-red-bg)',
-                  border: '1px solid var(--color-red)', borderRadius: 'var(--radius-sm)',
-                  fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--color-red)',
-                }}>
+                <div key={i} className="rounded-sm border border-red bg-red-bg px-1.5 py-1 font-mono text-[10px] text-red">
                   {v}
                 </div>
               ))}
@@ -232,34 +204,36 @@ export function ConstraintsPanel() {
         )}
 
         {violations.length === 0 && items.length > 0 && (
-          <div style={{ padding: '6px 8px', backgroundColor: 'var(--color-green-bg)', border: '1px solid var(--color-green)', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--color-green)' }}>
+          <div className="rounded-sm border border-green bg-green-bg px-2 py-1.5 font-mono text-[10px] text-green">
             ✓ No violations
           </div>
         )}
 
         {/* NFZ list */}
         {nfzs.length > 0 && (
-          <div style={{ marginTop: '10px' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--color-text-dim)', marginBottom: '4px', fontWeight: 600 }}>
+          <div className="mt-2.5">
+            <div className="mb-1 font-mono text-[10px] font-semibold text-text-dim">
               No-Fly Zones ({nfzs.length})
             </div>
             {nfzs.map((nfz) => (
               <div key={nfz.id}
                 onClick={() => selectNfz(nfz.id === selectedNfzId ? null : nfz.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '3px 6px', marginBottom: '2px', cursor: 'pointer',
-                  backgroundColor: nfz.id === selectedNfzId ? 'var(--color-red-bg)' : 'var(--color-bg-raised)',
-                  border: `1px solid ${nfz.id === selectedNfzId ? 'var(--color-red)' : 'var(--color-border-mid)'}`,
-                  borderRadius: 'var(--radius-sm)',
-                }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--color-text)' }}>
+                className={cn(
+                  'mb-0.5 flex cursor-pointer items-center justify-between rounded-sm border px-1.5 py-0.5',
+                  nfz.id === selectedNfzId
+                    ? 'border-red bg-red-bg'
+                    : 'border-border-mid bg-bg-raised'
+                )}
+              >
+                <span className="font-mono text-[10px] text-text">
                   {nfz.label} ({nfz.radiusM}m)
                 </span>
-                <button onClick={(e) => { e.stopPropagation(); deleteNfz(nfz.id); }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', padding: '1px' }}>
-                  <X size={11} />
-                </button>
+                <IconButton
+                  icon={<X size={11} />}
+                  aria-label={`Delete NFZ ${nfz.label}`}
+                  size="xs"
+                  onClick={(e) => { e.stopPropagation(); deleteNfz(nfz.id); }}
+                />
               </div>
             ))}
           </div>
