@@ -11,6 +11,12 @@ import { useUIStore } from '@/lib/store/ui-store';
 import { computeMissionMetrics } from '@/lib/services/metrics-service';
 import { exportMissionAsV1Json, makeExportFilename } from '@/lib/services/mission-builder';
 import type { MissionPlan } from '@/types/mission';
+import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Button, IconButton } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Dialog, DialogBody, DialogFooter } from '@/components/ui/dialog';
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -23,20 +29,14 @@ function relativeTime(iso: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+const RISK_VARIANT: Record<string, 'green' | 'amber' | 'red'> = {
+  LOW: 'green',
+  MEDIUM: 'amber',
+  HIGH: 'red',
+};
+
 function RiskBadge({ score, level }: { score: number; level: string }) {
-  const color =
-    level === 'LOW' ? 'var(--color-green)'
-      : level === 'MEDIUM' ? 'var(--color-amber)'
-      : 'var(--color-red)';
-  return (
-    <span style={{
-      fontFamily: 'var(--font-mono)', fontSize: '9px', fontWeight: 700,
-      color, border: `1px solid ${color}`, borderRadius: '2px',
-      padding: '1px 4px',
-    }}>
-      {score.toFixed(0)} {level}
-    </span>
-  );
+  return <Badge variant={RISK_VARIANT[level] ?? 'neutral'}>{score.toFixed(0)} {level}</Badge>;
 }
 
 interface MissionCardProps {
@@ -63,25 +63,25 @@ function MissionCard({ mission, isActive, onLoad, onDelete, onDuplicate, onExpor
     setEditingName(false);
   };
 
+  const MENU_ITEMS = [
+    { label: 'Rename', icon: <Edit2 size={11} />, action: () => { setEditingName(true); setNameValue(mission.name); setMenuOpen(false); } },
+    { label: 'Duplicate', icon: <Copy size={11} />, action: () => { onDuplicate(); setMenuOpen(false); } },
+    { label: 'Export', icon: <Download size={11} />, action: () => { onExport(); setMenuOpen(false); } },
+    { label: 'Delete', icon: <Trash2 size={11} />, action: () => { onDelete(); setMenuOpen(false); }, danger: true },
+  ];
+
   return (
     <div
       onClick={onLoad}
-      style={{
-        padding: '8px 10px',
-        backgroundColor: isActive ? 'rgba(0,255,65,0.08)' : 'var(--color-bg-raised)',
-        border: `1px solid ${isActive ? 'var(--color-green)' : 'var(--color-border-mid)'}`,
-        borderRadius: 'var(--radius-md)',
-        marginBottom: '6px',
-        cursor: 'pointer',
-        transition: 'border-color 150ms ease',
-        position: 'relative',
-      }}
+      className={cn(
+        'relative mb-1.5 cursor-pointer rounded-md border px-2.5 py-2 transition-colors duration-150',
+        isActive ? 'border-green bg-green-bg' : 'border-border-mid bg-bg-raised'
+      )}
     >
       {/* Name row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+      <div className="mb-1 flex items-center justify-between">
         {editingName ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}
-            onClick={(e) => e.stopPropagation()}>
+          <div className="flex flex-1 items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <input
               value={nameValue}
               onChange={(e) => setNameValue(e.target.value)}
@@ -90,43 +90,36 @@ function MissionCard({ mission, isActive, onLoad, onDelete, onDuplicate, onExpor
                 if (e.key === 'Escape') setEditingName(false);
               }}
               autoFocus
-              style={{
-                flex: 1, background: 'var(--color-bg-raised)', border: '1px solid var(--color-green)',
-                borderRadius: '2px', color: 'var(--color-text)', fontFamily: 'var(--font-mono)',
-                fontSize: '11px', padding: '1px 4px', outline: 'none',
-              }}
+              className="flex-1 rounded-[2px] border border-green bg-bg-raised px-1 py-0.5 font-mono text-[11px] text-text outline-none"
             />
-            <button onClick={commitRename} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-green)', display: 'flex' }}>
+            <button onClick={commitRename} aria-label="Confirm rename" className="flex text-green">
               <Check size={12} />
             </button>
           </div>
         ) : (
-          <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600,
-            color: isActive ? 'var(--color-green)' : 'var(--color-text)',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
-          }}
-            onDoubleClick={(e) => { e.stopPropagation(); setEditingName(true); setNameValue(mission.name); }}>
+          <span
+            className={cn(
+              'flex-1 truncate font-mono text-[11px] font-semibold',
+              isActive ? 'text-green' : 'text-text'
+            )}
+            onDoubleClick={(e) => { e.stopPropagation(); setEditingName(true); setNameValue(mission.name); }}
+          >
             {mission.name}
           </span>
         )}
-        <button
+        <IconButton
+          icon={<MoreHorizontal size={13} />}
+          aria-label="Mission actions"
+          size="xs"
           onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', padding: '1px', flexShrink: 0 }}
-        >
-          <MoreHorizontal size={13} />
-        </button>
+        />
       </div>
 
       {/* Meta */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--color-text-muted)' }}>
-          {relativeTime(mission.updatedAt)}
-        </span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--color-text-muted)' }}>
-          {spatialCount} WP
-        </span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--color-text-muted)' }}>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-mono text-[9px] text-text-muted">{relativeTime(mission.updatedAt)}</span>
+        <span className="font-mono text-[9px] text-text-muted">{spatialCount} WP</span>
+        <span className="font-mono text-[9px] text-text-muted">
           {metrics.totalDistanceM >= 1000
             ? `${(metrics.totalDistanceM / 1000).toFixed(1)}km`
             : `${Math.round(metrics.totalDistanceM)}m`}
@@ -138,29 +131,17 @@ function MissionCard({ mission, isActive, onLoad, onDelete, onDuplicate, onExpor
       {menuOpen && (
         <div
           onClick={(e) => e.stopPropagation()}
-          style={{
-            position: 'absolute', right: 8, top: 32, zIndex: 9999,
-            backgroundColor: 'var(--color-bg-raised)', border: '1px solid var(--color-border-mid)',
-            borderRadius: 'var(--radius-md)', boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
-            minWidth: '140px', overflow: 'hidden',
-          }}
+          className="absolute right-2 top-8 z-[9999] min-w-[140px] overflow-hidden rounded-md border border-border-mid bg-bg-raised shadow-xl"
         >
-          {[
-            { label: 'Rename', icon: <Edit2 size={11} />, action: () => { setEditingName(true); setNameValue(mission.name); setMenuOpen(false); } },
-            { label: 'Duplicate', icon: <Copy size={11} />, action: () => { onDuplicate(); setMenuOpen(false); } },
-            { label: 'Export', icon: <Download size={11} />, action: () => { onExport(); setMenuOpen(false); } },
-            { label: 'Delete', icon: <Trash2 size={11} />, action: () => { onDelete(); setMenuOpen(false); }, danger: true },
-          ].map((item) => (
-            <button key={item.label} onClick={item.action}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                width: '100%', padding: '6px 10px', background: 'none', border: 'none',
-                cursor: 'pointer', color: item.danger ? 'var(--color-red)' : 'var(--color-text)',
-                fontFamily: 'var(--font-mono)', fontSize: '10px', textAlign: 'left',
-                borderBottom: '1px solid var(--color-border)',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-bg-hover)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}>
+          {MENU_ITEMS.map((item) => (
+            <button
+              key={item.label}
+              onClick={item.action}
+              className={cn(
+                'flex w-full items-center gap-1.5 border-b border-border px-2.5 py-1.5 text-left font-mono text-[10px] transition-colors hover:bg-bg-hover',
+                item.danger ? 'text-red' : 'text-text'
+              )}
+            >
               {item.icon} {item.label}
             </button>
           ))}
@@ -241,92 +222,64 @@ export function MissionLibraryPanel() {
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 5000,
-        display: 'flex',
-      }}
-    >
+    <div className="fixed inset-y-0 left-0 z-[5000] flex">
       {/* Backdrop */}
       <div
         onClick={() => setMissionLibraryOpen(false)}
-        style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 5000 }}
+        className="fixed inset-0 z-[5000] bg-black/50"
       />
       {/* Drawer */}
-      <div style={{
-        position: 'relative', zIndex: 5001,
-        width: '320px', height: '100%',
-        backgroundColor: 'var(--color-bg-panel)',
-        borderRight: '1px solid var(--color-border-mid)',
-        display: 'flex', flexDirection: 'column',
-        boxShadow: '4px 0 24px rgba(0,0,0,0.6)',
-        animation: 'slideInLeft 200ms ease',
-      }}>
+      <div className="relative z-[5001] flex h-full w-80 flex-col border-r border-border-mid bg-bg-panel shadow-[4px_0_24px_rgba(0,0,0,0.6)] animate-[slideInLeft_200ms_ease]">
         {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '10px 12px', backgroundColor: '#0d0d0d',
-          borderBottom: '1px solid var(--color-border-mid)', flexShrink: 0,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <FolderOpen size={14} color="var(--color-green)" />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        <div className="flex shrink-0 items-center justify-between border-b border-border-mid bg-[#0d0d0d] px-3 py-2">
+          <div className="flex items-center gap-2">
+            <FolderOpen size={14} className="text-green" />
+            <span className="font-mono text-[11px] font-bold uppercase tracking-wide text-text">
               Missions
             </span>
             {tenant && (
-              <span style={{
-                fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--color-text-muted)',
-                border: '1px solid var(--color-border-mid)', borderRadius: '2px', padding: '1px 4px',
-              }}>
+              <span className="rounded-[2px] border border-border-mid px-1 py-px font-mono text-[9px] text-text-muted">
                 {tenant.name}
               </span>
             )}
           </div>
-          <button onClick={() => setMissionLibraryOpen(false)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex' }}>
-            <X size={14} />
-          </button>
+          <IconButton icon={<X size={14} />} aria-label="Close mission library" size="sm" onClick={() => setMissionLibraryOpen(false)} />
         </div>
 
         {/* Search + New */}
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <Search size={11} style={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)', pointerEvents: 'none' }} />
-              <input
+        <div className="shrink-0 border-b border-border px-3 py-2">
+          <div className="mb-1.5 flex gap-1.5">
+            <div className="relative flex-1">
+              <Search size={11} className="pointer-events-none absolute left-1.5 top-1/2 -translate-y-1/2 text-text-muted" />
+              <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search missions…"
-                style={{
-                  width: '100%', paddingLeft: '22px', paddingRight: '6px', height: '26px',
-                  backgroundColor: 'var(--color-bg-raised)', border: '1px solid var(--color-border-mid)',
-                  borderRadius: 'var(--radius-sm)', color: 'var(--color-text)',
-                  fontFamily: 'var(--font-mono)', fontSize: '11px', outline: 'none',
-                }}
+                className="h-[26px] pl-[22px]"
               />
             </div>
-            <button onClick={handleNew}
+            <Button
+              size="sm"
               aria-label="New mission"
-              style={{
-                display: 'flex', alignItems: 'center', gap: '3px', padding: '0 8px',
-                backgroundColor: 'var(--color-green-bg)', border: '1px solid var(--color-green)',
-                borderRadius: 'var(--radius-sm)', color: 'var(--color-green)',
-                fontFamily: 'var(--font-mono)', fontSize: '10px', cursor: 'pointer', whiteSpace: 'nowrap',
-              }}>
+              onClick={handleNew}
+              className="shrink-0 border-green bg-green-bg font-mono text-green hover:bg-green/20"
+            >
               <Plus size={11} /> New
-            </button>
+            </Button>
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--color-text-muted)' }}>
+          <div className="font-mono text-[9px] text-text-muted">
             {filtered.length} mission{filtered.length !== 1 ? 's' : ''}
           </div>
         </div>
 
         {/* Mission list */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px' }}>
+        <div className="flex-1 overflow-y-auto px-3 py-2">
           {filtered.length === 0 ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
-              {search ? 'No matching missions' : 'No missions yet'}
-            </div>
+            <EmptyState
+              icon={FolderOpen}
+              title={search ? 'No matching missions' : 'No missions yet'}
+              description={search ? undefined : 'Create one to start planning a flight.'}
+            />
           ) : (
             filtered.map((mission) => (
               <MissionCard
@@ -344,36 +297,24 @@ export function MissionLibraryPanel() {
       </div>
 
       {/* Delete confirm dialog */}
-      {confirmDeleteId && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backgroundColor: 'rgba(0,0,0,0.7)',
-        }}>
-          <div style={{
-            backgroundColor: 'var(--color-bg-raised)', border: '1px solid var(--color-red)',
-            borderRadius: 'var(--radius-md)', padding: '20px 24px', maxWidth: '320px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.8)',
-          }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--color-text)', marginBottom: '8px', fontWeight: 700 }}>
-              Delete Mission?
-            </div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-              This cannot be undone. The mission will be permanently removed.
-            </div>
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <button onClick={() => setConfirmDeleteId(null)}
-                style={{ padding: '5px 14px', background: 'none', border: '1px solid var(--color-border-mid)', borderRadius: 'var(--radius-sm)', color: 'var(--color-text-muted)', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '10px' }}>
-                Cancel
-              </button>
-              <button onClick={() => handleDelete(confirmDeleteId)}
-                style={{ padding: '5px 14px', backgroundColor: 'var(--color-red-bg)', border: '1px solid var(--color-red)', borderRadius: 'var(--radius-sm)', color: 'var(--color-red)', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700 }}>
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog open={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} size="sm" className="border-red/40">
+        <DialogBody>
+          <div className="mb-1.5 font-mono text-[13px] font-bold text-text">Delete Mission?</div>
+          <p className="font-sans text-xs text-text-muted">
+            This cannot be undone. The mission will be permanently removed.
+          </p>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
+          <Button
+            size="sm"
+            onClick={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+            className="border-red bg-red-bg font-mono font-bold text-red hover:bg-red/20"
+          >
+            Delete
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </div>
   );
 }

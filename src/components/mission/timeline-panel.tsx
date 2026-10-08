@@ -7,6 +7,9 @@ import { useGeofenceStore } from '@/lib/store/geofence-store';
 import { useUIStore } from '@/lib/store/ui-store';
 import { COMMAND_ICONS, getMissionCommandDefinition } from '@/lib/mavlink/commands';
 import { computeMissionMetrics } from '@/lib/services/metrics-service';
+import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Clock } from 'lucide-react';
 
 const NON_SPATIAL_ACTIONS = new Set(['wait', 'set_speed', 'condition_distance', 'do_jump', 'cam_trigg_dist', 'set_roi', 'change_altitude']);
 
@@ -45,14 +48,8 @@ export function TimelinePanel() {
 
   if (items.length === 0) {
     return (
-      <div style={{
-        height: '72px', backgroundColor: '#080808',
-        borderBottom: '1px solid var(--color-border-mid)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--color-text-muted)',
-        flexShrink: 0,
-      }}>
-        No mission items — add waypoints to see the timeline
+      <div className="h-[72px] shrink-0 border-b border-border-mid bg-[#080808]">
+        <EmptyState icon={Clock} title="No mission items" description="Add waypoints to see the timeline" className="h-full justify-center py-0" />
       </div>
     );
   }
@@ -61,18 +58,11 @@ export function TimelinePanel() {
   let segIdx = 0;
 
   return (
-    <div style={{
-      height: '88px', backgroundColor: '#080808',
-      borderBottom: '1px solid var(--color-border-mid)',
-      flexShrink: 0, overflowX: 'auto', overflowY: 'hidden',
-    }}
+    <div
+      className="h-[88px] shrink-0 overflow-x-auto overflow-y-hidden border-b border-border-mid bg-[#080808]"
       ref={scrollRef}
     >
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        padding: '0 16px', height: '100%', gap: '0',
-        minWidth: 'max-content',
-      }}>
+      <div className="flex h-full min-w-max items-center gap-0 px-4">
         {items.map((item, idx) => {
           const def = getMissionCommandDefinition(item.action);
           const isSelected = item.id === selectedMissionItemId;
@@ -92,53 +82,41 @@ export function TimelinePanel() {
               onClick={() => selectMissionItem(item.id)}
               title={`${item.name}\nAlt: ${item.altitude ?? '—'}m\nSpeed: ${item.speed ?? '—'}m/s\nParams: ${item.parameters.param1}, ${item.parameters.param2}, ${item.parameters.param3}, ${item.parameters.param4}`}
               aria-label={`Timeline step: ${item.name}`}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: isNonSpatial ? '4px 8px' : '6px 12px',
-                minWidth: isNonSpatial ? '60px' : '80px',
-                height: isNonSpatial ? '48px' : '64px',
-                backgroundColor: isSelected
-                  ? 'rgba(0,255,65,0.12)'
-                  : 'var(--color-bg-raised)',
-                border: `1px solid ${isSelected ? 'var(--color-green)' : 'var(--color-border-mid)'}`,
-                borderRadius: 'var(--radius-md)',
-                cursor: 'pointer',
-                transition: 'all 150ms ease',
-                boxShadow: isSelected ? '0 0 8px rgba(0,255,65,0.3)' : 'none',
-                flexShrink: 0,
-              }}
+              className={cn(
+                'flex shrink-0 flex-col items-center justify-center rounded-md border transition-all duration-150 cursor-pointer',
+                isNonSpatial ? 'h-12 min-w-[60px] px-2 py-1' : 'h-16 min-w-[80px] px-3 py-1.5',
+                isSelected
+                  ? 'border-green bg-green-bg shadow-[0_0_8px_rgba(0,255,65,0.3)]'
+                  : 'border-border-mid bg-bg-raised'
+              )}
             >
-              <div style={{ fontSize: isNonSpatial ? '14px' : '18px', lineHeight: 1 }}>{icon}</div>
-              <div style={{
-                fontFamily: 'var(--font-mono)', fontSize: isNonSpatial ? '8px' : '9px',
-                color: isSelected ? 'var(--color-green)' : 'var(--color-text)',
-                fontWeight: isSelected ? 700 : 500, marginTop: '2px', whiteSpace: 'nowrap',
-              }}>
+              <div className={isNonSpatial ? 'text-sm leading-none' : 'text-lg leading-none'}>{icon}</div>
+              <div
+                className={cn(
+                  'mt-0.5 whitespace-nowrap font-mono',
+                  isNonSpatial ? 'text-[8px]' : 'text-[9px]',
+                  isSelected ? 'font-bold text-green' : 'font-medium text-text'
+                )}
+              >
                 {stepLabel(item.name, spatialSeq)}
               </div>
               {!isNonSpatial && (
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--color-text-muted)', marginTop: '1px' }}>
+                <div className="mt-px font-mono text-[8px] text-text-muted">
                   {item.altitude !== null ? `${item.altitude}m` : '—'}
                   {item.speed ? ` · ${item.speed}m/s` : ''}
                 </div>
               )}
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '7px', color: 'var(--color-text-muted)', marginTop: '1px' }}>
+              <div className="mt-px font-mono text-[7px] text-text-muted">
                 #{idx + 1}
               </div>
             </div>
           );
 
           const arrow = idx < items.length - 1 ? (
-            <div key={`arrow-${idx}`} style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center',
-              justifyContent: 'center', padding: '0 4px', flexShrink: 0,
-            }}>
-              <div style={{ width: '20px', height: '1px', backgroundColor: 'var(--color-border-mid)' }} />
+            <div key={`arrow-${idx}`} className="flex shrink-0 flex-col items-center justify-center px-1">
+              <div className="h-px w-5 bg-border-mid" />
               {segDist !== null && segDist !== undefined && (
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '7px', color: 'var(--color-text-muted)', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                <div className="mt-0.5 whitespace-nowrap font-mono text-[7px] text-text-muted">
                   {segDist >= 1000 ? `${(segDist / 1000).toFixed(1)}km` : `${Math.round(segDist)}m`}
                   {segDur !== null && segDur !== undefined ? ` · ${Math.round(segDur)}s` : ''}
                 </div>

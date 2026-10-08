@@ -6,6 +6,7 @@ import { useTenantStore } from '@/lib/store/tenant-store';
 import { useMissionLibraryStore } from '@/lib/store/mission-library-store';
 import { useMissionStore } from '@/lib/store/mission-store';
 import { useUIStore } from '@/lib/store/ui-store';
+import { cn } from '@/lib/utils';
 
 const PRESET_COLORS = [
   '#2d7dd2', '#00cc66', '#ff6b35', '#9b59b6',
@@ -70,50 +71,36 @@ export function TenantSelector() {
   };
 
   return (
-    <div ref={containerRef} style={{ position: 'relative' }}>
+    <div ref={containerRef} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Switch organisation"
-        style={{
-          display: 'flex', alignItems: 'center', gap: '5px',
-          height: '24px', padding: '0 8px',
-          background: 'none', border: '1px solid var(--color-border-mid)',
-          borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-          transition: 'all 150ms ease',
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-bg-raised)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
+        className="flex h-6 items-center gap-1.5 rounded-sm border border-border-mid px-2 transition-colors hover:bg-bg-raised"
       >
-        <div style={{
-          width: '8px', height: '8px', borderRadius: '50%',
-          backgroundColor: activeTenant?.color ?? '#888', flexShrink: 0,
-        }} />
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--color-text)', whiteSpace: 'nowrap', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div
+          className="h-2 w-2 shrink-0 rounded-full"
+          style={{ backgroundColor: activeTenant?.color ?? '#888' }}
+        />
+        <span className="max-w-[100px] overflow-hidden whitespace-nowrap font-mono text-[10px] text-text text-ellipsis">
           {activeTenant?.name ?? 'No Org'}
         </span>
       </button>
 
       {open && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, marginTop: '2px',
-          zIndex: 9000, minWidth: '220px',
-          backgroundColor: 'var(--color-bg-raised)', border: '1px solid var(--color-border-mid)',
-          borderRadius: 'var(--radius-md)', boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
-          overflow: 'hidden',
-        }}>
-          <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--color-border)', fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        <div className="absolute left-0 top-full z-[9000] mt-0.5 min-w-[220px] overflow-hidden rounded-md border border-border-mid bg-bg-raised shadow-2xl">
+          <div className="border-b border-border px-2 py-1.5 font-mono text-[9px] uppercase tracking-wide text-text-muted">
             Organisations
           </div>
 
           {tenantList.map((tenant) => (
-            <div key={tenant.id}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '7px 10px',
-                backgroundColor: tenant.id === activeTenantId ? 'rgba(0,255,65,0.05)' : 'transparent',
-                borderBottom: '1px solid var(--color-border)',
-              }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: tenant.color, flexShrink: 0 }} />
+            <div
+              key={tenant.id}
+              className={cn(
+                'flex items-center gap-1.5 border-b border-border px-2.5 py-1.5',
+                tenant.id === activeTenantId && 'bg-green-bg'
+              )}
+            >
+              <div className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: tenant.color }} />
 
               {editingId === tenant.id ? (
                 <input
@@ -124,29 +111,33 @@ export function TenantSelector() {
                     if (e.key === 'Escape') setEditingId(null);
                   }}
                   autoFocus
-                  style={{
-                    flex: 1, background: 'var(--color-bg-raised)', border: '1px solid var(--color-green)',
-                    borderRadius: '2px', color: 'var(--color-text)', fontFamily: 'var(--font-mono)',
-                    fontSize: '10px', padding: '1px 4px', outline: 'none',
-                  }}
+                  className="flex-1 rounded-[2px] border border-green bg-bg-raised px-1 py-0.5 font-mono text-[10px] text-text outline-none"
                 />
               ) : (
                 <span
                   onClick={() => handleSwitch(tenant.id)}
-                  style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '10px', color: tenant.id === activeTenantId ? 'var(--color-green)' : 'var(--color-text)', cursor: 'pointer' }}>
+                  className={cn(
+                    'flex-1 cursor-pointer font-mono text-[10px]',
+                    tenant.id === activeTenantId ? 'text-green' : 'text-text'
+                  )}
+                >
                   {tenant.name}
                   {tenant.id === activeTenantId && ' ✓'}
                 </span>
               )}
 
-              <button onClick={() => { setEditingId(tenant.id); setEditName(tenant.name); }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', padding: '1px' }}>
+              <button
+                onClick={() => { setEditingId(tenant.id); setEditName(tenant.name); }}
+                aria-label={`Rename ${tenant.name}`}
+                className="flex p-0.5 text-text-muted transition-colors hover:text-text"
+              >
                 <Edit2 size={10} />
               </button>
-              <button onClick={() => handleDelete(tenant.id)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', padding: '1px' }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-red)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; }}>
+              <button
+                onClick={() => handleDelete(tenant.id)}
+                aria-label={`Delete ${tenant.name}`}
+                className="flex p-0.5 text-text-muted transition-colors hover:text-red"
+              >
                 <Trash2 size={10} />
               </button>
             </div>
@@ -154,51 +145,46 @@ export function TenantSelector() {
 
           {/* New org */}
           {creatingNew ? (
-            <div style={{ padding: '8px 10px', borderTop: '1px solid var(--color-border)' }}>
+            <div className="border-t border-border px-2.5 py-2">
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Organisation name"
                 onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') setCreatingNew(false); }}
                 autoFocus
-                style={{
-                  width: '100%', marginBottom: '6px', padding: '3px 6px',
-                  backgroundColor: 'var(--color-bg-raised)', border: '1px solid var(--color-green)',
-                  borderRadius: '2px', color: 'var(--color-text)', fontFamily: 'var(--font-mono)',
-                  fontSize: '10px', outline: 'none',
-                }}
+                className="mb-1.5 w-full rounded-[2px] border border-green bg-bg-raised px-1.5 py-0.5 font-mono text-[10px] text-text outline-none"
               />
-              <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
+              <div className="mb-1.5 flex gap-1">
                 {PRESET_COLORS.map((c) => (
-                  <button key={c} onClick={() => setNewColor(c)}
-                    style={{
-                      width: '14px', height: '14px', borderRadius: '50%', backgroundColor: c,
-                      border: c === newColor ? '2px solid #fff' : '1px solid transparent',
-                      cursor: 'pointer', padding: 0,
-                    }} />
+                  <button
+                    key={c}
+                    onClick={() => setNewColor(c)}
+                    aria-label={`Use color ${c}`}
+                    className="h-3.5 w-3.5 rounded-full p-0"
+                    style={{ backgroundColor: c, border: c === newColor ? '2px solid #fff' : '1px solid transparent' }}
+                  />
                 ))}
               </div>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <button onClick={handleCreate}
-                  style={{ flex: 1, padding: '3px', backgroundColor: 'var(--color-green-bg)', border: '1px solid var(--color-green)', borderRadius: '2px', color: 'var(--color-green)', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '9px' }}>
-                  <Check size={10} /> Create
+              <div className="flex gap-1.5">
+                <button
+                  onClick={handleCreate}
+                  className="flex-1 rounded-[2px] border border-green bg-green-bg py-0.5 font-mono text-[9px] text-green"
+                >
+                  <Check size={10} className="inline" /> Create
                 </button>
-                <button onClick={() => setCreatingNew(false)}
-                  style={{ flex: 1, padding: '3px', background: 'none', border: '1px solid var(--color-border-mid)', borderRadius: '2px', color: 'var(--color-text-muted)', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '9px' }}>
-                  <X size={10} /> Cancel
+                <button
+                  onClick={() => setCreatingNew(false)}
+                  className="flex-1 rounded-[2px] border border-border-mid py-0.5 font-mono text-[9px] text-text-muted"
+                >
+                  <X size={10} className="inline" /> Cancel
                 </button>
               </div>
             </div>
           ) : (
-            <button onClick={() => setCreatingNew(true)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                width: '100%', padding: '7px 10px', background: 'none', border: 'none',
-                cursor: 'pointer', borderTop: '1px solid var(--color-border)',
-                fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--color-text-muted)',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; }}>
+            <button
+              onClick={() => setCreatingNew(true)}
+              className="flex w-full items-center gap-1.5 border-t border-border px-2.5 py-1.5 font-mono text-[10px] text-text-muted transition-colors hover:text-text"
+            >
               <Plus size={11} /> New Organisation
             </button>
           )}

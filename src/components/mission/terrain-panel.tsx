@@ -13,6 +13,8 @@ import {
   getGroundClearance,
 } from '@/lib/services/terrain-service';
 import { round7 } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 
 interface SamplePoint {
   distFromStart: number;
@@ -123,43 +125,32 @@ export function TerrainPanel() {
   const hoverSample = hover !== null ? samples[hover] : null;
 
   return (
-    <div style={{
-      backgroundColor: '#0d0d0d',
-      borderTop: '1px solid var(--color-border-mid)',
-      flexShrink: 0,
-      padding: '6px 12px 8px',
-    }}>
+    <div className="shrink-0 border-t border-border-mid bg-[#0d0d0d] px-3 pb-2 pt-1.5">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Mountain size={12} color="var(--color-text-muted)" />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+      <div className="mb-1 flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <Mountain size={12} className="text-text-muted" />
+          <span className="font-mono text-[10px] font-bold uppercase tracking-wide text-text">
             Terrain Profile
           </span>
-          {hasConflict && (
-            <span className="badge badge-red">TERRAIN CONFLICT</span>
-          )}
-          {loading && (
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--color-text-muted)' }}>Loading…</span>
-          )}
+          {hasConflict && <Badge variant="red">Terrain Conflict</Badge>}
+          {loading && <span className="font-mono text-[9px] text-text-muted">Loading…</span>}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <label style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-1 font-mono text-[9px] text-text-muted">
             Min AGL (m)
-            <input
+            <Input
               type="number"
               value={config.minAGLClearance}
               onChange={(e) => updateConfig({ minAGLClearance: parseFloat(e.target.value) || 0 })}
-              style={{
-                width: '40px', padding: '1px 3px', backgroundColor: 'var(--color-bg-raised)',
-                border: '1px solid var(--color-border-mid)', borderRadius: '2px',
-                color: 'var(--color-text)', fontFamily: 'var(--font-mono)', fontSize: '9px', outline: 'none',
-              }}
+              className="h-5 w-10 px-1 text-[9px]"
             />
           </label>
-          <button onClick={() => fetchTerrain(true)}
+          <button
+            onClick={() => fetchTerrain(true)}
             aria-label="Refresh terrain data"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', gap: '3px', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: '9px' }}>
+            className="flex items-center gap-1 font-mono text-[9px] text-text-muted transition-colors hover:text-text"
+          >
             <RefreshCw size={11} /> Refresh
           </button>
         </div>
@@ -167,12 +158,12 @@ export function TerrainPanel() {
 
       {/* SVG Chart */}
       {samples.length > 0 ? (
-        <div style={{ position: 'relative' }}>
+        <div className="relative">
           <svg
             ref={svgRef}
             viewBox={`0 0 ${W} ${H}`}
             width="100%"
-            style={{ display: 'block', cursor: 'crosshair' }}
+            className="block cursor-crosshair"
             onMouseMove={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const mx = ((e.clientX - rect.left) / rect.width) * W;
@@ -241,43 +232,37 @@ export function TerrainPanel() {
 
           {/* Hover tooltip */}
           {hoverSample && hover !== null && (
-            <div style={{
-              position: 'absolute',
-              left: `${(xScale(hoverSample.distFromStart) / W) * 100}%`,
-              top: 0,
-              transform: 'translateX(-50%)',
-              backgroundColor: 'rgba(10,10,10,0.9)',
-              border: '1px solid var(--color-border-mid)',
-              borderRadius: '3px',
-              padding: '4px 6px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '9px',
-              color: 'var(--color-text)',
-              pointerEvents: 'none',
-              whiteSpace: 'nowrap',
-              zIndex: 10,
-            }}>
+            <div
+              className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-[3px] border border-border-mid bg-[rgba(10,10,10,0.9)] px-1.5 py-1 font-mono text-[9px] text-text"
+              style={{ left: `${(xScale(hoverSample.distFromStart) / W) * 100}%` }}
+            >
               <div>{Math.round(hoverSample.distFromStart)}m from start</div>
-              <div style={{ color: 'var(--color-amber)' }}>Terrain: {Math.round(hoverSample.terrainElev ?? 0)}m AMSL</div>
-              <div style={{ color: 'var(--color-green)' }}>Flight: {Math.round(hoverSample.flightAlt ?? 0)}m</div>
-              <div style={{ color: hoverSample.flightAlt !== null && hoverSample.terrainElev !== null && getGroundClearance(hoverSample.flightAlt, hoverSample.terrainElev) < config.minAGLClearance ? 'var(--color-red)' : 'var(--color-text-muted)' }}>
+              <div className="text-amber">Terrain: {Math.round(hoverSample.terrainElev ?? 0)}m AMSL</div>
+              <div className="text-green">Flight: {Math.round(hoverSample.flightAlt ?? 0)}m</div>
+              <div
+                className={
+                  hoverSample.flightAlt !== null && hoverSample.terrainElev !== null && getGroundClearance(hoverSample.flightAlt, hoverSample.terrainElev) < config.minAGLClearance
+                    ? 'text-red'
+                    : 'text-text-muted'
+                }
+              >
                 AGL: {hoverSample.flightAlt !== null && hoverSample.terrainElev !== null ? Math.round(getGroundClearance(hoverSample.flightAlt, hoverSample.terrainElev)) : '—'}m
               </div>
             </div>
           )}
 
           {/* Legend */}
-          <div style={{ display: 'flex', gap: '10px', marginTop: '2px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--color-text-muted)' }}>
-              <div style={{ width: '14px', height: '2px', background: 'var(--color-green)' }} /> Flight path
+          <div className="mt-0.5 flex gap-2.5">
+            <div className="flex items-center gap-1 font-mono text-[9px] text-text-muted">
+              <div className="h-0.5 w-3.5 bg-green" /> Flight path
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--color-text-muted)' }}>
-              <div style={{ width: '14px', height: '2px', background: 'rgba(255,170,0,0.8)' }} /> Terrain
+            <div className="flex items-center gap-1 font-mono text-[9px] text-text-muted">
+              <div className="h-0.5 w-3.5 bg-[rgba(255,170,0,0.8)]" /> Terrain
             </div>
           </div>
         </div>
       ) : (
-        <div style={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
+        <div className="flex h-[60px] items-center justify-center font-mono text-[11px] text-text-muted">
           {spatialItems.length < 2 ? 'Add at least 2 waypoints to see terrain profile' : loading ? 'Fetching terrain…' : 'No data'}
         </div>
       )}

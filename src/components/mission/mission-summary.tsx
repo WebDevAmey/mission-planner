@@ -1,12 +1,26 @@
 'use client';
 
-import React from 'react';
 import { useMissionStore } from '@/lib/store/mission-store';
 import { useConstraintsStore } from '@/lib/store/constraints-store';
 import { totalMissionDistance, estimatedFlightTime } from '@/lib/services/mission-builder';
 import { computeRiskScore } from '@/lib/services/risk-scorer';
 import { supportsCoordinates } from '@/lib/mavlink/commands';
-import { formatDuration } from '@/lib/utils';
+import { formatDuration, cn } from '@/lib/utils';
+
+const RISK_TEXT_CLASS: Record<'LOW' | 'MEDIUM' | 'HIGH', string> = {
+  LOW: 'text-green',
+  MEDIUM: 'text-amber',
+  HIGH: 'text-red',
+};
+
+function Stat({ label, children, last }: { label: string; children: React.ReactNode; last?: boolean }) {
+  return (
+    <div className={cn('flex flex-col items-center gap-px px-3', !last && 'border-r border-border')}>
+      <span className="font-mono text-[9px] uppercase tracking-wide text-text-muted">{label}</span>
+      <span className="font-mono text-xs font-bold text-text">{children}</span>
+    </div>
+  );
+}
 
 export function MissionSummary() {
   const { mission } = useMissionStore();
@@ -26,74 +40,19 @@ export function MissionSummary() {
   );
   const risk = computeRiskScore(mission.items, config, nfzs);
 
-  const riskColor =
-    risk.level === 'LOW'
-      ? 'var(--color-green)'
-      : risk.level === 'MEDIUM'
-      ? 'var(--color-amber)'
-      : 'var(--color-red)';
-
-  const statStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '1px',
-    padding: '0 12px',
-    borderRight: '1px solid var(--color-border)',
-  };
-
-  const labelS: React.CSSProperties = {
-    fontFamily: 'var(--font-mono)',
-    fontSize: '9px',
-    color: 'var(--color-text-muted)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.4px',
-  };
-
-  const valueS: React.CSSProperties = {
-    fontFamily: 'var(--font-mono)',
-    fontSize: '12px',
-    fontWeight: 700,
-    color: 'var(--color-text)',
-  };
-
   return (
-    <div style={{
-      height: '36px',
-      backgroundColor: '#0d0d0d',
-      borderTop: '1px solid var(--color-border-mid)',
-      borderBottom: '1px solid var(--color-border-mid)',
-      display: 'flex',
-      alignItems: 'center',
-      padding: '0 8px',
-      flexShrink: 0,
-      gap: '0',
-      overflowX: 'auto',
-    }}>
-      <div style={statStyle}>
-        <span style={labelS}>Waypoints</span>
-        <span style={valueS}>{spatialCount}</span>
-      </div>
-      <div style={statStyle}>
-        <span style={labelS}>Distance</span>
-        <span style={valueS}>
-          {distM >= 1000 ? `${(distM / 1000).toFixed(2)} km` : `${Math.round(distM)} m`}
+    <div className="flex h-9 shrink-0 items-center overflow-x-auto border-y border-border-mid bg-[#0d0d0d] px-2">
+      <Stat label="Waypoints">{spatialCount}</Stat>
+      <Stat label="Distance">
+        {distM >= 1000 ? `${(distM / 1000).toFixed(2)} km` : `${Math.round(distM)} m`}
+      </Stat>
+      <Stat label="Est. Time">{formatDuration(Math.round(timeS))}</Stat>
+      <Stat label="Max Alt">{maxAlt.toFixed(1)} m</Stat>
+      <Stat label="Risk" last>
+        <span className={RISK_TEXT_CLASS[risk.level]}>
+          {risk.total.toFixed(0)} <span className="text-[9px]">{risk.level}</span>
         </span>
-      </div>
-      <div style={statStyle}>
-        <span style={labelS}>Est. Time</span>
-        <span style={valueS}>{formatDuration(Math.round(timeS))}</span>
-      </div>
-      <div style={statStyle}>
-        <span style={labelS}>Max Alt</span>
-        <span style={valueS}>{maxAlt.toFixed(1)} m</span>
-      </div>
-      <div style={{ ...statStyle, borderRight: 'none' }}>
-        <span style={labelS}>Risk</span>
-        <span style={{ ...valueS, color: riskColor }}>
-          {risk.total.toFixed(0)} <span style={{ fontSize: '9px' }}>{risk.level}</span>
-        </span>
-      </div>
+      </Stat>
     </div>
   );
 }
