@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useMissionStore } from '@/lib/store/mission-store';
 import { useConstraintsStore } from '@/lib/store/constraints-store';
 import { useGeofenceStore } from '@/lib/store/geofence-store';
 import { useAgentStore } from '@/lib/store/agent-store';
 import { runFlightDeck } from '@/lib/agents/client';
 import type { FlightDeckRequest } from '@/lib/agents/schemas';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 
 export function MissionPromptBar() {
   const [value, setValue] = useState('');
@@ -47,38 +49,24 @@ export function MissionPromptBar() {
   }, [mission, value, running, config, nfzs, geofences, startRun, setConsoleOpen, addEvent, finishRun, fail]);
 
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: '6px', height: '28px',
-      padding: '0 8px', flex: '1 1 auto', minWidth: '160px', maxWidth: '420px',
-    }}>
-      <Sparkles size={12} color="var(--color-cyan)" style={{ flexShrink: 0 }} />
-      <input
+    <div className="flex h-7 min-w-[160px] max-w-[420px] flex-1 items-center gap-1.5 px-2">
+      <Sparkles size={12} className="shrink-0 text-cyan" />
+      <Input
         type="text"
         value={value}
         disabled={!mission || running}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
         placeholder="Ask Flight Deck to plan a mission…"
-        style={{
-          flex: 1, background: 'var(--color-bg-raised)', border: '1px solid var(--color-border-mid)',
-          borderRadius: 'var(--radius-sm)', color: 'var(--color-text)', fontFamily: 'var(--font-mono)',
-          fontSize: '11px', padding: '4px 8px', outline: 'none', minWidth: 0,
-        }}
+        className="h-6 min-w-0 flex-1 px-2"
       />
       <button
         onClick={submit}
         disabled={!mission || running || !value.trim()}
         title="Plan with Flight Deck"
-        style={{
-          display: 'flex', alignItems: 'center', gap: '4px', height: '24px', padding: '0 8px',
-          background: 'var(--color-blue-bg)', border: '1px solid var(--color-blue)',
-          borderRadius: 'var(--radius-sm)', color: 'var(--color-blue)',
-          fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700,
-          cursor: running || !value.trim() ? 'not-allowed' : 'pointer', flexShrink: 0,
-          opacity: running || !value.trim() ? 0.5 : 1,
-        }}
+        className="flex h-6 shrink-0 items-center gap-1 rounded-sm border border-blue bg-blue-bg px-2 font-mono text-[10px] font-bold text-blue transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {running ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+        {running ? <Spinner size={11} className="text-blue" /> : <Sparkles size={11} />}
         {running ? 'Planning…' : 'Plan'}
       </button>
     </div>
