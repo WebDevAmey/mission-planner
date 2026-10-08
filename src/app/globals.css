@@ -182,69 +182,6 @@
 
 @layer components {
 
-  /* ---- PANELS ---- */
-  .panel {
-    background-color: var(--color-bg-panel);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-  }
-  .panel-elevated {
-    background-color: var(--color-bg-raised);
-    border: 1px solid var(--color-border-mid);
-    border-radius: var(--radius-md);
-  }
-
-  /* ---- BUTTONS ---- */
-  .btn-base {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--sp-2) var(--sp-4);
-    border-radius: var(--radius-md);
-    font-family: var(--font-sans);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 150ms ease;
-    border: 1px solid transparent;
-  }
-  .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--sp-2) var(--sp-4);
-    border-radius: var(--radius-md);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 150ms ease;
-    background-color: var(--color-green);
-    color: #000;
-    border: 1px solid var(--color-green);
-    font-family: var(--font-mono);
-  }
-  .btn-primary:hover { background-color: var(--color-green-dim); }
-
-  .btn-ghost {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--sp-2) var(--sp-4);
-    border-radius: var(--radius-md);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 150ms ease;
-    background-color: transparent;
-    color: var(--color-text-dim);
-    border: 1px solid var(--color-border);
-  }
-  .btn-ghost:hover {
-    background-color: var(--color-bg-hover);
-    color: var(--color-text);
-    border-color: var(--color-border-mid);
-  }
-
   /* ---- TOOLBAR BUTTON (ArduPilot tool strip) ---- */
   .toolbar-btn {
     display: flex;
@@ -272,26 +209,6 @@
     border-color: var(--color-green);
     color: var(--color-green);
   }
-
-  /* ---- INPUTS ---- */
-  .input-base {
-    width: 100%;
-    height: 28px;
-    padding: 0 var(--sp-2);
-    background-color: var(--color-bg-panel);
-    border: 1px solid var(--color-border-mid);
-    border-radius: var(--radius-sm);
-    color: var(--color-text);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    transition: border-color 150ms ease;
-  }
-  .input-base:focus {
-    outline: none;
-    border-color: var(--color-green);
-    box-shadow: 0 0 0 2px var(--color-green-bg);
-  }
-  .input-base::placeholder { color: var(--color-text-muted); }
 
   /* ---- TABLE (Waypoint grid) ---- */
   .wp-table {
@@ -347,23 +264,6 @@
   .status-dot-degraded { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: var(--color-amber); }
   .status-dot-offline  { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: var(--color-red);   }
 
-  /* ---- DATA ROWS ---- */
-  .data-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 3px 0;
-    border-bottom: 1px solid var(--color-border);
-    font-size: 11px;
-  }
-  .data-row:last-child { border-bottom: none; }
-  .data-row-label { color: var(--color-text-dim); font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
-  .data-row-value { color: var(--color-green); font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
-  .data-mono      { font-family: var(--font-mono); font-size: 11px; color: var(--color-green); font-weight: 500; }
-
-  /* ---- SEPARATOR ---- */
-  .separator { height: 1px; background-color: var(--color-border); }
-
   /* ---- CONTEXT MENU ---- */
   .context-menu {
     position: fixed;
@@ -400,26 +300,6 @@
   .wp-table tr.row-alt td { background-color: rgba(255,255,255,0.015); }
   .wp-table tr.row-alt:hover td { background-color: var(--color-bg-hover); }
   .wp-table tr.selected.row-alt td { background-color: var(--color-green-bg); }
-}
-
-/* ============ UTILITIES ============ */
-
-@layer utilities {
-  .flex-center  { display: flex; align-items: center; justify-content: center; }
-  .flex-between { display: flex; align-items: center; justify-content: space-between; }
-  .text-mono    { font-family: var(--font-mono); }
-  .text-primary { color: var(--color-text); }
-  .text-secondary { color: var(--color-text-dim); }
-  .text-tertiary  { color: var(--color-text-muted); }
-  .text-accent    { color: var(--color-green); }
-  .bg-base        { background-color: var(--color-bg-base); }
-  .bg-panel       { background-color: var(--color-bg-panel); }
-  .bg-elevated    { background-color: var(--color-bg-raised); }
-  .bg-hover       { background-color: var(--color-bg-hover); }
-  .border-subtle  { border-color: var(--color-border); }
-  .border-mid     { border-color: var(--color-border-mid); }
-  .border-strong  { border-color: var(--color-border-hi); }
-  .truncate-1     { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
 }
 
 /* ============ SCROLLBARS ============ */
