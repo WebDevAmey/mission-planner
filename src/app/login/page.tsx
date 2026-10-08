@@ -2,7 +2,11 @@
 
 import React, { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { Lock, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input, Label } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import { cn } from '@/lib/utils';
 
 function LoginForm() {
   const router = useRouter();
@@ -39,64 +43,43 @@ function LoginForm() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      backgroundColor: 'var(--color-bg-base)',
-      padding: '24px',
-    }}>
-      <form onSubmit={submit} style={{
-        width: '100%', maxWidth: '360px', padding: '32px 28px', borderRadius: 'var(--radius-lg)',
-        backgroundColor: 'var(--color-bg-panel)', border: '1px solid var(--color-border-mid)',
-        boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-          <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'var(--color-foreground)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Lock size={14} color="var(--color-background)" />
+    <div className="flex min-h-screen items-center justify-center bg-background px-6">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-[360px] rounded-lg border border-border-mid bg-bg-panel p-7 shadow-[0_24px_60px_rgba(0,0,0,0.5)]"
+      >
+        <div className="mb-1.5 flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-foreground">
+            <Lock size={14} className="text-background" />
           </div>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '15px', fontWeight: 700, color: 'var(--color-text)' }}>
-            Flight Deck
-          </span>
+          <span className="font-sans text-[15px] font-bold text-text">Flight Deck</span>
         </div>
-        <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-text-dim)', margin: '0 0 22px' }}>
+        <p className="mb-6 font-sans text-[13px] text-text-dim">
           Enter the access password to continue to the mission planner.
         </p>
 
-        <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--color-text-dim)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Password
-        </label>
-        <input
+        <Label htmlFor="password">Password</Label>
+        <Input
+          id="password"
           type="password"
           value={password}
           autoFocus
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
-          style={{
-            width: '100%', boxSizing: 'border-box', background: 'var(--color-bg-raised)',
-            border: `1px solid ${error ? 'var(--color-red)' : 'var(--color-border-mid)'}`,
-            borderRadius: 'var(--radius-sm)', color: 'var(--color-text)', fontFamily: 'var(--font-mono)',
-            fontSize: '13px', padding: '9px 10px', outline: 'none', marginBottom: '10px',
-          }}
+          aria-invalid={!!error}
+          className={cn('mb-2.5 h-9 text-[13px]', error && 'border-red')}
         />
 
-        {error && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--color-red)', marginBottom: '10px' }}>
-            {error}
-          </div>
-        )}
+        {error && <div className="mb-2.5 font-mono text-[11px] text-red">{error}</div>}
 
-        <button
+        <Button
           type="submit"
+          variant="primary"
           disabled={!password || loading}
-          style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-            padding: '10px', backgroundColor: 'var(--color-foreground)', border: 'none', borderRadius: 'var(--radius-sm)',
-            color: 'var(--color-background)', fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700,
-            cursor: !password || loading ? 'not-allowed' : 'pointer', opacity: !password || loading ? 0.6 : 1,
-            marginTop: '4px',
-          }}
+          className="mt-1 w-full font-sans"
         >
-          {loading ? <Loader2 size={14} className="animate-spin" /> : <>Continue <ArrowRight size={14} /></>}
-        </button>
+          {loading ? <Spinner size={14} className="text-background" /> : <>Continue <ArrowRight size={14} /></>}
+        </Button>
       </form>
     </div>
   );
