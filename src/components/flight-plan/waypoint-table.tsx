@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useCallback } from 'react';
-import { Trash2, Plus, Copy, ChevronDown } from 'lucide-react';
+import { Trash2, Plus, Copy, ChevronDown, MapPin } from 'lucide-react';
 import { useMissionStore } from '@/lib/store/mission-store';
 import { useUIStore } from '@/lib/store/ui-store';
 import {
@@ -14,6 +14,8 @@ import {
   MavlinkFrame,
 } from '@/lib/mavlink/commands';
 import type { MissionItem } from '@/types/mission';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const cellStyle: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -168,75 +170,51 @@ export function WaypointTable({ height }: { height?: number }) {
 
   return (
     <div
-      style={{
-        height: `${containerHeight}px`,
-        backgroundColor: 'var(--color-bg-panel)',
-        borderTop: '2px solid var(--color-border-mid)',
-        display: 'flex',
-        flexDirection: 'column',
-        flexShrink: 0,
-      }}
+      className="flex shrink-0 flex-col border-t-2 border-border-mid bg-bg-panel"
+      style={{ height: `${containerHeight}px` }}
       onClick={() => setRowCtxMenu(null)}
     >
       {/* Table header bar */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '3px 8px', backgroundColor: '#0d0d0d',
-        borderBottom: '1px solid var(--color-border-mid)', flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700,
-            color: 'var(--color-green)', textTransform: 'uppercase', letterSpacing: '0.6px',
-          }}>
+      <div className="flex shrink-0 items-center justify-between border-b border-border-mid bg-[#0d0d0d] px-2 py-0.5">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-wide text-green">
             FLIGHT PLAN
           </span>
           {selectedIds.size > 0 && (
-            <button
+            <Button
+              size="xs"
               onClick={handleBulkDelete}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '3px',
-                padding: '1px 6px', backgroundColor: 'var(--color-red-bg)',
-                border: '1px solid var(--color-red)', borderRadius: '2px',
-                color: 'var(--color-red)', fontFamily: 'var(--font-mono)',
-                fontSize: '10px', cursor: 'pointer',
-              }}
+              className="border-red bg-red-bg text-red hover:bg-red/20"
             >
               <Trash2 size={10} /> Delete {selectedIds.size}
-            </button>
+            </Button>
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--color-text-muted)' }}>
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-[10px] text-text-muted">
             {items.length} items
           </span>
-          <button
+          <Button
+            size="xs"
             onClick={handleAddWaypoint}
             title="Add waypoint row"
-            style={{
-              display: 'flex', alignItems: 'center', gap: '3px',
-              padding: '2px 7px', backgroundColor: 'var(--color-green-bg)',
-              border: '1px solid var(--color-green)', borderRadius: '2px',
-              color: 'var(--color-green)', fontFamily: 'var(--font-mono)',
-              fontSize: '10px', fontWeight: 600, cursor: 'pointer',
-            }}
+            className="border-green bg-green-bg font-semibold text-green hover:bg-green/20"
           >
             <Plus size={11} /> WP
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Table body */}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto' }}>
         {items.length === 0 ? (
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            height: '100%', color: 'var(--color-text-muted)',
-            fontFamily: 'var(--font-mono)', fontSize: '11px', gap: '8px',
-          }}>
-            No mission items — click map or press WP to add
-          </div>
+          <EmptyState
+            icon={MapPin}
+            title="No mission items"
+            description="Click the map or press WP to add a waypoint."
+            className="h-full"
+          />
         ) : (
           <table className="wp-table">
             <thead>
@@ -489,22 +467,18 @@ export function WaypointTable({ height }: { height?: number }) {
 
                     {/* Actions */}
                     <td style={{ ...cellStyle, textAlign: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                      <div className="flex items-center gap-0.5">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDuplicate(item.id); }}
                           title="Duplicate row"
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', padding: '2px', borderRadius: '2px' }}
-                          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-cyan)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; }}
+                          className="flex items-center rounded-[2px] p-0.5 text-text-muted transition-colors hover:text-cyan"
                         >
                           <Copy size={11} />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
                           title="Delete item"
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', padding: '2px', borderRadius: '2px' }}
-                          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-red)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; }}
+                          className="flex items-center rounded-[2px] p-0.5 text-text-muted transition-colors hover:text-red"
                         >
                           <Trash2 size={11} />
                         </button>

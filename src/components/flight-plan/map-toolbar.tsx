@@ -15,6 +15,7 @@ import {
 import { useUIStore, type MapTool } from '@/lib/store/ui-store';
 import { useConstraintsStore } from '@/lib/store/constraints-store';
 import { useGeofenceStore } from '@/lib/store/geofence-store';
+import { cn } from '@/lib/utils';
 
 interface ToolDefinition {
   id: MapTool;
@@ -33,6 +34,19 @@ const TOOLS: ToolDefinition[] = [
   { id: 'measure', icon: <Ruler size={16} />, label: 'Measure', shortcut: 'M' },
 ];
 
+function ToolCountBadge({ count, color }: { count: number; color: 'red' | 'blue' }) {
+  return (
+    <span
+      className={
+        'absolute right-0.5 top-0.5 flex h-3 w-3 items-center justify-center rounded-full text-[8px] font-bold text-white ' +
+        (color === 'red' ? 'bg-red' : 'bg-blue')
+      }
+    >
+      {count}
+    </span>
+  );
+}
+
 export function MapToolbar() {
   const {
     activeTool, setActiveTool,
@@ -44,90 +58,57 @@ export function MapToolbar() {
   const { geofences } = useGeofenceStore();
 
   return (
-    <div
-      style={{
-        width: 'var(--toolbar-width)',
-        backgroundColor: 'var(--color-bg-panel)',
-        borderRight: '1px solid var(--color-border)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        paddingTop: '6px',
-        paddingBottom: '6px',
-        gap: '2px',
-        flexShrink: 0,
-      }}
-    >
+    <div className="flex w-(--toolbar-width) shrink-0 flex-col items-center gap-0.5 border-r border-border bg-bg-panel py-1.5">
       {TOOLS.map((tool, index) => (
-        <div key={tool.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-          {index === 3 && (
-            <div style={{ width: '32px', height: '1px', backgroundColor: 'var(--color-border)', margin: '4px 0' }} />
-          )}
+        <div key={tool.id} className="flex w-full flex-col items-center">
+          {index === 3 && <div className="my-1 h-px w-8 bg-border" />}
           <button
-            className={`toolbar-btn${activeTool === tool.id ? ' active' : ''}`}
+            className={cn('toolbar-btn relative h-10 w-11 flex-col gap-0.5', activeTool === tool.id && 'active')}
             onClick={() => setActiveTool(tool.id)}
             title={`${tool.label} (${tool.shortcut})`}
-            style={{ position: 'relative', width: '44px', height: '40px', flexDirection: 'column', gap: '2px' }}
           >
             {tool.icon}
-            <span style={{ fontSize: '8px', lineHeight: 1, color: 'inherit', fontFamily: 'var(--font-sans)' }}>
+            <span className="font-sans text-[8px] leading-none text-inherit">
               {tool.label}
             </span>
-            {tool.id === 'draw-circle' && nfzs.length > 0 && (
-              <span style={{
-                position: 'absolute', top: 2, right: 2,
-                backgroundColor: 'var(--color-red)', color: '#fff',
-                borderRadius: '50%', width: '12px', height: '12px',
-                fontSize: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 700,
-              }}>
-                {nfzs.length}
-              </span>
-            )}
+            {tool.id === 'draw-circle' && nfzs.length > 0 && <ToolCountBadge count={nfzs.length} color="red" />}
           </button>
         </div>
       ))}
 
-      <div style={{ flex: 1 }} />
+      <div className="flex-1" />
 
-      <div style={{ width: '32px', height: '1px', backgroundColor: 'var(--color-border)', margin: '4px 0' }} />
+      <div className="my-1 h-px w-8 bg-border" />
 
       <button
-        className={`toolbar-btn${constraintsPanelOpen ? ' active' : ''}`}
+        className={cn('toolbar-btn h-10 w-11 flex-col gap-0.5', constraintsPanelOpen && 'active')}
         onClick={toggleConstraintsPanel}
         title="Constraints panel"
         aria-label="Constraints panel"
-        style={{ width: '44px', height: '40px', flexDirection: 'column', gap: '2px' }}
       >
         <ShieldAlert size={15} />
-        <span style={{ fontSize: '7px', lineHeight: 1, fontFamily: 'var(--font-sans)' }}>Limits</span>
+        <span className="font-sans text-[7px] leading-none">Limits</span>
       </button>
 
       <button
-        className={`toolbar-btn${geofencePanelOpen ? ' active' : ''}`}
+        className={cn('toolbar-btn relative h-10 w-11 flex-col gap-0.5', geofencePanelOpen && 'active')}
         onClick={toggleGeofencePanel}
         title="Geofences (G)"
         aria-label="Geofences panel"
-        style={{ position: 'relative', width: '44px', height: '40px', flexDirection: 'column', gap: '2px' }}
       >
         <Shield size={15} />
-        <span style={{ fontSize: '7px', lineHeight: 1, fontFamily: 'var(--font-sans)' }}>Geofence</span>
-        {geofences.length > 0 && (
-          <span style={{ position: 'absolute', top: 2, right: 2, backgroundColor: 'var(--color-blue)', color: '#fff', borderRadius: '50%', width: '12px', height: '12px', fontSize: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
-            {geofences.length}
-          </span>
-        )}
+        <span className="font-sans text-[7px] leading-none">Geofence</span>
+        {geofences.length > 0 && <ToolCountBadge count={geofences.length} color="blue" />}
       </button>
 
       <button
-        className={`toolbar-btn${terrainPanelOpen ? ' active' : ''}`}
+        className={cn('toolbar-btn h-10 w-11 flex-col gap-0.5', terrainPanelOpen && 'active')}
         onClick={toggleTerrainPanel}
         title="Terrain profile"
         aria-label="Terrain profile panel"
-        style={{ width: '44px', height: '40px', flexDirection: 'column', gap: '2px' }}
       >
         <Mountain size={15} />
-        <span style={{ fontSize: '7px', lineHeight: 1, fontFamily: 'var(--font-sans)' }}>Terrain</span>
+        <span className="font-sans text-[7px] leading-none">Terrain</span>
       </button>
     </div>
   );
