@@ -1,6 +1,8 @@
 'use client';
 
 import { Component, ErrorInfo, ReactNode } from 'react';
+import { TriangleAlert } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   children: ReactNode;
@@ -41,19 +43,18 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return this.props.fallback || (
-        <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-          <div className="bg-gray-900 rounded-lg p-8 max-w-md text-center border border-red-800">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h2 className="text-xl font-semibold text-white mb-2">Something went wrong</h2>
-            <p className="text-gray-400 mb-4 text-sm">
+        <div className="flex min-h-screen items-center justify-center bg-background p-4">
+          <div className="max-w-md rounded-lg border border-red/40 bg-bg-panel p-8 text-center">
+            <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-red/40 bg-red-bg text-red">
+              <TriangleAlert size={20} />
+            </div>
+            <h2 className="mb-2 font-sans text-lg font-semibold text-text">Something went wrong</h2>
+            <p className="mb-5 font-mono text-[12px] text-text-dim">
               {this.state.error?.message || 'An unexpected error occurred'}
             </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white transition"
-            >
+            <Button variant="primary" className="mx-auto font-sans" onClick={() => window.location.reload()}>
               Reload Application
-            </button>
+            </Button>
           </div>
         </div>
       );

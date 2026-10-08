@@ -2,59 +2,31 @@
 
 import { useUIStore, type Toast } from '@/lib/store/ui-store';
 import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const TOAST_CLASSES: Record<Toast['type'], string> = {
+  success: 'border-green text-green shadow-[0_4px_16px_rgba(0,0,0,0.5),0_0_0_1px_var(--color-green-bg)]',
+  error: 'border-red text-red shadow-[0_4px_16px_rgba(0,0,0,0.5),0_0_0_1px_var(--color-red-bg)]',
+  warning: 'border-amber text-amber shadow-[0_4px_16px_rgba(0,0,0,0.5),0_0_0_1px_var(--color-amber-bg)]',
+  info: 'border-cyan text-cyan shadow-[0_4px_16px_rgba(0,0,0,0.5),0_0_0_1px_var(--color-blue-bg)]',
+};
 
 function ToastItem({ toast }: { toast: Toast }) {
   const { removeToast } = useUIStore();
 
-  const colors: Record<Toast['type'], string> = {
-    success: 'var(--color-green)',
-    error: 'var(--color-red)',
-    warning: 'var(--color-amber)',
-    info: 'var(--color-cyan)',
-  };
-
-  const bgs: Record<Toast['type'], string> = {
-    success: 'var(--color-green-bg)',
-    error: 'var(--color-red-bg)',
-    warning: 'var(--color-amber-bg)',
-    info: 'var(--color-blue-bg)',
-  };
-
-  const color = colors[toast.type];
-  const bg = bgs[toast.type];
-
   return (
     <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '7px 10px',
-        backgroundColor: 'var(--color-bg-raised)',
-        border: `1px solid ${color}`,
-        borderRadius: 'var(--radius-md)',
-        boxShadow: `0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px ${bg}`,
-        fontFamily: 'var(--font-mono)',
-        fontSize: '11px',
-        color: color,
-        backdropFilter: 'blur(4px)',
-        animation: 'slideInRight 200ms ease',
-        minWidth: '200px',
-        maxWidth: '320px',
-      }}
+      className={cn(
+        'flex min-w-[200px] max-w-[320px] items-center gap-2 rounded-md border bg-bg-raised px-2.5 py-1.5',
+        'animate-[slideInRight_200ms_ease] font-mono text-[11px] backdrop-blur-sm',
+        TOAST_CLASSES[toast.type]
+      )}
     >
-      <span style={{ flex: 1 }}>{toast.message}</span>
+      <span className="flex-1">{toast.message}</span>
       <button
         onClick={() => removeToast(toast.id)}
-        style={{
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          color: 'var(--color-text-muted)',
-          display: 'flex',
-          padding: '1px',
-          flexShrink: 0,
-        }}
+        aria-label="Dismiss notification"
+        className="shrink-0 p-0.5 text-text-muted transition-colors hover:text-text"
       >
         <X size={11} />
       </button>
@@ -68,20 +40,9 @@ export function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: '20px',
-        right: '16px',
-        zIndex: 99999,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '6px',
-        pointerEvents: 'none',
-      }}
-    >
+    <div className="pointer-events-none fixed bottom-5 right-4 z-[99999] flex flex-col gap-1.5">
       {toasts.map((toast) => (
-        <div key={toast.id} style={{ pointerEvents: 'auto' }}>
+        <div key={toast.id} className="pointer-events-auto">
           <ToastItem toast={toast} />
         </div>
       ))}

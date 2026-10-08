@@ -1,19 +1,21 @@
+import { Spinner } from '@/components/ui/spinner';
+
 interface LoadingSpinnerProps {
   size?: 'small' | 'medium' | 'large';
   message?: string;
 }
 
-export function LoadingSpinner({ size = 'medium', message }: LoadingSpinnerProps) {
-  const sizeClasses = {
-    small: 'w-4 h-4',
-    medium: 'w-8 h-8',
-    large: 'w-12 h-12',
-  };
+const SIZE_PX: Record<Required<LoadingSpinnerProps>['size'], number> = {
+  small: 16,
+  medium: 28,
+  large: 40,
+};
 
+export function LoadingSpinner({ size = 'medium', message }: LoadingSpinnerProps) {
   return (
     <div className="flex flex-col items-center justify-center gap-3">
-      <div className={`${sizeClasses[size]} animate-spin rounded-full border-2 border-gray-700 border-t-blue-500`} />
-      {message && <p className="text-sm text-gray-400">{message}</p>}
+      <Spinner size={SIZE_PX[size]} />
+      {message && <p className="font-mono text-[11px] text-text-dim">{message}</p>}
     </div>
   );
 }
