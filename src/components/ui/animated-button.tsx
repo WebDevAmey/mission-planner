@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 type AnimatedButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
   MotionProps & {
     children?: React.ReactNode;
-    as?: any;
+    as?: "button" | "a";
   };
 
 /**
@@ -21,7 +21,7 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   as = "button",
   ...rest
 }) => {
-  const Component = (motion as any)[as] || motion.button;
+  const Component = (as === "a" ? motion.a : motion.button) as React.ElementType;
 
   return (
     <Component
@@ -51,8 +51,8 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
           maskImage:
             "linear-gradient(-75deg, white calc(var(--mask-x) + 20%), transparent calc(var(--mask-x) + 30%), white calc(var(--mask-x) + 100%))",
         }}
-        initial={{ ["--mask-x" as any]: "100%" } as any}
-        animate={{ ["--mask-x" as any]: "-100%" } as any}
+        initial={{ "--mask-x": "100%" } as unknown as MotionProps["initial"]}
+        animate={{ "--mask-x": "-100%" } as unknown as MotionProps["animate"]}
         transition={{
           repeat: Infinity,
           duration: 1,
