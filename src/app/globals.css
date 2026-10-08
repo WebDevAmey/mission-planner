@@ -80,9 +80,11 @@
   --color-input:               #262626;
   --color-ring:                #3a3a3a;
 
-  /* -------- TYPOGRAPHY -------- */
-  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  /* -------- TYPOGRAPHY --------
+   * The actual font files are self-hosted by next/font/google in layout.tsx, which
+   * exposes them as the --font-inter / --font-jetbrains-mono variables below. */
+  --font-mono: var(--font-jetbrains-mono), "Fira Code", ui-monospace, monospace;
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
 
   /* -------- SPACING (4px grid) -------- */
   --sp-1: 4px;

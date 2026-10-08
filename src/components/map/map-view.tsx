@@ -427,7 +427,7 @@ export function MapView() {
         background-color:${isSelected ? '#00ff41' : 'rgba(0,255,65,0.55)'};
         border:${isSelected ? '2px' : '1.5px'} solid #00ff41;
         display:flex;align-items:center;justify-content:center;
-        font-family:JetBrains Mono,monospace;font-size:${isSelected ? '10px' : '9px'};
+        font-family:var(--font-mono);font-size:${isSelected ? '10px' : '9px'};
         font-weight:700;color:${isSelected ? '#000' : '#fff'};
         cursor:pointer;transition:transform 150ms ease;
         box-shadow:0 1px 6px rgba(0,0,0,0.6)${isSelected ? ',0 0 8px rgba(0,255,65,0.4)' : ''};
