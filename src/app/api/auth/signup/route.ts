@@ -1,0 +1,99 @@
+import { cookies, headers } from 'next/headers';
+import { db } from '@/prisma/db';
+import { signupSchema } from '@/lib/validation/auth';
+import { hashPassword } from '@/lib/auth/password';
+import { createSession, SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from '@/lib/auth/session';
+import { generateToken, hashToken } from '@/lib/auth/tokens';
+import { checkRateLimit, normalizeIdentifier, recordAttempt } from '@/lib/auth/rate-limit';
+import { isSameOriginRequest } from '@/lib/http/same-origin';
+import { getClientIp } from '@/lib/http/client-ip';
+import { sendVerificationEmail } from '@/lib/email/send';
+import { toIsoString } from '@/lib/db/serialize';
+
+const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+
+export async function POST(request: Request) {
+  if (!isSameOriginRequest(request)) {
+    return Response.json({ ok: false, error: 'Invalid request origin' }, { status: 403 });
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ ok: false, error: 'Invalid request body' }, { status: 400 });
+  }
+
+  const parsed = signupSchema.safeParse(body);
+  if (!parsed.success) {
+    return Response.json(
+      { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid input' },
+      { status: 400 }
+    );
+  }
+  const { email, password, name } = parsed.data;
+
+  const ip = getClientIp(request);
+  const rateLimitKey = normalizeIdentifier(ip ?? email);
+  if (!(await checkRateLimit(rateLimitKey, 'signup'))) {
+    return Response.json(
+      { ok: false, error: 'Too many signup attempts. Try again later.' },
+      { status: 429 }
+    );
+  }
+
+  const existing = await db.orm.public.User.where((u) => u.email.eq(email)).first();
+  if (existing) {
+    await recordAttempt(rateLimitKey, 'signup', false);
+    return Response.json(
+      { ok: false, error: 'An account with this email already exists' },
+      { status: 409 }
+    );
+  }
+
+  const passwordHash = await hashPassword(password);
+  const user = await db.orm.public.User.create({
+    email,
+    passwordHash,
+    name: name || null,
+  });
+
+  const verificationToken = generateToken();
+  await db.orm.public.EmailVerificationToken.create({
+    tokenHash: hashToken(verificationToken),
+    userId: user.id,
+    expiresAt: toIsoString(new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS)),
+  });
+
+  const headerList = await headers();
+  const origin = headerList.get('origin') ?? new URL(request.url).origin;
+  const verifyUrl = `${origin}/verify-email?token=${verificationToken}`;
+
+  const { delivered } = await sendVerificationEmail(user.email, verifyUrl);
+
+  const { token: sessionToken, expiresAt } = await createSession(user.id, {
+    userAgent: request.headers.get('user-agent'),
+    ipAddress: ip,
+  });
+
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE, sessionToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: SESSION_MAX_AGE_SECONDS,
+    expires: expiresAt,
+  });
+
+  await recordAttempt(rateLimitKey, 'signup', true);
+
+  return Response.json({
+    ok: true,
+    user: { id: user.id, email: user.email, name: user.name, emailVerified: false },
+    emailDelivered: delivered,
+    // Dev-only convenience so the flow is testable without RESEND_API_KEY configured.
+    // Never present outside development — see sendVerificationEmail's delivered flag.
+    devVerifyUrl: !delivered && process.env.NODE_ENV !== 'production' ? verifyUrl : undefined,
+  });
+}
