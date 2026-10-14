@@ -1,32 +1,43 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { SESSION_COOKIE, verifySessionToken } from '@/lib/auth/session';
+import { SESSION_COOKIE, getSessionUser } from '@/lib/auth/session';
 
-export default function proxy(request: NextRequest) {
+const AUTH_PAGES = ['/login', '/signup'];
+const PROTECTED_PAGES = ['/mission-planner', '/dashboard'];
+const PROTECTED_API_PREFIXES = ['/api/flight-deck', '/api/missions'];
+
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const authed = verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
+  const authed = Boolean(await getSessionUser(request.cookies.get(SESSION_COOKIE)?.value));
 
-  if (pathname.startsWith('/api/flight-deck')) {
+  if (PROTECTED_API_PREFIXES.some((p) => pathname.startsWith(p))) {
     if (!authed) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     return NextResponse.next();
   }
 
-  if (pathname.startsWith('/mission-planner')) {
+  if (PROTECTED_PAGES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     if (!authed) {
       const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('next', pathname);
+      loginUrl.searchParams.set('next', pathname + request.nextUrl.search);
       return NextResponse.redirect(loginUrl);
     }
     return NextResponse.next();
   }
 
-  if (pathname === '/login' && authed) {
-    return NextResponse.redirect(new URL('/mission-planner', request.url));
+  if (AUTH_PAGES.includes(pathname) && authed) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/mission-planner/:path*', '/api/flight-deck/:path*', '/login'],
+  matcher: [
+    '/mission-planner/:path*',
+    '/dashboard/:path*',
+    '/api/flight-deck/:path*',
+    '/api/missions/:path*',
+    '/login',
+    '/signup',
+  ],
 };
