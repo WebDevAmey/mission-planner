@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import { PlannerAction } from '@/lib/mavlink/commands';
 import {
@@ -105,9 +104,11 @@ const getSeedCoordinate = (mission: MissionPlan): Partial<MissionCoordinates> | 
   };
 };
 
+// Missions are now persisted server-side (see /api/missions); this store is
+// an in-memory editing buffer hydrated from the API, not a source of truth,
+// so it deliberately isn't backed by localStorage anymore.
 export const useMissionStore = create<MissionStoreState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       mission: null,
       past: [],
       future: [],
@@ -326,13 +327,5 @@ export const useMissionStore = create<MissionStoreState>()(
 
       canUndo: () => get().past.length > 0,
       canRedo: () => get().future.length > 0,
-    }),
-    {
-      name: 'mps-offline-mission-store',
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        mission: state.mission,
-      }),
-    }
-  )
+    })
 );

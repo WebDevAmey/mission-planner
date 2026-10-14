@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 export type ButtonVariant = 'primary' | 'accent' | 'secondary' | 'outline' | 'ghost' | 'danger';
@@ -56,6 +57,26 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
         active && 'border-green bg-green-bg text-green',
         className
       )}
+      {...props}
+    />
+  );
+});
+
+export interface ButtonLinkProps extends React.ComponentProps<typeof Link> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+}
+
+/** Same visual language as Button, for navigation rather than an action —
+ * renders an anchor (via next/link) so it's never nested inside a <button>. */
+export const ButtonLink = React.forwardRef<HTMLAnchorElement, ButtonLinkProps>(function ButtonLink(
+  { className, variant = 'secondary', size = 'md', ...props },
+  ref
+) {
+  return (
+    <Link
+      ref={ref}
+      className={cn(BASE_CLASSES, VARIANT_CLASSES[variant], SIZE_CLASSES[size], className)}
       {...props}
     />
   );

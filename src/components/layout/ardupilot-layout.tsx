@@ -150,6 +150,10 @@ function LibraryBridge() {
     if (initializedRef.current) return;
     initializedRef.current = true;
 
+    // A mission is already loaded (e.g. fetched from the server by the page
+    // that renders this layout) — don't replace it with a local fallback.
+    if (curMission) return;
+
     const existingIds = Object.keys(missions);
 
     // Ensure default tenant

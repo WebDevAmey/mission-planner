@@ -49,7 +49,7 @@ const STATS = [
 
 export default function LandingPage() {
   const router = useRouter();
-  const goToApp = () => router.push('/mission-planner');
+  const goToApp = () => router.push('/dashboard');
 
   return (
     <SmoothScroll className="bg-background text-foreground">
