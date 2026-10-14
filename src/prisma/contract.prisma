@@ -1,0 +1,157 @@
+// use prisma-8
+// Mission Planner data contract — users, auth, missions, waypoints.
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  emailVerified TimestamptzString?
+  createdAt     TimestamptzString @default(now())
+  updatedAt     TimestamptzString @default(now())
+
+  sessions                Session[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
+  missions                Mission[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt TimestamptzString
+  createdAt TimestamptzString @default(now())
+  userAgent String?
+  ipAddress String?
+
+  @@index([userId])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt TimestamptzString
+  createdAt TimestamptzString @default(now())
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt TimestamptzString
+  usedAt    TimestamptzString?
+  createdAt TimestamptzString @default(now())
+
+  @@index([userId])
+}
+
+// Tracks auth attempts (login, signup, password reset) by a coarse identifier
+// (lowercased email or "ip:<addr>") so endpoints can apply a sliding-window
+// lockout without needing a separate cache/queue service.
+model AuthAttempt {
+  id         String   @id @default(uuid())
+  identifier String
+  kind       String
+  success    Boolean
+  createdAt  TimestamptzString @default(now())
+
+  @@index([identifier, kind, createdAt])
+}
+
+enum MissionActionType {
+  takeoff
+  waypoint
+  loiter
+  loiter_unlim
+  loiter_turns
+  spline_waypoint
+  rtl
+  land
+  wait
+  condition_distance
+  set_speed
+  change_altitude
+  set_roi
+  cam_trigg_dist
+  do_jump
+}
+
+model Mission {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  homeLatitude  Float?
+  homeLongitude Float?
+  homeAltitude  Float?
+
+  createdAt TimestamptzString @default(now())
+  updatedAt TimestamptzString @default(now())
+
+  waypoints Waypoint[]
+  settings  MissionSettings?
+
+  @@index([userId])
+}
+
+// 1:1 with Mission — flight defaults plus the safety-limit configuration
+// surfaced in the app's "Constraints" panel. Kept as its own table (rather
+// than columns on Mission) so mission identity and tunable configuration can
+// evolve independently.
+model MissionSettings {
+  missionId String  @id
+  mission   Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  defaultAltitude   Float  @default(80)
+  defaultSpeed      Float  @default(12)
+  defaultLoiterTime Float  @default(30)
+  defaultWaitTime   Float  @default(10)
+  altitudeReference String @default("relative")
+
+  maxDistanceM    Float @default(10000)
+  maxAltM         Float @default(400)
+  minAltM         Float @default(10)
+  maxSpeedMs      Float @default(20)
+  minAGLClearance Float @default(30)
+}
+
+model Waypoint {
+  id        String  @id @default(uuid())
+  missionId String
+  mission   Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  sequence  Int
+
+  action  MissionActionType
+  command Int
+  frame   Int
+  name    String
+
+  latitude  Float?
+  longitude Float?
+  altitude  Float?
+  speed     Float?
+  notes     String?
+
+  param1 Float @default(0)
+  param2 Float @default(0)
+  param3 Float @default(0)
+  param4 Float @default(0)
+  param5 Float @default(0)
+  param6 Float @default(0)
+  param7 Float @default(0)
+
+  createdAt TimestamptzString @default(now())
+  updatedAt TimestamptzString @default(now())
+
+  @@unique([missionId, sequence])
+  @@index([missionId])
+}

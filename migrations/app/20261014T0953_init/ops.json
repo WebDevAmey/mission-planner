@@ -1,0 +1,1027 @@
+[
+  {
+    "id": "schema.public",
+    "label": "Create schema \"public\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Create schema \"public\"",
+        "sql": "CREATE SCHEMA IF NOT EXISTS \"public\"",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "table.AuthAttempt",
+    "label": "Create table \"AuthAttempt\"",
+    "summary": "Creates table \"AuthAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "AuthAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"AuthAttempt\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AuthAttempt\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"AuthAttempt\"",
+        "sql": "CREATE TABLE \"public\".\"AuthAttempt\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"identifier\" text NOT NULL,\n  \"kind\" text NOT NULL,\n  \"success\" bool NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"AuthAttempt\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AuthAttempt\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.EmailVerificationToken",
+    "label": "Create table \"EmailVerificationToken\"",
+    "summary": "Creates table \"EmailVerificationToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "EmailVerificationToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"EmailVerificationToken\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"EmailVerificationToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"EmailVerificationToken\"",
+        "sql": "CREATE TABLE \"public\".\"EmailVerificationToken\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"expiresAt\" timestamptz NOT NULL,\n  \"id\" text NOT NULL,\n  \"tokenHash\" text NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"EmailVerificationToken\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"EmailVerificationToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Mission",
+    "label": "Create table \"Mission\"",
+    "summary": "Creates table \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Mission\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Mission\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Mission\"",
+        "sql": "CREATE TABLE \"public\".\"Mission\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"description\" text,\n  \"homeAltitude\" float8,\n  \"homeLatitude\" float8,\n  \"homeLongitude\" float8,\n  \"id\" text NOT NULL,\n  \"name\" text NOT NULL,\n  \"updatedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Mission\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Mission\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.MissionSettings",
+    "label": "Create table \"MissionSettings\"",
+    "summary": "Creates table \"MissionSettings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "MissionSettings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"MissionSettings\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"MissionSettings\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"MissionSettings\"",
+        "sql": "CREATE TABLE \"public\".\"MissionSettings\" (\n  \"altitudeReference\" text DEFAULT 'relative' NOT NULL,\n  \"defaultAltitude\" float8 DEFAULT 80 NOT NULL,\n  \"defaultLoiterTime\" float8 DEFAULT 30 NOT NULL,\n  \"defaultSpeed\" float8 DEFAULT 12 NOT NULL,\n  \"defaultWaitTime\" float8 DEFAULT 10 NOT NULL,\n  \"maxAltM\" float8 DEFAULT 400 NOT NULL,\n  \"maxDistanceM\" float8 DEFAULT 10000 NOT NULL,\n  \"maxSpeedMs\" float8 DEFAULT 20 NOT NULL,\n  \"minAGLClearance\" float8 DEFAULT 30 NOT NULL,\n  \"minAltM\" float8 DEFAULT 10 NOT NULL,\n  \"missionId\" text NOT NULL,\n  PRIMARY KEY (\"missionId\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"MissionSettings\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"MissionSettings\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.PasswordResetToken",
+    "label": "Create table \"PasswordResetToken\"",
+    "summary": "Creates table \"PasswordResetToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "PasswordResetToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"PasswordResetToken\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"PasswordResetToken\"",
+        "sql": "CREATE TABLE \"public\".\"PasswordResetToken\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"expiresAt\" timestamptz NOT NULL,\n  \"id\" text NOT NULL,\n  \"tokenHash\" text NOT NULL,\n  \"usedAt\" timestamptz,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"PasswordResetToken\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Session",
+    "label": "Create table \"Session\"",
+    "summary": "Creates table \"Session\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Session"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Session\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Session\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Session\"",
+        "sql": "CREATE TABLE \"public\".\"Session\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"expiresAt\" timestamptz NOT NULL,\n  \"id\" text NOT NULL,\n  \"ipAddress\" text,\n  \"tokenHash\" text NOT NULL,\n  \"userAgent\" text,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Session\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Session\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.User",
+    "label": "Create table \"User\"",
+    "summary": "Creates table \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"User\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"User\"",
+        "sql": "CREATE TABLE \"public\".\"User\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"email\" text NOT NULL,\n  \"emailVerified\" timestamptz,\n  \"id\" text NOT NULL,\n  \"name\" text,\n  \"passwordHash\" text NOT NULL,\n  \"updatedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"User\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Waypoint",
+    "label": "Create table \"Waypoint\"",
+    "summary": "Creates table \"Waypoint\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Waypoint"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Waypoint\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Waypoint\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Waypoint\"",
+        "sql": "CREATE TABLE \"public\".\"Waypoint\" (\n  \"action\" text NOT NULL,\n  \"altitude\" float8,\n  \"command\" int4 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"frame\" int4 NOT NULL,\n  \"id\" text NOT NULL,\n  \"latitude\" float8,\n  \"longitude\" float8,\n  \"missionId\" text NOT NULL,\n  \"name\" text NOT NULL,\n  \"notes\" text,\n  \"param1\" float8 DEFAULT 0 NOT NULL,\n  \"param2\" float8 DEFAULT 0 NOT NULL,\n  \"param3\" float8 DEFAULT 0 NOT NULL,\n  \"param4\" float8 DEFAULT 0 NOT NULL,\n  \"param5\" float8 DEFAULT 0 NOT NULL,\n  \"param6\" float8 DEFAULT 0 NOT NULL,\n  \"param7\" float8 DEFAULT 0 NOT NULL,\n  \"sequence\" int4 NOT NULL,\n  \"speed\" float8,\n  \"updatedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"Waypoint_action_check_79f774a0\" CHECK (\"action\" IN ('takeoff', 'waypoint', 'loiter', 'loiter_unlim', 'loiter_turns', 'spline_waypoint', 'rtl', 'land', 'wait', 'condition_distance', 'set_speed', 'change_altitude', 'set_roi', 'cam_trigg_dist', 'do_jump'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Waypoint\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Waypoint\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.EmailVerificationToken.EmailVerificationToken_tokenHash_key",
+    "label": "Add unique constraint on \"EmailVerificationToken\" (tokenHash)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "EmailVerificationToken_tokenHash_key",
+        "table": "EmailVerificationToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"EmailVerificationToken_tokenHash_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "EmailVerificationToken_tokenHash_key",
+          "public",
+          "\"public\".\"EmailVerificationToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"EmailVerificationToken_tokenHash_key\"",
+        "sql": "ALTER TABLE \"public\".\"EmailVerificationToken\" ADD CONSTRAINT \"EmailVerificationToken_tokenHash_key\" UNIQUE (\"tokenHash\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"EmailVerificationToken_tokenHash_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "EmailVerificationToken_tokenHash_key",
+          "public",
+          "\"public\".\"EmailVerificationToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.PasswordResetToken.PasswordResetToken_tokenHash_key",
+    "label": "Add unique constraint on \"PasswordResetToken\" (tokenHash)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "PasswordResetToken_tokenHash_key",
+        "table": "PasswordResetToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"PasswordResetToken_tokenHash_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PasswordResetToken_tokenHash_key",
+          "public",
+          "\"public\".\"PasswordResetToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"PasswordResetToken_tokenHash_key\"",
+        "sql": "ALTER TABLE \"public\".\"PasswordResetToken\" ADD CONSTRAINT \"PasswordResetToken_tokenHash_key\" UNIQUE (\"tokenHash\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"PasswordResetToken_tokenHash_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PasswordResetToken_tokenHash_key",
+          "public",
+          "\"public\".\"PasswordResetToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Session.Session_tokenHash_key",
+    "label": "Add unique constraint on \"Session\" (tokenHash)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Session_tokenHash_key",
+        "table": "Session"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Session_tokenHash_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Session_tokenHash_key",
+          "public",
+          "\"public\".\"Session\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Session_tokenHash_key\"",
+        "sql": "ALTER TABLE \"public\".\"Session\" ADD CONSTRAINT \"Session_tokenHash_key\" UNIQUE (\"tokenHash\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"Session_tokenHash_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Session_tokenHash_key",
+          "public",
+          "\"public\".\"Session\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.User.User_email_key",
+    "label": "Add unique constraint on \"User\" (email)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "User_email_key",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"User_email_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "User_email_key",
+          "public",
+          "\"public\".\"User\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"User_email_key\"",
+        "sql": "ALTER TABLE \"public\".\"User\" ADD CONSTRAINT \"User_email_key\" UNIQUE (\"email\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"User_email_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "User_email_key",
+          "public",
+          "\"public\".\"User\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Waypoint.Waypoint_missionId_sequence_key",
+    "label": "Add unique constraint on \"Waypoint\" (missionId, sequence)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Waypoint_missionId_sequence_key",
+        "table": "Waypoint"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Waypoint_missionId_sequence_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Waypoint_missionId_sequence_key",
+          "public",
+          "\"public\".\"Waypoint\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Waypoint_missionId_sequence_key\"",
+        "sql": "ALTER TABLE \"public\".\"Waypoint\" ADD CONSTRAINT \"Waypoint_missionId_sequence_key\" UNIQUE (\"missionId\", \"sequence\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"Waypoint_missionId_sequence_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Waypoint_missionId_sequence_key",
+          "public",
+          "\"public\".\"Waypoint\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.AuthAttempt.AuthAttempt_identifier_kind_createdAt_idx_2cb00d78",
+    "label": "Create index \"AuthAttempt_identifier_kind_createdAt_idx_2cb00d78\" on \"AuthAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "AuthAttempt_identifier_kind_createdAt_idx_2cb00d78",
+        "table": "AuthAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"AuthAttempt_identifier_kind_createdAt_idx_2cb00d78\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AuthAttempt_identifier_kind_createdAt_idx_2cb00d78\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"AuthAttempt_identifier_kind_createdAt_idx_2cb00d78\"",
+        "sql": "CREATE INDEX \"AuthAttempt_identifier_kind_createdAt_idx_2cb00d78\" ON \"public\".\"AuthAttempt\" (\"identifier\", \"kind\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"AuthAttempt_identifier_kind_createdAt_idx_2cb00d78\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AuthAttempt_identifier_kind_createdAt_idx_2cb00d78\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.EmailVerificationToken.EmailVerificationToken_userId_idx_a489d58a",
+    "label": "Create index \"EmailVerificationToken_userId_idx_a489d58a\" on \"EmailVerificationToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "EmailVerificationToken_userId_idx_a489d58a",
+        "table": "EmailVerificationToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"EmailVerificationToken_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"EmailVerificationToken_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"EmailVerificationToken_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"EmailVerificationToken_userId_idx_a489d58a\" ON \"public\".\"EmailVerificationToken\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"EmailVerificationToken_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"EmailVerificationToken_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Mission.Mission_userId_idx_a489d58a",
+    "label": "Create index \"Mission_userId_idx_a489d58a\" on \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Mission_userId_idx_a489d58a",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Mission_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Mission_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Mission_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"Mission_userId_idx_a489d58a\" ON \"public\".\"Mission\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Mission_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Mission_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.PasswordResetToken.PasswordResetToken_userId_idx_a489d58a",
+    "label": "Create index \"PasswordResetToken_userId_idx_a489d58a\" on \"PasswordResetToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "PasswordResetToken_userId_idx_a489d58a",
+        "table": "PasswordResetToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"PasswordResetToken_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"PasswordResetToken_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"PasswordResetToken_userId_idx_a489d58a\" ON \"public\".\"PasswordResetToken\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"PasswordResetToken_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Session.Session_userId_idx_a489d58a",
+    "label": "Create index \"Session_userId_idx_a489d58a\" on \"Session\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Session_userId_idx_a489d58a",
+        "table": "Session"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Session_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Session_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Session_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"Session_userId_idx_a489d58a\" ON \"public\".\"Session\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Session_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Session_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Waypoint.Waypoint_missionId_idx_25ef2118",
+    "label": "Create index \"Waypoint_missionId_idx_25ef2118\" on \"Waypoint\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Waypoint_missionId_idx_25ef2118",
+        "table": "Waypoint"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Waypoint_missionId_idx_25ef2118\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Waypoint_missionId_idx_25ef2118\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Waypoint_missionId_idx_25ef2118\"",
+        "sql": "CREATE INDEX \"Waypoint_missionId_idx_25ef2118\" ON \"public\".\"Waypoint\" (\"missionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Waypoint_missionId_idx_25ef2118\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Waypoint_missionId_idx_25ef2118\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.EmailVerificationToken.EmailVerificationToken_userId_fkey",
+    "label": "Add foreign key \"EmailVerificationToken_userId_fkey\" on \"EmailVerificationToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "EmailVerificationToken_userId_fkey",
+        "table": "EmailVerificationToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"EmailVerificationToken_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "EmailVerificationToken_userId_fkey",
+          "public",
+          "\"public\".\"EmailVerificationToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"EmailVerificationToken_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"EmailVerificationToken\"\nADD CONSTRAINT \"EmailVerificationToken_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"EmailVerificationToken_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "EmailVerificationToken_userId_fkey",
+          "public",
+          "\"public\".\"EmailVerificationToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Mission.Mission_userId_fkey",
+    "label": "Add foreign key \"Mission_userId_fkey\" on \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Mission_userId_fkey",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Mission_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Mission_userId_fkey",
+          "public",
+          "\"public\".\"Mission\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Mission_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Mission\"\nADD CONSTRAINT \"Mission_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Mission_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Mission_userId_fkey",
+          "public",
+          "\"public\".\"Mission\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.MissionSettings.MissionSettings_missionId_fkey",
+    "label": "Add foreign key \"MissionSettings_missionId_fkey\" on \"MissionSettings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "MissionSettings_missionId_fkey",
+        "table": "MissionSettings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"MissionSettings_missionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "MissionSettings_missionId_fkey",
+          "public",
+          "\"public\".\"MissionSettings\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"MissionSettings_missionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"MissionSettings\"\nADD CONSTRAINT \"MissionSettings_missionId_fkey\"\nFOREIGN KEY (\"missionId\")\nREFERENCES \"public\".\"Mission\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"MissionSettings_missionId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "MissionSettings_missionId_fkey",
+          "public",
+          "\"public\".\"MissionSettings\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.PasswordResetToken.PasswordResetToken_userId_fkey",
+    "label": "Add foreign key \"PasswordResetToken_userId_fkey\" on \"PasswordResetToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "PasswordResetToken_userId_fkey",
+        "table": "PasswordResetToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"PasswordResetToken_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PasswordResetToken_userId_fkey",
+          "public",
+          "\"public\".\"PasswordResetToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"PasswordResetToken_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"PasswordResetToken\"\nADD CONSTRAINT \"PasswordResetToken_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"PasswordResetToken_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PasswordResetToken_userId_fkey",
+          "public",
+          "\"public\".\"PasswordResetToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Session.Session_userId_fkey",
+    "label": "Add foreign key \"Session_userId_fkey\" on \"Session\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Session_userId_fkey",
+        "table": "Session"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Session_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Session_userId_fkey",
+          "public",
+          "\"public\".\"Session\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Session_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Session\"\nADD CONSTRAINT \"Session_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Session_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Session_userId_fkey",
+          "public",
+          "\"public\".\"Session\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Waypoint.Waypoint_missionId_fkey",
+    "label": "Add foreign key \"Waypoint_missionId_fkey\" on \"Waypoint\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Waypoint_missionId_fkey",
+        "table": "Waypoint"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Waypoint_missionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Waypoint_missionId_fkey",
+          "public",
+          "\"public\".\"Waypoint\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Waypoint_missionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Waypoint\"\nADD CONSTRAINT \"Waypoint_missionId_fkey\"\nFOREIGN KEY (\"missionId\")\nREFERENCES \"public\".\"Mission\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Waypoint_missionId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Waypoint_missionId_fkey",
+          "public",
+          "\"public\".\"Waypoint\""
+        ]
+      }
+    ]
+  }
+]
