@@ -62,6 +62,8 @@ A modern, web-based mission planning application for ArduPilot-compatible autono
 - **Node.js**: 18.17 or later
 - **Package Manager**: pnpm 10.30+ (recommended) or npm 10+
 - **Git**: For version control
+- **PostgreSQL**: 15 or newer, for accounts and server-persisted missions — see
+  [Database & Authentication](#database--authentication)
 
 ## Installation
 
@@ -363,19 +365,180 @@ pnpm dev
 - Provide clear description of changes
 - Request review from team members
 
-## Environment Variables
+## Database & Authentication
 
-Copy the example file and add your key:
+Accounts and missions are persisted in PostgreSQL via Prisma ORM. Signup, login,
+logout, session persistence, protected routes, email verification, and password
+reset are all real — no mocked auth, no plaintext passwords, no faked emails.
+
+### Schema
+
+Defined in [`src/prisma/contract.prisma`](src/prisma/contract.prisma):
+
+| Model | Purpose |
+| --- | --- |
+| `User` | Account identity. `passwordHash` is Argon2id (never plaintext). `emailVerified` is a nullable timestamp. |
+| `Session` | One row per signed-in session. Only a SHA-256 hash of the session token is stored — the raw token lives only in the `mps_session` httpOnly cookie — so a DB leak alone can't be replayed into a valid session. |
+| `EmailVerificationToken` / `PasswordResetToken` | Single-use, hashed, expiring tokens (24h / 1h) for the two email-based flows. |
+| `AuthAttempt` | A row per login/signup/forgot-password attempt, keyed by a coarse identifier (email or IP). Backs the rate limiter — see below. |
+| `Mission` | Belongs to exactly one `User` (`userId`, cascade-deleted with the user). Home position is three plain nullable columns, not JSON. |
+| `MissionSettings` | 1:1 with `Mission` — flight defaults (altitude/speed/loiter/wait) and the safety-limit configuration from the Constraints panel. A real table, not a JSON blob, because every field is a fixed, individually meaningful number. |
+| `Waypoint` | Belongs to a `Mission` (cascade-deleted with it). One row per waypoint; `action` is a Postgres-enforced enum matching `PlannerAction`; `(missionId, sequence)` is unique. |
+
+UUID primary keys throughout, FK cascades on every child table, and indexes on
+every foreign key plus the `AuthAttempt` rate-limit lookup. Nothing mission-shaped
+is stored as an unstructured blob — the only genuinely flexible field in the whole
+schema would be a JSONB column, and there isn't one yet because nothing here needs
+one.
+
+**Deliberately out of scope for this pass:** the existing tenant/organization
+switcher, no-fly zones, and geofences remain exactly as they were before — a
+client-only, localStorage-backed convenience inside the mission editor. Only
+`Mission` identity, its `Waypoint`s, and its `MissionSettings` are server-persisted.
+Migrating those three is a reasonable next step, not done here, to avoid widening
+an already-large change.
+
+### Migrations
+
+This project's Prisma CLI (`8.0.0-rc.22`) uses a "contract" workflow rather than the
+classic `prisma migrate dev`: you edit the schema, emit a typed contract, plan a
+migration from the diff, then apply it. Every migration is a version-controlled,
+on-disk package under [`migrations/app/`](migrations/app) — nothing is inferred
+and auto-applied at startup.
+
+```bash
+pnpm contract:emit     # regenerate contract.json / contract.d.ts from the schema
+pnpm db:plan           # diff the contract against migration history, write a new migration
+pnpm db:migrate        # apply pending migrations to $DATABASE_URL
+pnpm db:sign           # mark the DB as matching the contract (required before querying it)
+```
+
+Run `db:plan` → review the generated SQL under `migrations/app/<timestamp>_<name>/` →
+`db:migrate` → `db:sign`, in that order, every time the schema changes. **Never**
+run these against production without reviewing the generated SQL first, and never
+`db:migrate` with a destructive rename/delete you haven't deliberately confirmed
+(the planner refuses silently-lossy changes and tells you to pass `--rename` or
+`--delete` explicitly).
+
+### Authentication implementation
+
+- **Password hashing**: Argon2id via `@node-rs/argon2` (prebuilt native binary,
+  no node-gyp build step — matters for Vercel's serverless build). OWASP-baseline
+  cost parameters in `src/lib/auth/password.ts`.
+- **Sessions**: a random 256-bit token in an `httpOnly`, `sameSite=lax`, `secure`
+  (in production) cookie; only its hash is stored server-side (`src/lib/auth/session.ts`).
+  Logout deletes the DB row, not just the cookie. Resetting a password invalidates
+  every existing session for that account.
+- **Email verification / password reset**: same hashed-token pattern, 24h / 1h
+  expiry, single-use (`src/lib/auth/tokens.ts`, the `verify-email` / `reset-password`
+  routes).
+- **Email delivery**: `src/lib/email/send.ts` calls the Resend REST API directly
+  with `fetch` (no SDK dependency). Without `RESEND_API_KEY` set, no email is sent
+  — the app is honest about that rather than pretending — and outside production
+  the API response instead includes a working `devVerifyUrl` / `devResetUrl` so the
+  flow stays testable.
+- **Rate limiting**: `src/lib/auth/rate-limit.ts` tracks attempts in the
+  `AuthAttempt` table (10 failed logins / 15 min, 5 signups or password-reset
+  requests / hour, per identifier) — database-backed rather than in-memory because
+  Vercel's serverless functions don't share process memory across invocations.
+- **CSRF**: every mutating route checks the request's `Origin` header matches the
+  app's own host (`src/lib/http/same-origin.ts`) — a cross-site form post or
+  `<img>` trick can't set that header, and it's a second layer on top of the
+  session cookie's `sameSite: 'lax'`.
+- **Account enumeration**: login and forgot-password return the same generic
+  response whether or not the account exists (login also runs a dummy password
+  check so timing doesn't leak it either).
+- **Authorization**: every mission route re-derives the signed-in user from the
+  session cookie itself and filters every query by `userId` — a mission that
+  exists but isn't yours 404s, it doesn't 403, so its existence isn't confirmed
+  either. `src/proxy.ts` (Next's renamed `middleware.ts`) blocks page navigation
+  for signed-out users, but per Next's own guidance that's defense-in-depth, not
+  the only check — every route handler verifies independently.
+- **Protected surfaces**: `/dashboard`, `/mission-planner`, `/api/missions/*`, and
+  `/api/flight-deck` require a session; `/login` and `/signup` redirect to
+  `/dashboard` if you already have one.
+
+### Environment variables
+
+Copy the example file:
 ```bash
 cp .env.local.example .env.local
 ```
-```env
-# Required for Flight Deck (ATLAS/SENTINEL agentic mission planner)
-ANTHROPIC_API_KEY=sk-ant-...
+
+| Variable | Required | Notes |
+| --- | --- | --- |
+| `DATABASE_URL` | Yes | Postgres connection string. Read by both the Next.js app and the Prisma CLI (the CLI loads it via `dotenv/config` from a plain `.env` file — put it there, not only in `.env.local`, or the CLI commands above won't see it). |
+| `ANTHROPIC_API_KEY` | Only for Flight Deck | Unrelated to auth — the ATLAS/SENTINEL agentic planner. |
+| `RESEND_API_KEY` | Recommended for production | Without it, verification/reset emails aren't sent (see above). |
+| `EMAIL_FROM` | No | Defaults to `Flight Deck <onboarding@resend.dev>` (Resend's own sandbox sender — fine for testing, won't reliably land in Gmail/Outlook inboxes for real users; verify your own domain in Resend for production). |
+
+### Local development
+
+A dedicated Postgres role and database, least-privilege (not the superuser):
+
+```bash
+psql -d postgres -c "CREATE ROLE mission_planner_app LOGIN PASSWORD 'pick-a-local-password';"
+psql -d postgres -c "CREATE DATABASE mission_planner_dev OWNER mission_planner_app;"
 ```
-Get a key at [console.anthropic.com](https://console.anthropic.com/). Restart the dev
-server after adding it. The rest of the app works without it — Flight Deck's prompt bar
-will report a clear "Missing API key" error in the Agent Console until it's set.
+
+Set `DATABASE_URL` in `.env` to that role/database, then:
+
+```bash
+pnpm install
+pnpm contract:emit
+pnpm db:plan --name init     # only needed once, or after a schema change
+pnpm db:migrate
+pnpm db:sign
+pnpm db:seed                 # optional — creates demo@example.com / password1234 with a sample mission
+pnpm dev
+```
+
+### Recommended PostgreSQL hosting for production
+
+This app deploys to **Vercel** (confirmed from the repo's GitHub deployment
+history), whose serverless functions are short-lived and shouldn't hold a
+persistent Postgres connection open — a self-managed "just run `postgres` on the
+server" setup isn't an option there. Recommended, in order:
+
+1. **[Neon](https://neon.tech)** — serverless Postgres with a built-in connection
+   pooler, generous free tier, and a first-class Vercel integration (adds
+   `DATABASE_URL` to your project automatically). This is a plain managed Postgres
+   product, not a bundled backend-as-a-service — you still own the schema, the
+   migrations, and the auth code in this repo.
+2. **[Railway](https://railway.app)** or **[Render](https://render.com)** — also
+   plain managed Postgres, simple dashboard-based provisioning, if you'd rather not
+   use Neon specifically.
+
+To use Neon: create a project at neon.tech (or via the Vercel integration in your
+Vercel project's Storage tab), copy its connection string, and set it as
+`DATABASE_URL` in your Vercel project's Environment Variables (Production scope).
+Use the same string locally in `.env` if you want local dev to point at a Neon
+branch instead of a local Postgres install.
+
+**This requires an account and cannot be done on your behalf** — provisioning a
+database is an action only you can take. Once `DATABASE_URL` is set in Vercel, run
+the migration commands above with that same connection string (from your own
+machine, pointed at the production database) before the first deploy that needs
+it, then set `RESEND_API_KEY` the same way if you want real verification/reset
+emails to go out.
+
+### Production deployment steps
+
+1. Provision a Postgres database (see above) and copy its connection string.
+2. In Vercel → Project → Settings → Environment Variables, set `DATABASE_URL`
+   (and `RESEND_API_KEY` / `EMAIL_FROM` if you want real email) for the
+   Production environment.
+3. From your own machine, with `DATABASE_URL` pointed at that same production
+   database: `pnpm contract:emit && pnpm db:migrate && pnpm db:sign`. Do this
+   before traffic hits a deploy that depends on the new schema.
+4. Push to `main` (or your Vercel-connected branch) — Vercel's existing
+   GitHub integration builds and deploys as it already does today; nothing about
+   the deploy trigger changes.
+5. Never run `db:migrate` against production without having reviewed the planned
+   SQL first, and never re-run `prisma orm init` or point `db:migrate` at a
+   production URL with `--to @empty` or similar — both are destructive and this
+   project's tooling will refuse a silently-lossy plan, but a forced one will not
+   be stopped twice.
 
 ## License
 
