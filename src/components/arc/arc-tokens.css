@@ -1,0 +1,384 @@
+/*
+ * ARC UI design tokens, scoped.
+ *
+ * Generated from @arclux/arc-ui/src/base.css (its :root block). ARC's base.css
+ * cannot be imported globally: its :root redefines --radius-*, --shadow-*,
+ * --text-xs..3xl, --font-mono, --ease-* and --breakpoint-*, which are
+ * Tailwind/BoardUI theme variables and would restyle the whole app. Here the
+ * same tokens are declared only on ARC hosts (custom properties inherit into
+ * their shadow roots) and on an opt-in `.arc-scope` wrapper.
+ *
+ * To regenerate after an ARC upgrade, copy the :root block of base.css again.
+ * Add a tag below when you start using a new ARC component.
+ */
+:where(.arc-scope),
+:where(arc-accordion),
+:where(arc-accordion-item),
+:where(arc-marquee),
+:where(arc-cta-banner),
+:where(arc-feature-card),
+:where(arc-animated-number),
+:where(arc-gradient-text),
+:where(arc-card),
+:where(arc-stat),
+:where(arc-badge),
+:where(arc-typewriter),
+:where(arc-value-card),
+:where(arc-empty-state),
+:where(arc-hover-card),
+:where(arc-status-bar),
+:where(arc-connection-status) {
+  color-scheme: dark;
+
+  --bg-deep: rgb(3, 3, 7);
+  --bg-surface: rgb(10, 10, 15);
+  --bg-base: rgb(10, 10, 15);
+  --bg-card: rgb(13, 13, 18);
+  --bg-elevated: rgb(17, 17, 22);
+
+  --text-primary: rgb(232, 232, 236);
+  --text-secondary: rgb(150, 152, 162);
+  --text-muted: rgb(142, 142, 155);
+  --text-ghost: rgb(133, 133, 154);
+
+  --border-subtle: rgb(24, 24, 30);
+  --border-default: rgb(34, 34, 41);
+  --border-bright: rgb(51, 51, 64);
+
+  --accent-primary: rgb(77, 126, 247);
+  --accent-secondary: rgb(149, 103, 255);
+
+  /* The accent captured under a name pinned regions never redeclare, so they
+     can derive from it without referencing a property they are themselves
+     declaring — which would be a cycle, and would invalidate both. Private and
+     not part of the public token surface: override --accent-primary as usual
+     and this follows, including into a pinned nav or footer. */
+  --_brand-primary: var(--accent-primary);
+  --_brand-secondary: var(--accent-secondary);
+
+  --accent-primary-rgb: 77, 126, 247;
+  --accent-secondary-rgb: 149, 103, 255;
+  --text-primary-rgb: 232, 232, 236;
+  --text-muted-rgb: 142, 142, 155;
+  --border-default-rgb: 34, 34, 41;
+  --color-error-rgb: 240, 69, 69;
+  --white-rgb: 255, 255, 255;
+  --black-rgb: 0, 0, 0;
+
+  --accent-primary-subtle: rgba(var(--accent-primary-rgb), 0.06);
+  --accent-primary-border: rgba(var(--accent-primary-rgb), 0.12);
+  --accent-primary-glow: rgba(var(--accent-primary-rgb), 0.2);
+  --accent-primary-ring: rgba(var(--accent-primary-rgb), 0.15);
+  --accent-secondary-subtle: rgba(var(--accent-secondary-rgb), 0.06);
+  --accent-secondary-border: rgba(var(--accent-secondary-rgb), 0.12);
+  --accent-secondary-glow: rgba(var(--accent-secondary-rgb), 0.2);
+
+  --color-success: rgb(52, 211, 153);
+  --color-success-rgb: 52, 211, 153;
+  --color-error: rgb(240, 69, 69);
+  --color-error-subtle: rgba(240, 69, 69, 0.1);
+  --color-warning: rgb(245, 158, 11);
+  --color-warning-rgb: 245, 158, 11;
+  --color-warning-subtle: rgba(245, 158, 11, 0.1);
+  --color-info: rgb(59, 130, 246);
+  --color-info-rgb: 59, 130, 246;
+  --color-info-subtle: rgba(59, 130, 246, 0.1);
+
+  --chart-1: #4d7ef7;
+  --chart-2: #ea580c;
+  --chart-3: #0d9488;
+  --chart-4: #8b5cf6;
+  --chart-5: #db2777;
+  --chart-6: #65a30d;
+  --chart-1-rgb: 77, 126, 247;
+  --chart-2-rgb: 234, 88, 12;
+  --chart-3-rgb: 13, 148, 136;
+  --chart-4-rgb: 139, 92, 246;
+  --chart-5-rgb: 219, 39, 119;
+  --chart-6-rgb: 101, 163, 13;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.35), 0 8px 16px rgba(0, 0, 0, 0.15);
+  --shadow-overlay: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.25);
+
+  --z-base: 0;
+  --z-dropdown: 1000;
+  --z-tooltip: 1100;
+  --z-overlay: 1200;
+  --z-modal: 1300;
+  --z-toast: 1400;
+  --z-max: 9999;
+
+  --breakpoint-xs: 480px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  --opacity-disabled: 0.5;
+  --opacity-muted: 0.6;
+  --opacity-hover: 0.8;
+  --opacity-visible: 1;
+
+  /* Font role slots. Override only the -family token to assign a typeface;
+     the fallback and every component using the role follow automatically.
+     Each role also carries a -weight, for faces that do not ship the weight
+     the role is set at. */
+  --font-body-family: 'Host Grotesk';
+  --font-body-fallback: system-ui, sans-serif;
+  --font-body-weight: 500;
+  --font-body: var(--font-body-family), var(--font-body-fallback);
+
+  --font-label-family: 'Tomorrow';
+  --font-label-fallback: system-ui, -apple-system, Segoe UI, sans-serif;
+  --font-label-weight: 600;
+  --font-label: var(--font-label-family), var(--font-label-fallback);
+
+  --font-mono-family: 'JetBrains Mono';
+  --font-mono-fallback: ui-monospace, monospace;
+  --font-mono-weight: 400;
+  --font-mono: var(--font-mono-family), var(--font-mono-fallback);
+
+  /* Display follows the text role until it is assigned a face of its own. Its
+     weight does not follow: large type usually wants its own. */
+  --font-display-family: var(--font-body-family);
+  --font-display-fallback: var(--font-body-fallback);
+  --font-display-weight: 500;
+  --font-display: var(--font-display-family), var(--font-display-fallback);
+
+  --font-quote-family: Georgia;
+  --font-quote-fallback: serif;
+  --font-quote-weight: 200;
+  --font-quote: var(--font-quote-family), var(--font-quote-fallback);
+
+  /* --font-accent named the label role before the slots were split out.
+     Kept as an alias so existing overrides and usages keep working. */
+  --font-accent: var(--font-label);
+
+  --text-xs: 12px;
+  --text-sm: 16px;
+  --text-md: 17px;
+  --text-lg: clamp(18px, 1.5vw, 20px);
+  --text-xl: clamp(22px, 2.5vw, 26px);
+  --text-2xl: clamp(28px, 3vw, 36px);
+  --text-3xl: clamp(36px, 5vw, 52px);
+
+  /* Private mirrors of the size scale. Components read these rather than the
+     public --text-* names, because shared-styles.js has to declare a working
+     default on :host and a token cannot fall back to itself:
+     --text-md: var(--text-md, 17px) is a self-reference and invalid. Declaring
+     the public name on :host instead is what made an override at :root
+     unreachable — a value set on the host always beats one inherited into it.
+     The indirection gives components a name that is only ever declared, and
+     consumers a name that is only ever read.
+
+     Emitted here as well as on :host so the standalone CSS build resolves them:
+     there is no shadow root there, so :root is the only declaration site. */
+  --_text-xs: var(--text-xs);
+  --_text-sm: var(--text-sm);
+  --_text-md: var(--text-md);
+  --_text-lg: var(--text-lg);
+  --_text-xl: var(--text-xl);
+  --_text-2xl: var(--text-2xl);
+  --_text-3xl: var(--text-3xl);
+
+  --display-xl-size: var(--text-3xl);
+  --display-xl-weight: var(--font-display-weight);
+  --display-xl-spacing: -1px;
+  --heading-size: var(--text-xl);
+  --heading-weight: var(--font-display-weight);
+  --heading-lh: 1.2;
+  --body-size: var(--text-md);
+  --body-weight: var(--font-body-weight);
+  --body-lh: 1.7;
+  --wordmark-size: clamp(20px, 2.5vw, 28px);
+  --wordmark-weight: var(--font-display-weight);
+  --wordmark-spacing: clamp(8px, 1.2vw, 14px);
+  --glyph-lh: 1;
+  --ui-lh: 1.4;
+  --ui-size: 14px;
+  --numeral-size: clamp(24px, 3vw, 36px);
+  --numeral-weight: 200;
+  --label-size: var(--text-xs);
+  --label-weight: var(--font-label-weight);
+  --label-spacing: 2px;
+  --section-title-size: var(--label-size);
+  --section-title-weight: var(--label-weight);
+  --section-title-spacing: var(--label-spacing);
+  --ui-accent-size: 16px;
+  --ui-accent-weight: var(--font-label-weight);
+  --ui-accent-spacing: 0.5px;
+  --code-size: 14px;
+  --code-lh: 1.8;
+  --label-inline-size: 10px;
+  --label-inline-spacing: 0.75px;
+  --field-weight: 400;
+
+  --touch-min: 24px;
+  --touch-pad: 4px;
+
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+  --space-4xl: 128px;
+
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  --transition-fast: var(--duration-fast) var(--ease-standard);
+  --transition-base: var(--duration-base) var(--ease-standard);
+  --transition-slow: var(--duration-slow) var(--ease-standard);
+  --transition-enter: var(--duration-enter) var(--ease-out);
+  --transition-exit: var(--duration-exit) var(--ease-in);
+
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 400ms;
+  --duration-enter: 500ms;
+  --duration-exit: 300ms;
+
+  /* Back-compat: the two curve names published before the motion scale
+     existed. Public API, so they stay; new work spells --ease-out and
+     --ease-standard. */
+  --ease-out-expo: var(--ease-out);
+  --ease-in-out: var(--ease-standard);
+
+  --gradient-display-text: linear-gradient(135deg, rgb(232, 232, 236) 0%, rgb(124, 124, 137) 100%);
+  --gradient-accent-text: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  --gradient-divider: linear-gradient(90deg, rgba(24, 24, 30, 0), rgb(24, 24, 30), rgba(24, 24, 30, 0));
+  --gradient-divider-glow: linear-gradient(90deg, rgba(var(--accent-primary-rgb),0), rgba(var(--accent-primary-rgb),0.2), rgba(var(--accent-secondary-rgb),0.12), rgba(var(--accent-secondary-rgb),0));
+  --gradient-page-ambient: radial-gradient(ellipse, rgba(255, 255, 255,0.015) 0%, rgba(255, 255, 255,0) 70%);
+  --gradient-sunset: linear-gradient(135deg, #ff6b6b, #ffa500, #ff4757);
+  --gradient-ocean: linear-gradient(135deg, #00d2ff, #3a7bd5, #6dd5fa);
+
+  --orb-close: #ff5f57;
+  --orb-minimize: #febc2e;
+  --orb-maximize: #28c840;
+
+  --glow-white: 0 0 6px rgba(var(--text-primary-rgb),0.6), 0 0 18px rgba(var(--text-primary-rgb),0.25), 0 0 40px rgba(var(--text-primary-rgb),0.1);
+  --glow-primary: 0 0 8px rgba(var(--accent-primary-rgb),0.9), 0 0 20px rgba(var(--accent-primary-rgb),0.5), 0 0 44px rgba(var(--accent-primary-rgb),0.25), 0 0 80px rgba(var(--accent-primary-rgb),0.1);
+  --glow-secondary: 0 0 8px rgba(var(--accent-secondary-rgb),0.9), 0 0 20px rgba(var(--accent-secondary-rgb),0.4), 0 0 40px rgba(var(--accent-secondary-rgb),0.15);
+
+  /* Lobes of light. The inputs are deliberately not declared: see the note in
+     the tree above. */
+  --lobe-line: linear-gradient(var(--lobe-axis, 90deg), rgba(var(--lobe-rgb, var(--border-default-rgb)), 0), rgba(var(--lobe-rgb, var(--border-default-rgb)), var(--lobe-alpha, 1)), rgba(var(--lobe-rgb, var(--border-default-rgb)), 0));
+  --lobe-start: linear-gradient(var(--lobe-axis, 90deg), rgba(var(--lobe-rgb, var(--border-default-rgb)), var(--lobe-alpha, 1)), rgba(var(--lobe-rgb, var(--border-default-rgb)), 0));
+  --lobe-end: linear-gradient(var(--lobe-axis, 90deg), rgba(var(--lobe-rgb, var(--border-default-rgb)), 0), rgba(var(--lobe-rgb, var(--border-default-rgb)), var(--lobe-alpha, 1)));
+  --lobe-ambient: radial-gradient(var(--lobe-shape, ellipse), rgba(var(--lobe-rgb, var(--border-default-rgb)), var(--lobe-alpha, 0.08)) 0%, rgba(var(--lobe-rgb, var(--border-default-rgb)), 0) var(--lobe-extent, 70%));
+
+  --glow-line-white: linear-gradient(90deg, rgba(var(--text-primary-rgb),0), rgba(var(--text-primary-rgb),0.35), rgba(var(--text-primary-rgb),0));
+  --glow-line-blue: linear-gradient(90deg, rgba(var(--accent-primary-rgb),0), rgba(var(--accent-primary-rgb),0.7), rgba(var(--accent-primary-rgb),0));
+  --glow-line-gradient: linear-gradient(90deg, rgba(var(--accent-primary-rgb),0), var(--accent-primary), var(--accent-secondary), rgba(var(--accent-secondary-rgb),0));
+
+  --glow-xs: 0 0 6px rgba(var(--accent-primary-rgb), 0.3);
+  --glow-sm: 0 0 8px rgba(var(--accent-primary-rgb), 0.3);
+  --glow-md: 0 0 12px rgba(var(--accent-primary-rgb), 0.25);
+  --glow-status: 0 0 12px rgba(var(--_status-rgb), var(--glow-status-alpha, 0.15));
+  --glow-status-alpha: 0.15;
+  --glow-hover: 0 0 12px rgba(var(--accent-primary-rgb), 0.15);
+  --glow-card-hover: 0 0 20px rgba(var(--accent-primary-rgb),0.08), 0 0 40px rgba(var(--accent-secondary-rgb),0.04);
+  --gradient-border-glow: linear-gradient(135deg, rgba(var(--accent-primary-rgb),0.15), rgba(var(--accent-secondary-rgb),0.1), rgba(var(--accent-primary-rgb),0.05));
+  --gradient-ambient: radial-gradient(circle at 15% 85%, rgba(var(--accent-primary-rgb),0.04) 0%, rgba(var(--accent-primary-rgb),0) 50%),
+                      radial-gradient(circle at 85% 15%, rgba(var(--accent-secondary-rgb),0.03) 0%, rgba(var(--accent-secondary-rgb),0) 50%);
+
+  --focus-ring: 0 0 0 1px rgba(var(--accent-primary-rgb),0.25);
+  --focus-glow: 0 0 0 1px rgba(var(--accent-primary-rgb),0.2), 0 0 6px rgba(var(--accent-primary-rgb),0.35), 0 0 16px rgba(var(--accent-primary-rgb),0.2), 0 0 40px rgba(var(--accent-secondary-rgb),0.12);
+  --focus-error: 0 0 0 2px var(--surface-base), 0 0 0 4px var(--color-error), 0 0 16px rgba(var(--color-error-rgb), 0.2);
+  --focus-inset: inset 0 0 0 2px var(--interactive);
+  --focus-thumb: 0 0 8px rgba(var(--interactive-rgb), 0.5), 0 0 20px rgba(var(--interactive-rgb), 0.25);
+
+  --max-width: 1120px;
+  --max-width-sm: 720px;
+  --nav-height: 64px;
+  --nav-row-inset: var(--space-sm);
+
+  --bg-hover: rgba(255, 255, 255, 0.04);
+  --overlay-backdrop: rgba(0, 0, 0, 0.6);
+  --accent-text-mix: 0%;
+
+  /* Text painted ON an accent fill — the primary button's label, the active
+     segment, the selected day in a picker.
+
+     Not simply --surface-base, which is what those five call sites used to
+     read. That works in dark, where the ground is near-black against a bright
+     accent (5.53:1), but light mode pairs its near-white ground with a darker
+     accent and lands at 4.30:1 — under AA, on the most-used control in the
+     library. The light theme overrides this to pure white (4.79:1); the dark
+     value stays exactly what it was, since white on the dark accent would be
+     3.72:1 and strictly worse. */
+  --on-accent: var(--surface-base);
+
+  /* ── Semantic: Interactive ── */
+  --interactive: var(--accent-primary);
+  --interactive-rgb: var(--accent-primary-rgb);
+  --interactive-hover: var(--glow-hover);
+  --interactive-active: var(--glow-primary);
+  --interactive-focus: var(--focus-glow);
+  --interactive-focus-ring: var(--focus-ring);
+  --interactive-focus-error: var(--focus-error);
+  --interactive-focus-inset: var(--focus-inset);
+  --interactive-focus-thumb: var(--focus-thumb);
+  --interactive-muted: var(--text-ghost);
+
+  /* ── Semantic: Surface ── */
+  --surface-base: var(--bg-deep);
+  --surface-primary: var(--bg-surface);
+  --surface-raised: var(--bg-card);
+  --surface-overlay: var(--bg-elevated);
+  --surface-hover: var(--bg-hover);
+
+  /* ── Semantic: Divider ── */
+  --divider: var(--border-subtle);
+  --divider-glow: var(--glow-line-gradient);
+
+  /* ── Semantic: Feedback composites ── */
+  --feedback-error-subtle: var(--color-error-subtle);
+  --feedback-error-border: rgba(var(--color-error-rgb), 0.2);
+  --feedback-error-glow: 0 0 12px rgba(var(--color-error-rgb), 0.15);
+  --feedback-success-subtle: rgba(var(--color-success-rgb), 0.1);
+  --feedback-success-border: rgba(var(--color-success-rgb), 0.2);
+  --feedback-success-glow: 0 0 12px rgba(var(--color-success-rgb), 0.15);
+  --feedback-warning-subtle: var(--color-warning-subtle);
+  --feedback-warning-border: rgba(var(--color-warning-rgb), 0.2);
+  --feedback-warning-glow: 0 0 12px rgba(var(--color-warning-rgb), 0.15);
+  --feedback-info-subtle: var(--color-info-subtle);
+  --feedback-info-border: rgba(var(--color-info-rgb), 0.2);
+  --feedback-info-glow: 0 0 12px rgba(var(--color-info-rgb), 0.15);
+
+}
+
+/* Flight Deck alignment: ARC speaks the app's type and surfaces. */
+:where(.arc-scope),
+:where(arc-accordion, arc-marquee, arc-cta-banner, arc-feature-card, arc-animated-number, arc-gradient-text, arc-card, arc-stat, arc-badge, arc-value-card, arc-empty-state) {
+  --font-body-family: var(--font-inter);
+  --font-body-fallback: system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+  --bg-base: var(--color-bg-base);
+  --bg-card: var(--color-background-secondary-default);
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+}
+
+/* Hide ARC elements until they upgrade (they only register client-side). */
+@media (scripting: enabled) {
+  :is(arc-accordion, arc-accordion-item, arc-marquee, arc-cta-banner, arc-feature-card, arc-animated-number, arc-gradient-text, arc-card, arc-stat, arc-badge, arc-typewriter, arc-value-card, arc-empty-state, arc-hover-card, arc-status-bar, arc-connection-status):not(:defined) {
+    opacity: 0;
+  }
+}
