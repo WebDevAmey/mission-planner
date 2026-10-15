@@ -134,6 +134,10 @@ export function MapView() {
     map.addControl(new ScaleControl({ unit: 'metric' }), 'bottom-right');
     map.addControl(new NavigationControl(), 'top-right');
     map.on('load', () => setMapReady(true));
+    map.on('moveend', () => {
+      const c = map.getCenter();
+      useUIStore.getState().setMapView({ lat: c.lat, lng: c.lng, zoom: map.getZoom() });
+    });
     mapRef.current = map;
 
     return () => {
