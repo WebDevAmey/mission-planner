@@ -1,90 +1,17 @@
-import { db } from '@/prisma/db';
-import { requireUser, UnauthorizedError } from '@/lib/auth/guard';
-import { isSameOriginRequest } from '@/lib/http/same-origin';
+import { authorize, notFound } from '@/lib/http/api';
 import { toMissionPlan } from '@/lib/missions/map';
+import { asDbMission, duplicateMission, getOwnedFullMission, loadFullMission } from '@/lib/missions/repo';
 
+/** POST /api/missions/:id/duplicate → 201 `{ ok, mission }` (copies settings, limits, items and zones). */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!isSameOriginRequest(request)) {
-    return Response.json({ ok: false, error: 'Invalid request origin' }, { status: 403 });
-  }
-
-  let user;
-  try {
-    user = await requireUser();
-  } catch (err) {
-    if (err instanceof UnauthorizedError) return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    throw err;
-  }
+  const user = await authorize(request);
+  if (user instanceof Response) return user;
 
   const { id } = await params;
-  const original = await db.orm.public.Mission.where({ id })
-    .include('waypoints', (w) => w)
-    .include('settings', (s) => s)
-    .first();
+  const original = await getOwnedFullMission(id, user.id);
+  if (!original) return notFound();
 
-  if (!original || original.userId !== user.id) {
-    return Response.json({ ok: false, error: 'Mission not found' }, { status: 404 });
-  }
-
-  const copy = await db.transaction(async (tx) => {
-    const mission = await tx.orm.public.Mission.create({
-      name: `${original.name} (Copy)`,
-      description: original.description,
-      userId: user.id,
-      homeLatitude: original.homeLatitude,
-      homeLongitude: original.homeLongitude,
-      homeAltitude: original.homeAltitude,
-    });
-
-    const settings = original.settings;
-    await tx.orm.public.MissionSettings.create({
-      missionId: mission.id,
-      ...(settings
-        ? {
-            defaultAltitude: settings.defaultAltitude,
-            defaultSpeed: settings.defaultSpeed,
-            defaultLoiterTime: settings.defaultLoiterTime,
-            defaultWaitTime: settings.defaultWaitTime,
-            altitudeReference: settings.altitudeReference,
-            maxDistanceM: settings.maxDistanceM,
-            maxAltM: settings.maxAltM,
-            minAltM: settings.minAltM,
-            maxSpeedMs: settings.maxSpeedMs,
-            minAGLClearance: settings.minAGLClearance,
-          }
-        : {}),
-    });
-
-    for (const wp of original.waypoints) {
-      await tx.orm.public.Waypoint.create({
-        missionId: mission.id,
-        sequence: wp.sequence,
-        action: wp.action,
-        command: wp.command,
-        frame: wp.frame,
-        name: wp.name,
-        latitude: wp.latitude,
-        longitude: wp.longitude,
-        altitude: wp.altitude,
-        speed: wp.speed,
-        notes: wp.notes,
-        param1: wp.param1,
-        param2: wp.param2,
-        param3: wp.param3,
-        param4: wp.param4,
-        param5: wp.param5,
-        param6: wp.param6,
-        param7: wp.param7,
-      });
-    }
-
-    return mission;
-  });
-
-  const full = await db.orm.public.Mission.where({ id: copy.id })
-    .include('waypoints', (w) => w)
-    .include('settings', (s) => s)
-    .first();
-
-  return Response.json({ ok: true, mission: toMissionPlan(full!) }, { status: 201 });
+  const copyId = await duplicateMission(original, user.id);
+  const full = await loadFullMission(copyId);
+  return Response.json({ ok: true, mission: toMissionPlan(asDbMission(full!)) }, { status: 201 });
 }

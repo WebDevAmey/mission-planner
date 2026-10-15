@@ -1,139 +1,78 @@
-import { db } from '@/prisma/db';
-import { requireUser, UnauthorizedError } from '@/lib/auth/guard';
-import { updateMissionSchema } from '@/lib/validation/mission';
-import { isSameOriginRequest } from '@/lib/http/same-origin';
+import { MAX_MISSION_ITEMS, updateMissionSchema } from '@/lib/validation/mission';
+import { apiError, authorize, notFound, readJsonBody, validationError } from '@/lib/http/api';
 import { toMissionPlan } from '@/lib/missions/map';
-import { toIsoString } from '@/lib/db/serialize';
+import {
+  VersionConflictError,
+  asDbMission,
+  getOwnedFullMission,
+  getOwnedMission,
+  loadFullMission,
+  saveMissionDocument,
+} from '@/lib/missions/repo';
+import { db } from '@/prisma/db';
 
-async function loadFullMission(id: string) {
-  return db.orm.public.Mission.where({ id })
-    .include('waypoints', (w) => w)
-    .include('settings', (s) => s)
-    .first();
-}
+type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  let user;
-  try {
-    user = await requireUser();
-  } catch (err) {
-    if (err instanceof UnauthorizedError) return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    throw err;
-  }
+/** Whole-document saves: 2,000 items plus zones fit comfortably under 4 MB. */
+const MAX_PATCH_BYTES = 4 * 1024 * 1024;
 
-  const { id } = await params;
-  const mission = await loadFullMission(id);
-
-  // 404, not 403, for a mission that exists but isn't yours — don't confirm it exists.
-  if (!mission || mission.userId !== user.id) {
-    return Response.json({ ok: false, error: 'Mission not found' }, { status: 404 });
-  }
-
-  return Response.json({ ok: true, mission: toMissionPlan(mission) });
-}
-
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!isSameOriginRequest(request)) {
-    return Response.json({ ok: false, error: 'Invalid request origin' }, { status: 403 });
-  }
-
-  let user;
-  try {
-    user = await requireUser();
-  } catch (err) {
-    if (err instanceof UnauthorizedError) return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    throw err;
-  }
+/** GET /api/missions/:id → `{ ok, mission: ApiMission }` (404 for missing or foreign). */
+export async function GET(request: Request, { params }: Ctx) {
+  const user = await authorize(request);
+  if (user instanceof Response) return user;
 
   const { id } = await params;
-  const existing = await db.orm.public.Mission.where({ id }).first();
-  if (!existing || existing.userId !== user.id) {
-    return Response.json({ ok: false, error: 'Mission not found' }, { status: 404 });
+  const mission = await getOwnedFullMission(id, user.id);
+  if (!mission) return notFound();
+  return Response.json({ ok: true, mission: toMissionPlan(asDbMission(mission)) });
+}
+
+/**
+ * PATCH /api/missions/:id — whole-document save.
+ * Body: `{ baseVersion?, name?, description?, homePosition?, settings?, limits?, items?, zones?, vehicleType?, status? }`
+ * 400 invalid · 404 not owner · 409 `{ currentVersion }` stale baseVersion · 413 too many items.
+ */
+export async function PATCH(request: Request, { params }: Ctx) {
+  const user = await authorize(request);
+  if (user instanceof Response) return user;
+
+  const { id } = await params;
+  if (!(await getOwnedMission(id, user.id))) return notFound();
+
+  const body = await readJsonBody(request, { maxBytes: MAX_PATCH_BYTES });
+  if (!body.ok) return body.response;
+
+  const raw = body.data as { items?: unknown };
+  if (Array.isArray(raw?.items) && raw.items.length > MAX_MISSION_ITEMS) {
+    return apiError(413, 'PAYLOAD_TOO_LARGE', `A mission can hold at most ${MAX_MISSION_ITEMS} items`);
   }
 
-  let body: unknown;
+  const parsed = updateMissionSchema.safeParse(body.data);
+  if (!parsed.success) return validationError(parsed.error);
+
   try {
-    body = await request.json();
-  } catch {
-    return Response.json({ ok: false, error: 'Invalid request body' }, { status: 400 });
-  }
-
-  const parsed = updateMissionSchema.safeParse(body);
-  if (!parsed.success) {
-    return Response.json(
-      { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid input' },
-      { status: 400 }
-    );
-  }
-  const { name, description, homePosition, settings, items } = parsed.data;
-
-  await db.transaction(async (tx) => {
-    const missionUpdate: Record<string, unknown> = { updatedAt: toIsoString(new Date()) };
-    if (name !== undefined) missionUpdate.name = name;
-    if (description !== undefined) missionUpdate.description = description;
-    if (homePosition !== undefined) {
-      missionUpdate.homeLatitude = homePosition?.latitude ?? null;
-      missionUpdate.homeLongitude = homePosition?.longitude ?? null;
-      missionUpdate.homeAltitude = homePosition?.altitude ?? null;
-    }
-    await tx.orm.public.Mission.where({ id }).update(missionUpdate);
-
-    if (settings) {
-      await tx.orm.public.MissionSettings.where({ missionId: id }).upsert({
-        create: { missionId: id, ...settings },
-        update: settings,
+    await saveMissionDocument(id, parsed.data);
+  } catch (err) {
+    if (err instanceof VersionConflictError) {
+      return apiError(409, 'VERSION_CONFLICT', 'This mission was changed elsewhere', {
+        currentVersion: err.currentVersion,
       });
     }
-
-    if (items) {
-      await tx.orm.public.Waypoint.where({ missionId: id }).deleteAll();
-      for (const item of items) {
-        await tx.orm.public.Waypoint.create({
-          ...(item.id ? { id: item.id } : {}),
-          missionId: id,
-          sequence: item.sequence,
-          action: item.action,
-          command: item.command,
-          frame: item.frame,
-          name: item.name,
-          latitude: item.latitude,
-          longitude: item.longitude,
-          altitude: item.altitude,
-          speed: item.speed ?? null,
-          notes: item.notes ?? null,
-          param1: item.param1,
-          param2: item.param2,
-          param3: item.param3,
-          param4: item.param4,
-          param5: item.param5,
-          param6: item.param6,
-          param7: item.param7,
-        });
-      }
-    }
-  });
-
-  const full = await loadFullMission(id);
-  return Response.json({ ok: true, mission: toMissionPlan(full!) });
-}
-
-export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  let user;
-  try {
-    user = await requireUser();
-  } catch (err) {
-    if (err instanceof UnauthorizedError) return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
     throw err;
   }
 
+  const full = await loadFullMission(id);
+  return Response.json({ ok: true, mission: toMissionPlan(asDbMission(full!)) });
+}
+
+/** DELETE /api/missions/:id → `{ ok: true }`. Children cascade via FKs. */
+export async function DELETE(request: Request, { params }: Ctx) {
+  const user = await authorize(request);
+  if (user instanceof Response) return user;
+
   const { id } = await params;
-  const existing = await db.orm.public.Mission.where({ id }).first();
-  if (!existing || existing.userId !== user.id) {
-    return Response.json({ ok: false, error: 'Mission not found' }, { status: 404 });
-  }
+  if (!(await getOwnedMission(id, user.id))) return notFound();
 
-  // Waypoints and settings cascade via the FK's ON DELETE CASCADE.
   await db.orm.public.Mission.where({ id }).delete();
-
   return Response.json({ ok: true });
 }
