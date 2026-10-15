@@ -1,0 +1,1001 @@
+[
+  {
+    "id": "table.Zone",
+    "label": "Create table \"Zone\"",
+    "summary": "Creates table \"Zone\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Zone"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Zone\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Zone\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Zone\"",
+        "sql": "CREATE TABLE \"public\".\"Zone\" (\n  \"centerLat\" float8,\n  \"centerLng\" float8,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"enabled\" bool DEFAULT true NOT NULL,\n  \"id\" text NOT NULL,\n  \"kind\" text NOT NULL,\n  \"label\" text DEFAULT '' NOT NULL,\n  \"maxAltM\" float8,\n  \"minAltM\" float8,\n  \"missionId\" text NOT NULL,\n  \"radiusM\" float8,\n  \"shape\" text NOT NULL,\n  \"updatedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"vertices\" jsonb,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"Zone_kind_check_6eea59b1\" CHECK (\"kind\" IN ('no_fly', 'keep_in', 'keep_out')),\n  CONSTRAINT \"Zone_shape_check_0f40d968\" CHECK (\"shape\" IN ('circle', 'polygon'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Zone\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Zone\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Mission.bboxMaxLat",
+    "label": "Add column \"bboxMaxLat\" to \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "bboxMaxLat",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"bboxMaxLat\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "bboxMaxLat"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"bboxMaxLat\"",
+        "sql": "ALTER TABLE \"public\".\"Mission\" ADD COLUMN \"bboxMaxLat\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"bboxMaxLat\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "bboxMaxLat"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Mission.bboxMaxLng",
+    "label": "Add column \"bboxMaxLng\" to \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "bboxMaxLng",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"bboxMaxLng\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "bboxMaxLng"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"bboxMaxLng\"",
+        "sql": "ALTER TABLE \"public\".\"Mission\" ADD COLUMN \"bboxMaxLng\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"bboxMaxLng\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "bboxMaxLng"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Mission.bboxMinLat",
+    "label": "Add column \"bboxMinLat\" to \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "bboxMinLat",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"bboxMinLat\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "bboxMinLat"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"bboxMinLat\"",
+        "sql": "ALTER TABLE \"public\".\"Mission\" ADD COLUMN \"bboxMinLat\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"bboxMinLat\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "bboxMinLat"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Mission.bboxMinLng",
+    "label": "Add column \"bboxMinLng\" to \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "bboxMinLng",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"bboxMinLng\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "bboxMinLng"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"bboxMinLng\"",
+        "sql": "ALTER TABLE \"public\".\"Mission\" ADD COLUMN \"bboxMinLng\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"bboxMinLng\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "bboxMinLng"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Mission.distanceM",
+    "label": "Add column \"distanceM\" to \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "distanceM",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"distanceM\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "distanceM"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"distanceM\"",
+        "sql": "ALTER TABLE \"public\".\"Mission\" ADD COLUMN \"distanceM\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"distanceM\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "distanceM"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Mission.durationS",
+    "label": "Add column \"durationS\" to \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "durationS",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"durationS\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "durationS"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"durationS\"",
+        "sql": "ALTER TABLE \"public\".\"Mission\" ADD COLUMN \"durationS\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"durationS\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "durationS"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Mission.errorCount",
+    "label": "Add column \"errorCount\" to \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "errorCount",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"errorCount\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "errorCount"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"errorCount\"",
+        "sql": "ALTER TABLE \"public\".\"Mission\" ADD COLUMN \"errorCount\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"errorCount\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "errorCount"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Mission.lastValidatedAt",
+    "label": "Add column \"lastValidatedAt\" to \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "lastValidatedAt",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"lastValidatedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "lastValidatedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"lastValidatedAt\"",
+        "sql": "ALTER TABLE \"public\".\"Mission\" ADD COLUMN \"lastValidatedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"lastValidatedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "lastValidatedAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Mission.status",
+    "label": "Add column \"status\" to \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "status",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"status\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "status"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"status\"",
+        "sql": "ALTER TABLE \"public\".\"Mission\" ADD COLUMN \"status\" text DEFAULT 'draft' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"status\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "status"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Mission.vehicleType",
+    "label": "Add column \"vehicleType\" to \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "vehicleType",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"vehicleType\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "vehicleType"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"vehicleType\"",
+        "sql": "ALTER TABLE \"public\".\"Mission\" ADD COLUMN \"vehicleType\" text DEFAULT 'multirotor' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"vehicleType\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "vehicleType"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Mission.version",
+    "label": "Add column \"version\" to \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "version",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"version\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "version"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"version\"",
+        "sql": "ALTER TABLE \"public\".\"Mission\" ADD COLUMN \"version\" int4 DEFAULT 1 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"version\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "version"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Mission.warningCount",
+    "label": "Add column \"warningCount\" to \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "warningCount",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"warningCount\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "warningCount"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"warningCount\"",
+        "sql": "ALTER TABLE \"public\".\"Mission\" ADD COLUMN \"warningCount\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"warningCount\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "warningCount"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Mission.waypointCount",
+    "label": "Add column \"waypointCount\" to \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "waypointCount",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"waypointCount\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "waypointCount"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"waypointCount\"",
+        "sql": "ALTER TABLE \"public\".\"Mission\" ADD COLUMN \"waypointCount\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"waypointCount\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Mission",
+          "waypointCount"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.MissionSettings.cruiseSpeed",
+    "label": "Add column \"cruiseSpeed\" to \"MissionSettings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "cruiseSpeed",
+        "table": "MissionSettings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"cruiseSpeed\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "MissionSettings",
+          "cruiseSpeed"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"cruiseSpeed\"",
+        "sql": "ALTER TABLE \"public\".\"MissionSettings\" ADD COLUMN \"cruiseSpeed\" float8 DEFAULT 12 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"cruiseSpeed\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "MissionSettings",
+          "cruiseSpeed"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.MissionSettings.homeElevationM",
+    "label": "Add column \"homeElevationM\" to \"MissionSettings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "homeElevationM",
+        "table": "MissionSettings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"homeElevationM\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "MissionSettings",
+          "homeElevationM"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"homeElevationM\"",
+        "sql": "ALTER TABLE \"public\".\"MissionSettings\" ADD COLUMN \"homeElevationM\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"homeElevationM\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "MissionSettings",
+          "homeElevationM"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.MissionSettings.hoverSpeed",
+    "label": "Add column \"hoverSpeed\" to \"MissionSettings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "hoverSpeed",
+        "table": "MissionSettings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"hoverSpeed\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "MissionSettings",
+          "hoverSpeed"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"hoverSpeed\"",
+        "sql": "ALTER TABLE \"public\".\"MissionSettings\" ADD COLUMN \"hoverSpeed\" float8 DEFAULT 5 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"hoverSpeed\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "MissionSettings",
+          "hoverSpeed"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.MissionSettings.ratedEnduranceS",
+    "label": "Add column \"ratedEnduranceS\" to \"MissionSettings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "ratedEnduranceS",
+        "table": "MissionSettings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"ratedEnduranceS\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "MissionSettings",
+          "ratedEnduranceS"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"ratedEnduranceS\"",
+        "sql": "ALTER TABLE \"public\".\"MissionSettings\" ADD COLUMN \"ratedEnduranceS\" float8 DEFAULT 1200 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"ratedEnduranceS\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "MissionSettings",
+          "ratedEnduranceS"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.MissionSettings.turnaroundM",
+    "label": "Add column \"turnaroundM\" to \"MissionSettings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "turnaroundM",
+        "table": "MissionSettings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"turnaroundM\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "MissionSettings",
+          "turnaroundM"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"turnaroundM\"",
+        "sql": "ALTER TABLE \"public\".\"MissionSettings\" ADD COLUMN \"turnaroundM\" float8 DEFAULT 10 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"turnaroundM\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "MissionSettings",
+          "turnaroundM"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Session.lastSeenAt",
+    "label": "Add column \"lastSeenAt\" to \"Session\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "lastSeenAt",
+        "table": "Session"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"lastSeenAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Session",
+          "lastSeenAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"lastSeenAt\"",
+        "sql": "ALTER TABLE \"public\".\"Session\" ADD COLUMN \"lastSeenAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"lastSeenAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Session",
+          "lastSeenAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.Mission.Mission_status_check_f28e65a1",
+    "label": "Add check constraint \"Mission_status_check_f28e65a1\" on \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "Mission_status_check_f28e65a1",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Mission_status_check_f28e65a1\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Mission_status_check_f28e65a1",
+          "public",
+          "\"public\".\"Mission\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"Mission_status_check_f28e65a1\"",
+        "sql": "ALTER TABLE \"public\".\"Mission\" ADD CONSTRAINT \"Mission_status_check_f28e65a1\" CHECK (\"status\" IN ('draft', 'ready', 'archived'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"Mission_status_check_f28e65a1\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Mission_status_check_f28e65a1",
+          "public",
+          "\"public\".\"Mission\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Mission.Mission_userId_updatedAt_idx_42f5280d",
+    "label": "Create index \"Mission_userId_updatedAt_idx_42f5280d\" on \"Mission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Mission_userId_updatedAt_idx_42f5280d",
+        "table": "Mission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Mission_userId_updatedAt_idx_42f5280d\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Mission_userId_updatedAt_idx_42f5280d\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Mission_userId_updatedAt_idx_42f5280d\"",
+        "sql": "CREATE INDEX \"Mission_userId_updatedAt_idx_42f5280d\" ON \"public\".\"Mission\" (\"userId\", \"updatedAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Mission_userId_updatedAt_idx_42f5280d\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Mission_userId_updatedAt_idx_42f5280d\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Zone.Zone_missionId_idx_25ef2118",
+    "label": "Create index \"Zone_missionId_idx_25ef2118\" on \"Zone\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Zone_missionId_idx_25ef2118",
+        "table": "Zone"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Zone_missionId_idx_25ef2118\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Zone_missionId_idx_25ef2118\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Zone_missionId_idx_25ef2118\"",
+        "sql": "CREATE INDEX \"Zone_missionId_idx_25ef2118\" ON \"public\".\"Zone\" (\"missionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Zone_missionId_idx_25ef2118\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Zone_missionId_idx_25ef2118\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Zone.Zone_missionId_fkey",
+    "label": "Add foreign key \"Zone_missionId_fkey\" on \"Zone\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Zone_missionId_fkey",
+        "table": "Zone"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Zone_missionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Zone_missionId_fkey",
+          "public",
+          "\"public\".\"Zone\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Zone_missionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Zone\"\nADD CONSTRAINT \"Zone_missionId_fkey\"\nFOREIGN KEY (\"missionId\")\nREFERENCES \"public\".\"Mission\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Zone_missionId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Zone_missionId_fkey",
+          "public",
+          "\"public\".\"Zone\""
+        ]
+      }
+    ]
+  }
+]

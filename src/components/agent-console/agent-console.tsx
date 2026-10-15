@@ -87,7 +87,7 @@ function EventRow({ event }: { event: AgentEvent }) {
 
 function ApprovalCard() {
   const { result, clearRun, setConsoleOpen } = useAgentStore();
-  const { mission, loadMission } = useMissionStore();
+  const { mission, replaceItems } = useMissionStore();
   const { addToast } = useUIStore();
 
   if (!result || !result.draftMission) return null;
@@ -97,8 +97,8 @@ function ApprovalCard() {
   const approve = () => {
     if (!mission || !result.draftMission) return;
     const items = buildMissionItemsFromDraft(result.draftMission, mission.settings);
-    loadMission({ ...mission, items, updatedAt: new Date().toISOString() });
-    addToast('✓ Flight Deck mission applied', 'success');
+    replaceItems(items, 'Load Flight Deck draft');
+    addToast('Flight Deck draft loaded. Undo to restore your previous items.', 'success');
     clearRun();
   };
 

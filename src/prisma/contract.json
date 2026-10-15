@@ -35,6 +35,10 @@
     "Waypoint": {
       "model": "Waypoint",
       "namespace": "public"
+    },
+    "Zone": {
+      "model": "Zone",
+      "namespace": "public"
     }
   },
   "domain": {
@@ -103,6 +107,53 @@
               {
                 "name": "do_jump",
                 "value": "do_jump"
+              }
+            ]
+          },
+          "MissionStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "draft",
+                "value": "draft"
+              },
+              {
+                "name": "ready",
+                "value": "ready"
+              },
+              {
+                "name": "archived",
+                "value": "archived"
+              }
+            ]
+          },
+          "ZoneKind": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "no_fly",
+                "value": "no_fly"
+              },
+              {
+                "name": "keep_in",
+                "value": "keep_in"
+              },
+              {
+                "name": "keep_out",
+                "value": "keep_out"
+              }
+            ]
+          },
+          "ZoneShape": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "circle",
+                "value": "circle"
+              },
+              {
+                "name": "polygon",
+                "value": "polygon"
               }
             ]
           }
@@ -249,6 +300,34 @@
           },
           "Mission": {
             "fields": {
+              "bboxMaxLat": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "bboxMaxLng": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "bboxMinLat": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "bboxMinLng": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -260,6 +339,27 @@
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "distanceM": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "durationS": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "errorCount": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
                   "kind": "scalar"
                 }
               },
@@ -291,11 +391,31 @@
                   "kind": "scalar"
                 }
               },
+              "lastValidatedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "name": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "MissionStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
                 }
               },
               "updatedAt": {
@@ -309,6 +429,34 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "vehicleType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "version": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "warningCount": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "waypointCount": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
                   "kind": "scalar"
                 }
               }
@@ -360,15 +508,51 @@
                   "model": "Waypoint",
                   "namespace": "public"
                 }
+              },
+              "zones": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "missionId"
+                  ]
+                },
+                "to": {
+                  "model": "Zone",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
               "fields": {
+                "bboxMaxLat": {
+                  "column": "bboxMaxLat"
+                },
+                "bboxMaxLng": {
+                  "column": "bboxMaxLng"
+                },
+                "bboxMinLat": {
+                  "column": "bboxMinLat"
+                },
+                "bboxMinLng": {
+                  "column": "bboxMinLng"
+                },
                 "createdAt": {
                   "column": "createdAt"
                 },
                 "description": {
                   "column": "description"
+                },
+                "distanceM": {
+                  "column": "distanceM"
+                },
+                "durationS": {
+                  "column": "durationS"
+                },
+                "errorCount": {
+                  "column": "errorCount"
                 },
                 "homeAltitude": {
                   "column": "homeAltitude"
@@ -382,14 +566,32 @@
                 "id": {
                   "column": "id"
                 },
+                "lastValidatedAt": {
+                  "column": "lastValidatedAt"
+                },
                 "name": {
                   "column": "name"
+                },
+                "status": {
+                  "column": "status"
                 },
                 "updatedAt": {
                   "column": "updatedAt"
                 },
                 "userId": {
                   "column": "userId"
+                },
+                "vehicleType": {
+                  "column": "vehicleType"
+                },
+                "version": {
+                  "column": "version"
+                },
+                "warningCount": {
+                  "column": "warningCount"
+                },
+                "waypointCount": {
+                  "column": "waypointCount"
                 }
               },
               "namespaceId": "public",
@@ -402,6 +604,13 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "cruiseSpeed": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/float8@1",
                   "kind": "scalar"
                 }
               },
@@ -427,6 +636,20 @@
                 }
               },
               "defaultWaitTime": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "homeElevationM": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "hoverSpeed": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/float8@1",
@@ -474,6 +697,20 @@
                   "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
+              },
+              "ratedEnduranceS": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "turnaroundM": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
               }
             },
             "relations": {
@@ -499,6 +736,9 @@
                 "altitudeReference": {
                   "column": "altitudeReference"
                 },
+                "cruiseSpeed": {
+                  "column": "cruiseSpeed"
+                },
                 "defaultAltitude": {
                   "column": "defaultAltitude"
                 },
@@ -510,6 +750,12 @@
                 },
                 "defaultWaitTime": {
                   "column": "defaultWaitTime"
+                },
+                "homeElevationM": {
+                  "column": "homeElevationM"
+                },
+                "hoverSpeed": {
+                  "column": "hoverSpeed"
                 },
                 "maxAltM": {
                   "column": "maxAltM"
@@ -528,6 +774,12 @@
                 },
                 "missionId": {
                   "column": "missionId"
+                },
+                "ratedEnduranceS": {
+                  "column": "ratedEnduranceS"
+                },
+                "turnaroundM": {
+                  "column": "turnaroundM"
                 }
               },
               "namespaceId": "public",
@@ -652,6 +904,13 @@
                   "kind": "scalar"
                 }
               },
+              "lastSeenAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "tokenHash": {
                 "nullable": false,
                 "type": {
@@ -705,6 +964,9 @@
                 },
                 "ipAddress": {
                   "column": "ipAddress"
+                },
+                "lastSeenAt": {
+                  "column": "lastSeenAt"
                 },
                 "tokenHash": {
                   "column": "tokenHash"
@@ -1105,6 +1367,186 @@
               "namespaceId": "public",
               "table": "Waypoint"
             }
+          },
+          "Zone": {
+            "fields": {
+              "centerLat": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "centerLng": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "enabled": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "kind": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "ZoneKind",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "label": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "maxAltM": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "minAltM": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "missionId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "radiusM": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "shape": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "ZoneShape",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "vertices": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "mission": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "missionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Mission",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "centerLat": {
+                  "column": "centerLat"
+                },
+                "centerLng": {
+                  "column": "centerLng"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "enabled": {
+                  "column": "enabled"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "kind": {
+                  "column": "kind"
+                },
+                "label": {
+                  "column": "label"
+                },
+                "maxAltM": {
+                  "column": "maxAltM"
+                },
+                "minAltM": {
+                  "column": "minAltM"
+                },
+                "missionId": {
+                  "column": "missionId"
+                },
+                "radiusM": {
+                  "column": "radiusM"
+                },
+                "shape": {
+                  "column": "shape"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "vertices": {
+                  "column": "vertices"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Zone"
+            }
           }
         }
       }
@@ -1245,7 +1687,34 @@
               ]
             },
             "Mission": {
+              "checks": [
+                {
+                  "expression": "\"status\" IN ('draft', 'ready', 'archived')",
+                  "name": "Mission_status_check_f28e65a1",
+                  "prefix": "Mission_status_check"
+                }
+              ],
               "columns": {
+                "bboxMaxLat": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "nullable": true
+                },
+                "bboxMaxLng": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "nullable": true
+                },
+                "bboxMinLat": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "nullable": true
+                },
+                "bboxMinLng": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "nullable": true
+                },
                 "createdAt": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
@@ -1258,6 +1727,21 @@
                 "description": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
+                  "nullable": true
+                },
+                "distanceM": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "nullable": true
+                },
+                "durationS": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "nullable": true
+                },
+                "errorCount": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
                   "nullable": true
                 },
                 "homeAltitude": {
@@ -1280,10 +1764,30 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "lastValidatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
                 "name": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "draft"
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "MissionStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
                 },
                 "updatedAt": {
                   "codecId": "pg/timestamptz-string@1",
@@ -1298,6 +1802,34 @@
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
+                },
+                "vehicleType": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "multirotor"
+                  },
+                  "nullable": false
+                },
+                "version": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 1
+                  },
+                  "nullable": false
+                },
+                "warningCount": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "waypointCount": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
                 }
               },
               "foreignKeys": [
@@ -1330,6 +1862,15 @@
                   "name": "Mission_userId_idx_a489d58a",
                   "prefix": "Mission_userId_idx",
                   "unique": false
+                },
+                {
+                  "columns": [
+                    "userId",
+                    "updatedAt"
+                  ],
+                  "name": "Mission_userId_updatedAt_idx_42f5280d",
+                  "prefix": "Mission_userId_updatedAt_idx",
+                  "unique": false
                 }
               ],
               "primaryKey": {
@@ -1347,6 +1888,15 @@
                   "default": {
                     "kind": "literal",
                     "value": "relative"
+                  },
+                  "nullable": false
+                },
+                "cruiseSpeed": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "default": {
+                    "kind": "literal",
+                    "value": 12
                   },
                   "nullable": false
                 },
@@ -1383,6 +1933,20 @@
                   "default": {
                     "kind": "literal",
                     "value": 10
+                  },
+                  "nullable": false
+                },
+                "homeElevationM": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "nullable": true
+                },
+                "hoverSpeed": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "default": {
+                    "kind": "literal",
+                    "value": 5
                   },
                   "nullable": false
                 },
@@ -1434,6 +1998,24 @@
                 "missionId": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
+                  "nullable": false
+                },
+                "ratedEnduranceS": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "default": {
+                    "kind": "literal",
+                    "value": 1200
+                  },
+                  "nullable": false
+                },
+                "turnaroundM": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "default": {
+                    "kind": "literal",
+                    "value": 10
+                  },
                   "nullable": false
                 }
               },
@@ -1573,6 +2155,11 @@
                 "ipAddress": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
+                  "nullable": true
+                },
+                "lastSeenAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
                   "nullable": true
                 },
                 "tokenHash": {
@@ -1899,6 +2486,158 @@
                   ]
                 }
               ]
+            },
+            "Zone": {
+              "checks": [
+                {
+                  "expression": "\"kind\" IN ('no_fly', 'keep_in', 'keep_out')",
+                  "name": "Zone_kind_check_6eea59b1",
+                  "prefix": "Zone_kind_check"
+                },
+                {
+                  "expression": "\"shape\" IN ('circle', 'polygon')",
+                  "name": "Zone_shape_check_0f40d968",
+                  "prefix": "Zone_shape_check"
+                }
+              ],
+              "columns": {
+                "centerLat": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "nullable": true
+                },
+                "centerLng": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "enabled": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "kind": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "ZoneKind",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "label": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": ""
+                  },
+                  "nullable": false
+                },
+                "maxAltM": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "nullable": true
+                },
+                "minAltM": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "nullable": true
+                },
+                "missionId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "radiusM": {
+                  "codecId": "pg/float8@1",
+                  "dataType": "pg/float8",
+                  "nullable": true
+                },
+                "shape": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "ZoneShape",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "vertices": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "Zone_missionId_idx_25ef2118"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "missionId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Zone"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Mission"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "missionId"
+                  ],
+                  "name": "Zone_missionId_idx_25ef2118",
+                  "prefix": "Zone_missionId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
             }
           },
           "valueSet": {
@@ -1921,6 +2660,29 @@
                 "cam_trigg_dist",
                 "do_jump"
               ]
+            },
+            "MissionStatus": {
+              "kind": "valueSet",
+              "values": [
+                "draft",
+                "ready",
+                "archived"
+              ]
+            },
+            "ZoneKind": {
+              "kind": "valueSet",
+              "values": [
+                "no_fly",
+                "keep_in",
+                "keep_out"
+              ]
+            },
+            "ZoneShape": {
+              "kind": "valueSet",
+              "values": [
+                "circle",
+                "polygon"
+              ]
             }
           }
         },
@@ -1928,10 +2690,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "797d2cd086c0759828e87e956f9f06eaae2e677fba19abcd8dbafd267194ecea"
+    "storageHash": "99949b9337b98556cf784c06d24138af8dfc080fac930dc4c663577bbf38dba9"
   },
   "execution": {
-    "executionHash": "e078d18a9694c71466ce89877417b89d24f86ccbbe44648f3a7ceb9588e476e7",
+    "executionHash": "4ec102d9d444bf9d516db864c65230b6f011a90485242e082d53913926c8b4d2",
     "mutations": {
       "defaults": [
         {
@@ -2007,6 +2769,17 @@
           },
           "ref": {
             "entry": "Waypoint",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Zone",
             "field": "id",
             "namespace": "public"
           }
