@@ -14,14 +14,36 @@ import type {
   MissionExportPayload,
   MissionItem,
   MissionPlan,
+  MissionPlanSettings,
 } from '@/types/mission';
+import {
+  DEFAULT_LIMITS,
+  toEditorMission,
+  type EditorMission,
+  type MissionLimits,
+  type MissionZone,
+} from '@/lib/store/editor-types';
+
+const HISTORY_LIMIT = 100;
 
 interface MissionStoreState {
-  mission: MissionPlan | null;
-  past: MissionPlan[];
-  future: MissionPlan[];
+  mission: EditorMission | null;
+  past: EditorMission[];
+  future: EditorMission[];
+  /** Label of the most recent undoable change (for "Undo <label>" affordances). */
+  lastChangeLabel: string | null;
   createMission: (name?: string) => void;
-  loadMission: (mission: MissionPlan) => void;
+  /** Replace the open document and reset history (fresh load from the server). */
+  loadMission: (mission: MissionPlan | EditorMission) => void;
+  /** Apply any document change as exactly one undo step. */
+  applyChange: (label: string, updater: (draft: EditorMission) => EditorMission) => void;
+  /** Replace all items as one undo step (templates, Flight Deck, planners). */
+  replaceItems: (items: MissionItem[], label?: string) => void;
+  updateSettings: (settings: Partial<MissionPlanSettings>) => void;
+  updateLimits: (limits: Partial<MissionLimits>) => void;
+  addZone: (zone: Omit<MissionZone, 'id'> & { id?: string }) => string | null;
+  updateZone: (id: string, updates: Partial<Omit<MissionZone, 'id'>>) => void;
+  deleteZone: (id: string) => void;
   updateMissionName: (name: string) => void;
   addMissionItem: (
     action: PlannerAction,
@@ -55,10 +77,10 @@ const DEFAULT_SETTINGS = {
   altitudeReference: 'relative' as const,
 };
 
-const cloneMission = (mission: MissionPlan): MissionPlan =>
-  JSON.parse(JSON.stringify(mission)) as MissionPlan;
+const cloneMission = (mission: EditorMission): EditorMission =>
+  JSON.parse(JSON.stringify(mission)) as EditorMission;
 
-const createEmptyMission = (name: string): MissionPlan => ({
+const createEmptyMission = (name: string): EditorMission => ({
   id: uuidv4(),
   name,
   createdAt: new Date().toISOString(),
@@ -66,13 +88,16 @@ const createEmptyMission = (name: string): MissionPlan => ({
   items: [],
   settings: DEFAULT_SETTINGS,
   homePosition: null,
+  zones: [],
+  limits: { ...DEFAULT_LIMITS },
 });
 
 const withHistory = (
-  currentMission: MissionPlan,
+  currentMission: EditorMission,
   get: () => MissionStoreState,
   set: (value: Partial<MissionStoreState>) => void,
-  updater: (draft: MissionPlan) => MissionPlan
+  updater: (draft: EditorMission) => EditorMission,
+  label = 'Edit'
 ): void => {
   const baseMission = cloneMission(currentMission);
   const nextMission = updater(baseMission);
@@ -83,12 +108,13 @@ const withHistory = (
       items: resequenceMissionItems(nextMission.items, nextMission.settings),
       updatedAt: new Date().toISOString(),
     },
-    past: [...get().past, currentMission],
+    past: [...get().past, currentMission].slice(-HISTORY_LIMIT),
     future: [],
+    lastChangeLabel: label,
   });
 };
 
-const getSeedCoordinate = (mission: MissionPlan): Partial<MissionCoordinates> | undefined => {
+const getSeedCoordinate = (mission: EditorMission): Partial<MissionCoordinates> | undefined => {
   const lastSpatialItem = [...mission.items]
     .reverse()
     .find((item) => item.latitude !== null && item.longitude !== null);
@@ -112,6 +138,7 @@ export const useMissionStore = create<MissionStoreState>()(
       mission: null,
       past: [],
       future: [],
+      lastChangeLabel: null,
 
       createMission: (name = 'Mission 001') => {
         set({
@@ -122,14 +149,75 @@ export const useMissionStore = create<MissionStoreState>()(
       },
 
       loadMission: (mission) => {
+        const doc = toEditorMission(mission);
         set({
           mission: {
-            ...mission,
-            items: resequenceMissionItems(mission.items, mission.settings),
+            ...doc,
+            items: resequenceMissionItems(doc.items, doc.settings),
           },
           past: [],
           future: [],
+          lastChangeLabel: null,
         });
+      },
+
+      applyChange: (label, updater) => {
+        const mission = get().mission;
+        if (!mission) return;
+        withHistory(mission, get, set, updater, label);
+      },
+
+      replaceItems: (items, label = 'Replace items') => {
+        const mission = get().mission;
+        if (!mission) return;
+        withHistory(
+          mission,
+          get,
+          set,
+          (draft) => ({
+            ...draft,
+            items: items.map((item) => normalizeMissionItem({ ...item }, draft.settings)),
+          }),
+          label
+        );
+      },
+
+      updateSettings: (settings) => {
+        const mission = get().mission;
+        if (!mission) return;
+        withHistory(mission, get, set, (draft) => ({ ...draft, settings: { ...draft.settings, ...settings } }), 'Change defaults');
+      },
+
+      updateLimits: (limits) => {
+        const mission = get().mission;
+        if (!mission) return;
+        withHistory(mission, get, set, (draft) => ({ ...draft, limits: { ...draft.limits, ...limits } }), 'Change limits');
+      },
+
+      addZone: (zone) => {
+        const mission = get().mission;
+        if (!mission) return null;
+        const id = zone.id ?? uuidv4();
+        withHistory(mission, get, set, (draft) => ({ ...draft, zones: [...draft.zones, { ...zone, id }] }), 'Add zone');
+        return id;
+      },
+
+      updateZone: (id, updates) => {
+        const mission = get().mission;
+        if (!mission) return;
+        withHistory(
+          mission,
+          get,
+          set,
+          (draft) => ({ ...draft, zones: draft.zones.map((z) => (z.id === id ? { ...z, ...updates } : z)) }),
+          'Edit zone'
+        );
+      },
+
+      deleteZone: (id) => {
+        const mission = get().mission;
+        if (!mission) return;
+        withHistory(mission, get, set, (draft) => ({ ...draft, zones: draft.zones.filter((z) => z.id !== id) }), 'Delete zone');
       },
 
       updateMissionName: (name) => {
@@ -310,6 +398,7 @@ export const useMissionStore = create<MissionStoreState>()(
           mission: previous,
           past: past.slice(0, -1),
           future: [mission, ...future],
+          lastChangeLabel: null,
         });
       },
 
@@ -320,8 +409,9 @@ export const useMissionStore = create<MissionStoreState>()(
         const [next, ...remaining] = future;
         set({
           mission: next,
-          past: [...past, mission],
+          past: [...past, mission].slice(-HISTORY_LIMIT),
           future: remaining,
+          lastChangeLabel: null,
         });
       },
 

@@ -1,7 +1,13 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import { v4 as uuidv4 } from 'uuid';
+import { useMemo } from 'react';
+import { useMissionStore } from '@/lib/store/mission-store';
+import { useUIStore } from '@/lib/store/ui-store';
+import type { EditorMission, MissionLimits, MissionZone } from '@/lib/store/editor-types';
 
+/**
+ * Legacy constraint types, kept so existing services keep compiling. The data now
+ * lives on the open mission (zones + limits, saved to the server) instead of a
+ * browser-wide localStorage store, so nothing leaks between missions or accounts.
+ */
 export interface NoFlyZone {
   id: string;
   latitude: number;
@@ -25,68 +31,69 @@ export interface ConstraintViolation {
   message: string;
 }
 
-interface ConstraintsStoreState {
-  config: ConstraintConfig;
-  nfzs: NoFlyZone[];
-  selectedNfzId: string | null;
-  updateConfig: (updates: Partial<ConstraintConfig>) => void;
-  addNfz: (lat: number, lng: number, radiusM: number, label?: string) => void;
-  updateNfz: (id: string, updates: Partial<Omit<NoFlyZone, 'id'>>) => void;
-  deleteNfz: (id: string) => void;
-  selectNfz: (id: string | null) => void;
+/** Legacy localStorage key; read once by the import prompt, then deleted. */
+export const LEGACY_CONSTRAINTS_KEY = 'mps-constraints-store';
+
+export function zonesToNfzs(zones: MissionZone[]): NoFlyZone[] {
+  return zones
+    .filter((z) => z.enabled && z.kind === 'no_fly' && z.shape === 'circle' && z.centerLat !== null && z.centerLng !== null && z.radiusM)
+    .map((z) => ({ id: z.id, latitude: z.centerLat!, longitude: z.centerLng!, radiusM: z.radiusM!, label: z.label }));
 }
 
-const DEFAULT_CONFIG: ConstraintConfig = {
-  maxDistanceM: 10000,
-  maxAltM: 400,
-  minAltM: 10,
-  maxSpeedMs: 20,
-  minAGLClearance: 30,
-  defaultSpeedMs: 10,
-};
+export function missionToConfig(mission: Pick<EditorMission, 'limits' | 'settings'> | null): ConstraintConfig {
+  const limits: MissionLimits = mission?.limits ?? {
+    maxDistanceM: 10000,
+    maxAltM: 400,
+    minAltM: 10,
+    maxSpeedMs: 20,
+    minAGLClearance: 30,
+  };
+  return { ...limits, defaultSpeedMs: mission?.settings.defaultSpeed ?? 10 };
+}
 
-export const useConstraintsStore = create<ConstraintsStoreState>()(
-  persist(
-    (set) => ({
-      config: DEFAULT_CONFIG,
-      nfzs: [],
-      selectedNfzId: null,
+/** Same surface as the old zustand store, backed by the open mission. */
+export function useConstraintsStore() {
+  const mission = useMissionStore((s) => s.mission);
+  const addZone = useMissionStore((s) => s.addZone);
+  const updateZone = useMissionStore((s) => s.updateZone);
+  const deleteZone = useMissionStore((s) => s.deleteZone);
+  const updateLimits = useMissionStore((s) => s.updateLimits);
+  const updateSettings = useMissionStore((s) => s.updateSettings);
+  const selectedNfzId = useUIStore((s) => s.selectedZoneId);
+  const selectZone = useUIStore((s) => s.selectZone);
 
-      updateConfig: (updates) =>
-        set((state) => ({ config: { ...state.config, ...updates } })),
+  const zones = mission?.zones;
+  const nfzs = useMemo(() => zonesToNfzs(zones ?? []), [zones]);
+  const config = useMemo(() => missionToConfig(mission), [mission]);
 
-      addNfz: (lat, lng, radiusM, label) =>
-        set((state) => ({
-          nfzs: [
-            ...state.nfzs,
-            {
-              id: uuidv4(),
-              latitude: lat,
-              longitude: lng,
-              radiusM,
-              label: label ?? `NFZ ${state.nfzs.length + 1}`,
-            },
-          ],
-        })),
-
-      updateNfz: (id, updates) =>
-        set((state) => ({
-          nfzs: state.nfzs.map((nfz) =>
-            nfz.id === id ? { ...nfz, ...updates } : nfz
-          ),
-        })),
-
-      deleteNfz: (id) =>
-        set((state) => ({
-          nfzs: state.nfzs.filter((nfz) => nfz.id !== id),
-          selectedNfzId: state.selectedNfzId === id ? null : state.selectedNfzId,
-        })),
-
-      selectNfz: (id) => set({ selectedNfzId: id }),
-    }),
-    {
-      name: 'mps-constraints-store',
-      storage: createJSONStorage(() => localStorage),
-    }
-  )
-);
+  return {
+    config,
+    nfzs,
+    selectedNfzId,
+    updateConfig: (updates: Partial<ConstraintConfig>) => {
+      const { defaultSpeedMs, ...limits } = updates;
+      if (Object.keys(limits).length > 0) updateLimits(limits);
+      if (defaultSpeedMs !== undefined) updateSettings({ defaultSpeed: defaultSpeedMs });
+    },
+    addNfz: (lat: number, lng: number, radiusM: number, label?: string) =>
+      addZone({
+        kind: 'no_fly',
+        shape: 'circle',
+        label: label ?? `No-fly ${nfzs.length + 1}`,
+        enabled: true,
+        centerLat: lat,
+        centerLng: lng,
+        radiusM,
+        vertices: null,
+      }),
+    updateNfz: (id: string, updates: Partial<Omit<NoFlyZone, 'id'>>) =>
+      updateZone(id, {
+        ...(updates.latitude !== undefined && { centerLat: updates.latitude }),
+        ...(updates.longitude !== undefined && { centerLng: updates.longitude }),
+        ...(updates.radiusM !== undefined && { radiusM: updates.radiusM }),
+        ...(updates.label !== undefined && { label: updates.label }),
+      }),
+    deleteNfz: (id: string) => deleteZone(id),
+    selectNfz: (id: string | null) => selectZone(id),
+  };
+}

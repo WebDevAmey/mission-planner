@@ -1,52 +1,180 @@
-import { useEffect, useRef, useState } from 'react';
-import type { MissionPlan } from '@/types/mission';
+'use client';
 
-export type AutosaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+import { useCallback, useEffect, useRef } from 'react';
+import { useMissionStore } from '@/lib/store/mission-store';
+import { hasUnsavedChanges, useSaveStore } from '@/lib/store/save-store';
+import { buildMissionPatch } from '@/hooks/mission-payload';
+import type { EditorMission } from '@/lib/store/editor-types';
 
 const DEBOUNCE_MS = 900;
+const MAX_BACKOFF_MS = 30_000;
 
-/** Debounced autosave for the mission currently open in the editor. Skips the
- * save that would otherwise fire immediately after a fresh load (the mission
- * object just came from the server, so there's nothing new to persist). */
-export function useAutosaveMission(mission: MissionPlan | null, missionId: string | null): AutosaveStatus {
-  const [status, setStatus] = useState<AutosaveStatus>('idle');
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const loadedMissionIdRef = useRef<string | null>(null);
+/** Content fingerprint of what the server would store (no version, no timestamps). */
+const fingerprint = (mission: EditorMission) => JSON.stringify(buildMissionPatch(mission, null));
 
+/**
+ * Debounced whole-document autosave (TECHNICAL_SPEC §5.3):
+ * - at most one PATCH in flight; edits made meanwhile trigger one follow-up save;
+ * - network/5xx failures retry with exponential backoff (1 s … 30 s);
+ * - 4xx failures stop and show the reason; 409 enters the conflict state;
+ * - `beforeunload` warns while anything is unsaved.
+ * State is published through `useSaveStore` so the header can render it.
+ */
+export function useAutosaveMission(missionId: string | null, initialVersion: number | null = null) {
+  const mission = useMissionStore((s) => s.mission);
+  const setSave = useSaveStore((s) => s.set);
+
+  const savedRef = useRef<string | null>(null);
+  const loadedIdRef = useRef<string | null>(null);
+  const inFlightRef = useRef<Promise<boolean> | null>(null);
+  const followUpRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const attemptsRef = useRef(0);
+  const conflictVersionRef = useRef<number | null>(null);
+
+  const clearTimer = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
+  };
+
+  const runSave = useCallback(
+    (force = false): Promise<boolean> => {
+      if (inFlightRef.current) {
+        followUpRef.current = true;
+        return inFlightRef.current;
+      }
+      const current = useMissionStore.getState().mission;
+      if (!current || !missionId || current.id !== missionId) return Promise.resolve(true);
+
+      const json = fingerprint(current);
+      if (!force && json === savedRef.current) {
+        setSave({ status: 'saved', error: null });
+        return Promise.resolve(true);
+      }
+
+      clearTimer();
+      setSave({ status: 'saving' });
+      const body = buildMissionPatch(current, useSaveStore.getState().serverVersion);
+
+      const scheduleRetry = (message: string) => {
+        const delay = Math.min(MAX_BACKOFF_MS, 1000 * 2 ** attemptsRef.current);
+        attemptsRef.current += 1;
+        setSave({ status: 'error', error: `${message} Retrying in ${Math.round(delay / 1000)} s.` });
+        timerRef.current = setTimeout(() => void runSave(), delay);
+      };
+
+      const p = (async () => {
+        try {
+          const res = await fetch(`/api/missions/${missionId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          const data = (await res.json().catch(() => null)) as {
+            error?: string;
+            currentVersion?: number;
+            version?: number;
+            mission?: { version?: number };
+          } | null;
+
+          if (res.ok) {
+            attemptsRef.current = 0;
+            savedRef.current = json;
+            const version = data?.mission?.version ?? data?.version;
+            const latest = useMissionStore.getState().mission;
+            setSave({
+              status: latest && fingerprint(latest) !== json ? 'pending' : 'saved',
+              error: null,
+              lastSavedAt: Date.now(),
+              ...(typeof version === 'number' && { serverVersion: version }),
+            });
+            return true;
+          }
+          if (res.status === 409) {
+            setSave({ status: 'conflict', error: 'This mission changed elsewhere.' });
+            conflictVersionRef.current = typeof data?.currentVersion === 'number' ? data.currentVersion : null;
+            return false;
+          }
+          if (res.status === 401) {
+            setSave({ status: 'error', error: 'You were signed out. Sign in again in another tab, then Retry.' });
+            return false;
+          }
+          if (res.status >= 400 && res.status < 500) {
+            setSave({ status: 'error', error: data?.error ?? `The server rejected this save (${res.status}).` });
+            return false;
+          }
+          scheduleRetry('Server error.');
+          return false;
+        } catch {
+          scheduleRetry('Network error.');
+          return false;
+        } finally {
+          inFlightRef.current = null;
+          if (followUpRef.current) {
+            followUpRef.current = false;
+            const s = useSaveStore.getState().status;
+            if (s !== 'conflict') {
+              clearTimer();
+              timerRef.current = setTimeout(() => void runSave(), 0);
+            }
+          }
+        }
+      })();
+      inFlightRef.current = p;
+      return p;
+    },
+    [missionId, setSave]
+  );
+
+  // Publish imperative actions for the header (Retry / Overwrite / flush on navigation).
+  useEffect(() => {
+    setSave({
+      flush: () => {
+        attemptsRef.current = 0;
+        return runSave();
+      },
+      overwrite: () => {
+        if (conflictVersionRef.current !== null) setSave({ serverVersion: conflictVersionRef.current });
+        conflictVersionRef.current = null;
+        return runSave(true);
+      },
+    });
+  }, [runSave, setSave]);
+
+  // Reset when a different mission is opened.
+  useEffect(() => {
+    setSave({ status: 'idle', error: null, serverVersion: initialVersion, lastSavedAt: null });
+    return () => clearTimer();
+  }, [missionId, initialVersion, setSave]);
+
+  // Debounce saves on every document change.
   useEffect(() => {
     if (!mission || !missionId || mission.id !== missionId) return;
 
-    if (loadedMissionIdRef.current !== missionId) {
-      loadedMissionIdRef.current = missionId;
+    if (loadedIdRef.current !== missionId) {
+      loadedIdRef.current = missionId;
+      savedRef.current = fingerprint(mission);
       return;
     }
+    if (fingerprint(mission) === savedRef.current) return;
 
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    const status = useSaveStore.getState().status;
+    if (status === 'conflict') return; // wait for the user's decision
+    if (status !== 'error' && status !== 'saving') setSave({ status: 'pending' });
 
-    timeoutRef.current = setTimeout(async () => {
-      setStatus('saving');
-      try {
-        const res = await fetch(`/api/missions/${missionId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: mission.name,
-            description: mission.description ?? null,
-            homePosition: mission.homePosition ?? null,
-            settings: mission.settings,
-            items: mission.items,
-          }),
-        });
-        setStatus(res.ok ? 'saved' : 'error');
-      } catch {
-        setStatus('error');
+    clearTimer();
+    timerRef.current = setTimeout(() => void runSave(), DEBOUNCE_MS);
+  }, [mission, missionId, runSave, setSave]);
+
+  // Warn before closing the tab with unsaved work.
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges(useSaveStore.getState().status)) {
+        e.preventDefault();
+        e.returnValue = '';
       }
-    }, DEBOUNCE_MS);
-
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [mission, missionId]);
-
-  return status;
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
 }

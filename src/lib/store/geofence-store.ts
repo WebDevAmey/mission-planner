@@ -1,7 +1,10 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import { v4 as uuidv4 } from 'uuid';
+import { useMemo } from 'react';
+import { useMissionStore } from '@/lib/store/mission-store';
+import { useUIStore } from '@/lib/store/ui-store';
+import type { MissionZone } from '@/lib/store/editor-types';
 
+/** Legacy geofence shape, kept for the existing checker and exporters. Backed by
+ * the open mission's zones (keep-in / keep-out), which are saved to the server. */
 export interface GeofenceItem {
   id: string;
   type: 'circle' | 'polygon';
@@ -14,95 +17,61 @@ export interface GeofenceItem {
   enabled: boolean;
 }
 
-function modeColor(mode: 'keep-in' | 'keep-out'): string {
-  return mode === 'keep-in' ? '#2d7dd2' : '#ff3333';
+/** Legacy localStorage key; read once by the import prompt, then deleted. */
+export const LEGACY_GEOFENCE_KEY = 'mps-geofence-store';
+
+const MODE_COLOR = { 'keep-in': 'var(--color-blue)', 'keep-out': 'var(--color-red)' } as const;
+
+export function zonesToGeofences(zones: MissionZone[]): GeofenceItem[] {
+  return zones
+    .filter((z) => z.kind !== 'no_fly' || z.shape === 'polygon')
+    .map((z) => {
+      const mode = z.kind === 'keep_in' ? 'keep-in' : 'keep-out';
+      return {
+        id: z.id,
+        type: z.shape,
+        mode,
+        label: z.label,
+        color: MODE_COLOR[mode],
+        center: z.centerLat !== null && z.centerLng !== null ? { lat: z.centerLat, lng: z.centerLng } : undefined,
+        radiusM: z.radiusM ?? undefined,
+        vertices: z.vertices?.map(([lng, lat]) => ({ lat, lng })),
+        enabled: z.enabled,
+      };
+    });
 }
 
-interface GeofenceStoreState {
-  geofences: GeofenceItem[];
-  selectedGeofenceId: string | null;
-  addCircleGeofence: (
-    center: { lat: number; lng: number },
-    radiusM: number,
-    mode: 'keep-in' | 'keep-out',
-    label?: string
-  ) => string;
-  addPolygonGeofence: (
-    vertices: { lat: number; lng: number }[],
-    mode: 'keep-in' | 'keep-out',
-    label?: string
-  ) => string;
-  updateGeofence: (id: string, partial: Partial<Omit<GeofenceItem, 'id'>>) => void;
-  deleteGeofence: (id: string) => void;
-  toggleGeofence: (id: string) => void;
-  selectGeofence: (id: string | null) => void;
+export function geofenceToZone(g: Omit<GeofenceItem, 'id' | 'color'>): Omit<MissionZone, 'id'> {
+  return {
+    kind: g.mode === 'keep-in' ? 'keep_in' : 'keep_out',
+    shape: g.type,
+    label: g.label,
+    enabled: g.enabled,
+    centerLat: g.center?.lat ?? null,
+    centerLng: g.center?.lng ?? null,
+    radiusM: g.radiusM ?? null,
+    vertices: g.vertices?.map((v) => [v.lng, v.lat] as [number, number]) ?? null,
+  };
 }
 
-export const useGeofenceStore = create<GeofenceStoreState>()(
-  persist(
-    (set, get) => ({
-      geofences: [],
-      selectedGeofenceId: null,
+export function useGeofenceStore() {
+  const zones = useMissionStore((s) => s.mission?.zones);
+  const addZone = useMissionStore((s) => s.addZone);
+  const updateZone = useMissionStore((s) => s.updateZone);
+  const deleteZone = useMissionStore((s) => s.deleteZone);
+  const selectedGeofenceId = useUIStore((s) => s.selectedZoneId);
+  const selectZone = useUIStore((s) => s.selectZone);
+  const geofences = useMemo(() => zonesToGeofences(zones ?? []), [zones]);
 
-      addCircleGeofence: (center, radiusM, mode, label) => {
-        const id = uuidv4();
-        const item: GeofenceItem = {
-          id,
-          type: 'circle',
-          mode,
-          label: label ?? `${mode === 'keep-in' ? 'Keep-In' : 'Keep-Out'} Zone ${get().geofences.length + 1}`,
-          color: modeColor(mode),
-          center,
-          radiusM,
-          enabled: true,
-        };
-        set((s) => ({ geofences: [...s.geofences, item] }));
-        return id;
-      },
-
-      addPolygonGeofence: (vertices, mode, label) => {
-        const id = uuidv4();
-        const item: GeofenceItem = {
-          id,
-          type: 'polygon',
-          mode,
-          label: label ?? `${mode === 'keep-in' ? 'Keep-In' : 'Keep-Out'} Zone ${get().geofences.length + 1}`,
-          color: modeColor(mode),
-          vertices,
-          enabled: true,
-        };
-        set((s) => ({ geofences: [...s.geofences, item] }));
-        return id;
-      },
-
-      updateGeofence: (id, partial) => {
-        set((s) => ({
-          geofences: s.geofences.map((g) =>
-            g.id === id ? { ...g, ...partial } : g
-          ),
-        }));
-      },
-
-      deleteGeofence: (id) => {
-        set((s) => ({
-          geofences: s.geofences.filter((g) => g.id !== id),
-          selectedGeofenceId: s.selectedGeofenceId === id ? null : s.selectedGeofenceId,
-        }));
-      },
-
-      toggleGeofence: (id) => {
-        set((s) => ({
-          geofences: s.geofences.map((g) =>
-            g.id === id ? { ...g, enabled: !g.enabled } : g
-          ),
-        }));
-      },
-
-      selectGeofence: (id) => set({ selectedGeofenceId: id }),
-    }),
-    {
-      name: 'mps-geofence-store',
-      storage: createJSONStorage(() => localStorage),
-    }
-  )
-);
+  return {
+    geofences,
+    selectedGeofenceId,
+    deleteGeofence: (id: string) => deleteZone(id),
+    toggleGeofence: (id: string) => {
+      const z = zones?.find((zone) => zone.id === id);
+      if (z) updateZone(id, { enabled: !z.enabled });
+    },
+    selectGeofence: (id: string | null) => selectZone(id),
+    addGeofence: (g: Omit<GeofenceItem, 'id' | 'color'>) => addZone(geofenceToZone(g)),
+  };
+}
