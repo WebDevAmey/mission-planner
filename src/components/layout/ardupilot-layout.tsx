@@ -3,11 +3,12 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import {
   Download, Undo2, Redo2, Wand2, AlertTriangle,
-  FolderOpen, Clock, Grid3X3, Bot, LogOut, Route, X,
+  Clock, Grid3X3, Bot, LogOut, Route, X,
 } from 'lucide-react';
 import { useMissionStore } from '@/lib/store/mission-store';
-import { useMissionLibraryStore } from '@/lib/store/mission-library-store';
-import { useTenantStore } from '@/lib/store/tenant-store';
+import { signOut } from '@/lib/store/local-data';
+import { useSaveStore } from '@/lib/store/save-store';
+import { SaveIndicator } from '@/components/editor/save-indicator';
 import { useUIStore } from '@/lib/store/ui-store';
 import { useConstraintsStore } from '@/lib/store/constraints-store';
 import { useGeofenceStore } from '@/lib/store/geofence-store';
@@ -18,11 +19,9 @@ import { WaypointTable } from '@/components/flight-plan/waypoint-table';
 import { ConstraintsPanel } from '@/components/constraints/constraints-panel';
 import { MissionSummary } from '@/components/mission/mission-summary';
 import { ToastContainer } from '@/components/common/toast';
-import { MissionLibraryPanel } from '@/components/mission/mission-library-panel';
 import { TemplatePicker } from '@/components/mission/template-picker';
 import { TerrainPanel } from '@/components/mission/terrain-panel';
 import { TimelinePanel } from '@/components/mission/timeline-panel';
-import { TenantSelector } from '@/components/mission/tenant-selector';
 import { MissionPromptBar } from '@/components/agent-console/mission-prompt-bar';
 import { AgentConsole } from '@/components/agent-console/agent-console';
 import { Button } from '@/components/ui/button';
@@ -130,58 +129,6 @@ function ToolbarDivider() {
   return <Separator orientation="vertical" className="mx-0.5 h-[18px]" />;
 }
 
-/** Syncs mission-store writes → library and sets up initial state. */
-function LibraryBridge() {
-  const mission = useMissionStore((s) => s.mission);
-  const { syncMission, missions, createMission: libCreate } = useMissionLibraryStore();
-  const { loadMission: storeLoad, mission: curMission } = useMissionStore();
-  const {
-    tenants, activeTenantId, ensureDefault, assignMissionToTenant,
-  } = useTenantStore();
-  const initializedRef = useRef(false);
-
-  // Sync mission-store writes to library
-  useEffect(() => {
-    if (mission) syncMission(mission);
-  }, [mission, syncMission]);
-
-  // Boot: ensure tenant + at least one mission
-  useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-
-    // A mission is already loaded (e.g. fetched from the server by the page
-    // that renders this layout) — don't replace it with a local fallback.
-    if (curMission) return;
-
-    const existingIds = Object.keys(missions);
-
-    // Ensure default tenant
-    if (Object.keys(tenants).length === 0) {
-      ensureDefault(existingIds);
-    }
-
-    const tenantId = activeTenantId ?? Object.keys(tenants)[0];
-
-    // If library is empty, create an initial mission
-    if (existingIds.length === 0) {
-      const newMission = libCreate();
-      if (tenantId) assignMissionToTenant(newMission.id, tenantId);
-      storeLoad(newMission);
-    } else if (!curMission) {
-      // Library has missions but store doesn't — load the most recent
-      const sorted = Object.values(missions).sort(
-        (a, b) => b.updatedAt.localeCompare(a.updatedAt)
-      );
-      storeLoad(sorted[0]);
-    }
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return null;
-}
-
 function TopBar() {
   const {
     mission,
@@ -190,23 +137,20 @@ function TopBar() {
     redo,
     canUndo,
     canRedo,
-    reorderMissionItems,
+    replaceItems,
   } = useMissionStore();
   const {
     addToast,
     setAlternativeRoutes,
     clearAlternativeRoutes,
     alternativeRoutes,
-    toggleMissionLibrary,
     toggleTemplatePicker,
     toggleTimeline,
     timelineOpen,
-    missionLibraryOpen,
     templatePickerOpen,
   } = useUIStore();
   const { config, nfzs } = useConstraintsStore();
   const { geofences } = useGeofenceStore();
-  const { getActiveTenant } = useTenantStore();
   const { consoleOpen, toggleConsole, status: flightDeckStatus } = useAgentStore();
 
   const [editingName, setEditingName] = useState(false);
@@ -239,11 +183,10 @@ function TopBar() {
     if (!mission) { addToast('No mission loaded', 'error'); return; }
     if (mission.items.length === 0) { addToast('⚠ Export blocked — empty mission', 'error'); return; }
 
-    const tenant = getActiveTenant();
     const metrics = computeMissionMetrics(mission.items, config, nfzs, mission.homePosition);
     const content = exportMissionAsV1Json(mission, {
-      tenantId: tenant?.id ?? 'default',
-      tenantName: tenant?.name ?? 'Default',
+      tenantId: 'personal',
+      tenantName: 'Personal',
       constraints: { ...config, nfzs },
       metrics,
       geofences,
@@ -258,7 +201,7 @@ function TopBar() {
     addToast(`✓ Exported ${makeExportFilename(mission.name)}`, 'success');
     setExportConfirm(false);
     setExportOpen(false);
-  }, [mission, config, nfzs, geofences, getActiveTenant, addToast]);
+  }, [mission, config, nfzs, geofences, addToast]);
 
   const handleExportClick = useCallback(() => {
     if (!mission) { addToast('No mission loaded', 'error'); return; }
@@ -275,19 +218,9 @@ function TopBar() {
     if (!mission || mission.items.length === 0) { addToast('No mission to optimise', 'error'); return; }
     const result = optimiseRoute(mission.items);
     if (result.alreadyOptimal) { addToast('Route already optimal', 'info'); return; }
-    const currentIds = mission.items.map((i) => i.id);
-    const targetIds = result.reorderedItems.map((i) => i.id);
-    const current = [...currentIds];
-    for (let t = 0; t < targetIds.length; t++) {
-      const from = current.indexOf(targetIds[t]);
-      if (from !== t) {
-        reorderMissionItems(from, t);
-        const moved = current.splice(from, 1)[0];
-        current.splice(t, 0, moved);
-      }
-    }
+    replaceItems(result.reorderedItems, 'Optimise order');
     addToast(`Route optimised — saved ${Math.round(result.savedM)} m`, 'success');
-  }, [mission, addToast, reorderMissionItems]);
+  }, [mission, addToast, replaceItems]);
 
   const handleAlternatives = useCallback(() => {
     if (!mission || mission.items.length < 4) { addToast('Need ≥4 spatial waypoints for alternatives', 'warning'); return; }
@@ -351,8 +284,8 @@ function TopBar() {
           <span className="font-mono text-[11px] font-bold uppercase tracking-wide text-green">MPS</span>
         </div>
 
-        {/* Context: tenant + mission name */}
-        <TenantSelector />
+        <ToolbarButton label="◀ Missions" variant="ghost" title="Back to missions"
+          onClick={async () => { await useSaveStore.getState().flush(); window.location.href = '/dashboard'; }} />
         <ToolbarDivider />
         {mission && (editingName ? (
           <input type="text" value={nameValue} onChange={(e) => setNameValue(e.target.value)}
@@ -370,6 +303,7 @@ function TopBar() {
           </button>
         ))}
 
+        <SaveIndicator className="ml-2" />
         <ToolbarDivider />
 
         {/* Command: ask Flight Deck to plan */}
@@ -402,8 +336,6 @@ function TopBar() {
         <div className="flex gap-1">
           <ToolbarButton icon={Grid3X3} label="Templates" title="Mission templates (T)"
             active={templatePickerOpen} onClick={toggleTemplatePicker} />
-          <ToolbarButton icon={FolderOpen} label="Missions" title="Mission library (Ctrl+M)" ariaLabel="Open mission library"
-            active={missionLibraryOpen} onClick={toggleMissionLibrary} />
           <ToolbarButton icon={Clock} label="Timeline" title="Timeline (Ctrl+T)" ariaLabel="Toggle timeline"
             active={timelineOpen} onClick={toggleTimeline} />
           <ToolbarButton icon={Bot} label="Flight Deck" title="Flight Deck agent console"
@@ -444,7 +376,7 @@ function TopBar() {
 
         {/* Account */}
         <ToolbarButton icon={LogOut} title="Sign out" variant="ghost" hoverRed
-          onClick={() => { fetch('/api/auth/logout', { method: 'POST' }).finally(() => { window.location.href = '/'; }); }} />
+          onClick={async () => { await useSaveStore.getState().flush(); await signOut('/'); }} />
       </div>
 
       {/* Tabs */}
@@ -524,23 +456,16 @@ function ResizeDivider({ onResize }: { onResize: (delta: number) => void }) {
 
 function AlternativesPanel() {
   const { alternativeRoutes, clearAlternativeRoutes, addToast } = useUIStore();
-  const { reorderMissionItems, mission } = useMissionStore();
+  const { replaceItems, mission } = useMissionStore();
 
   if (alternativeRoutes.length === 0) return null;
 
   const applyRoute = (route: typeof alternativeRoutes[0]) => {
     if (!mission) return;
-    const currentIds = mission.items.map((i) => i.id);
-    const targetIds = route.itemIds;
-    const current = [...currentIds];
-    for (let t = 0; t < targetIds.length; t++) {
-      const from = current.indexOf(targetIds[t]);
-      if (from !== t) {
-        reorderMissionItems(from, t);
-        const moved = current.splice(from, 1)[0];
-        current.splice(t, 0, moved);
-      }
-    }
+    const byId = new Map(mission.items.map((i) => [i.id, i]));
+    const ordered = route.itemIds.map((id) => byId.get(id)).filter((i): i is NonNullable<typeof i> => !!i);
+    const rest = mission.items.filter((i) => !route.itemIds.includes(i.id));
+    replaceItems([...ordered, ...rest], `Apply ${route.label}`);
     clearAlternativeRoutes();
     addToast(`Applied ${route.label}`, 'success');
   };
@@ -605,7 +530,7 @@ function KeyboardShortcutsMount() {
 
 export function ArduPilotLayout() {
   const [tableHeight, setTableHeight] = useState(224);
-  const { missionLibraryOpen, templatePickerOpen } = useUIStore();
+  const { templatePickerOpen } = useUIStore();
 
   const handleTableResize = useCallback((delta: number) => {
     setTableHeight((prev) => {
@@ -616,7 +541,6 @@ export function ArduPilotLayout() {
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-bg-base text-text">
-      <LibraryBridge />
       <KeyboardShortcutsMount />
       <TopBar />
       <div className="flex flex-1 overflow-hidden">
@@ -625,7 +549,6 @@ export function ArduPilotLayout() {
       <AlternativesPanel />
       <ToastContainer />
       <AgentConsole />
-      {missionLibraryOpen && <MissionLibraryPanel />}
       {templatePickerOpen && <TemplatePicker />}
     </div>
   );

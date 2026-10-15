@@ -29,18 +29,22 @@ export interface AlternativeRoute {
 
 interface UIStoreState {
   selectedMissionItemId: string | null;
+  selectedZoneId: string | null;
+  /** Last map centre/zoom, so tools without a location (templates) can use it. */
+  mapView: { lat: number; lng: number; zoom: number } | null;
+  setMapView: (view: { lat: number; lng: number; zoom: number }) => void;
   activeTool: MapTool;
   drawingFence: boolean;
   toasts: Toast[];
   alternativeRoutes: AlternativeRoute[];
   activeAlternativeId: string | null;
   constraintsPanelOpen: boolean;
-  missionLibraryOpen: boolean;
   templatePickerOpen: boolean;
   timelineOpen: boolean;
   geofencePanelOpen: boolean;
   terrainPanelOpen: boolean;
   selectMissionItem: (itemId: string | null) => void;
+  selectZone: (zoneId: string | null) => void;
   setActiveTool: (tool: MapTool) => void;
   toggleDrawingFence: () => void;
   setDrawingFence: (drawing: boolean) => void;
@@ -51,12 +55,10 @@ interface UIStoreState {
   clearAlternativeRoutes: () => void;
   setActiveAlternative: (id: string | null) => void;
   toggleConstraintsPanel: () => void;
-  toggleMissionLibrary: () => void;
   toggleTemplatePicker: () => void;
   toggleTimeline: () => void;
   toggleGeofencePanel: () => void;
   toggleTerrainPanel: () => void;
-  setMissionLibraryOpen: (open: boolean) => void;
   setTemplatePickerOpen: (open: boolean) => void;
 }
 
@@ -64,19 +66,22 @@ let toastCounter = 0;
 
 export const useUIStore = create<UIStoreState>((set, get) => ({
   selectedMissionItemId: null,
+  selectedZoneId: null,
+  mapView: null,
+  setMapView: (view) => set({ mapView: view }),
   activeTool: 'add-wp',
   drawingFence: false,
   toasts: [],
   alternativeRoutes: [],
   activeAlternativeId: null,
   constraintsPanelOpen: false,
-  missionLibraryOpen: false,
   templatePickerOpen: false,
   timelineOpen: false,
   geofencePanelOpen: false,
   terrainPanelOpen: false,
 
   selectMissionItem: (itemId) => set({ selectedMissionItemId: itemId }),
+  selectZone: (zoneId) => set({ selectedZoneId: zoneId }),
   setActiveTool: (tool) => set({ activeTool: tool }),
   toggleDrawingFence: () => set((state) => ({ drawingFence: !state.drawingFence })),
   setDrawingFence: (drawing) => set({ drawingFence: drawing }),
@@ -101,8 +106,6 @@ export const useUIStore = create<UIStoreState>((set, get) => ({
 
   toggleConstraintsPanel: () =>
     set((state) => ({ constraintsPanelOpen: !state.constraintsPanelOpen })),
-  toggleMissionLibrary: () =>
-    set((state) => ({ missionLibraryOpen: !state.missionLibraryOpen })),
   toggleTemplatePicker: () =>
     set((state) => ({ templatePickerOpen: !state.templatePickerOpen })),
   toggleTimeline: () =>
@@ -111,6 +114,5 @@ export const useUIStore = create<UIStoreState>((set, get) => ({
     set((state) => ({ geofencePanelOpen: !state.geofencePanelOpen })),
   toggleTerrainPanel: () =>
     set((state) => ({ terrainPanelOpen: !state.terrainPanelOpen })),
-  setMissionLibraryOpen: (open) => set({ missionLibraryOpen: open }),
   setTemplatePickerOpen: (open) => set({ templatePickerOpen: open }),
 }));
