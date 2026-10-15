@@ -6,6 +6,7 @@ import { createSession, SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from '@/lib/au
 import { checkRateLimit, normalizeIdentifier, recordAttempt } from '@/lib/auth/rate-limit';
 import { isSameOriginRequest } from '@/lib/http/same-origin';
 import { getClientIp } from '@/lib/http/client-ip';
+import { maybeCleanupAuthTables } from '@/lib/auth/cleanup';
 
 const GENERIC_ERROR = 'Incorrect email or password';
 
@@ -69,6 +70,7 @@ export async function POST(request: Request) {
   });
 
   await recordAttempt(identifier, 'login', true);
+  maybeCleanupAuthTables();
 
   return Response.json({
     ok: true,

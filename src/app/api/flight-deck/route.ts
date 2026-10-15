@@ -1,10 +1,20 @@
 import { buildFlightDeckGraph, type FlightDeckStateType } from '@/lib/agents/graph';
 import { FlightDeckRequestSchema, type AgentEvent, type FlightDeckResult } from '@/lib/agents/schemas';
+import { apiError, authorize, readJsonBody, validationError } from '@/lib/http/api';
+import { consumeQuota } from '@/lib/auth/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const encoder = new TextEncoder();
+
+/** Per-user AI quota (S1; DECISIONS open question 3). */
+const QUOTA = [
+  { windowMs: 60 * 60 * 1000, max: 10 },
+  { windowMs: 24 * 60 * 60 * 1000, max: 50 },
+];
+const MAX_BODY_BYTES = 256 * 1024;
+const RUN_TIMEOUT_MS = 120_000;
 
 function sseFrame(event: AgentEvent): Uint8Array {
   return encoder.encode(`data: ${JSON.stringify(event)}\n\n`);
@@ -27,10 +37,23 @@ function resultFromState(state: FlightDeckStateType): FlightDeckResult {
 }
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  const parsed = FlightDeckRequestSchema.safeParse(body);
-  if (!parsed.success) {
-    return Response.json({ error: 'Invalid request', issues: parsed.error.issues }, { status: 400 });
+  const user = await authorize(request);
+  if (user instanceof Response) return user;
+
+  const body = await readJsonBody(request, { maxBytes: MAX_BODY_BYTES });
+  if (!body.ok) return body.response;
+  const parsed = FlightDeckRequestSchema.safeParse(body.data);
+  if (!parsed.success) return validationError(parsed.error);
+
+  const quota = await consumeQuota(`user:${user.id}`, 'flight_deck', QUOTA);
+  if (!quota.allowed) {
+    return apiError(
+      429,
+      'RATE_LIMITED',
+      'Flight Deck run limit reached. Try again later.',
+      { retryAfterS: quota.retryAfterS },
+      { headers: { 'Retry-After': String(quota.retryAfterS) } }
+    );
   }
 
   const graph = buildFlightDeckGraph();
@@ -50,7 +73,7 @@ export async function POST(request: Request) {
             agentLog: [],
             error: null,
           },
-          { streamMode: 'values', recursionLimit: 20 }
+          { streamMode: 'values', recursionLimit: 20, signal: AbortSignal.timeout(RUN_TIMEOUT_MS) }
         );
 
         for await (const state of runStream) {

@@ -1,56 +1,48 @@
-import { db } from '@/prisma/db';
-import { requireUser, UnauthorizedError } from '@/lib/auth/guard';
-import { createMissionSchema } from '@/lib/validation/mission';
-import { isSameOriginRequest } from '@/lib/http/same-origin';
+import { createMissionSchema, listMissionsQuerySchema } from '@/lib/validation/mission';
+import { apiError, authorize, readJsonBody, validationError } from '@/lib/http/api';
 import { toMissionPlan, toMissionSummary } from '@/lib/missions/map';
+import { asDbMission, createMissionDocument, listMissions, loadFullMission } from '@/lib/missions/repo';
+import { templateName, templateWaypoints } from '@/lib/missions/templates';
 
-export async function GET() {
-  let user;
-  try {
-    user = await requireUser();
-  } catch (err) {
-    if (err instanceof UnauthorizedError) return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    throw err;
-  }
+/** GET /api/missions?query=&sort=updated|name|created&status= → `{ ok, missions: MissionSummary[] }` */
+export async function GET(request: Request) {
+  const user = await authorize(request);
+  if (user instanceof Response) return user;
 
-  const missions = await db.orm.public.Mission.where({ userId: user.id })
-    .orderBy((m) => m.updatedAt.desc())
-    .include('waypoints', (w) => w.select('id'))
-    .all();
+  const params = Object.fromEntries(new URL(request.url).searchParams);
+  const parsed = listMissionsQuerySchema.safeParse(params);
+  if (!parsed.success) return validationError(parsed.error);
 
+  const missions = await listMissions(user.id, parsed.data);
   return Response.json({ ok: true, missions: missions.map(toMissionSummary) });
 }
 
+/** POST /api/missions `{ name?, description?, template?, home?, vehicleType? }` → 201 `{ ok, mission }` */
 export async function POST(request: Request) {
-  if (!isSameOriginRequest(request)) {
-    return Response.json({ ok: false, error: 'Invalid request origin' }, { status: 403 });
+  const user = await authorize(request);
+  if (user instanceof Response) return user;
+
+  const body = await readJsonBody(request, { maxBytes: 16 * 1024, allowEmpty: true });
+  if (!body.ok) return body.response;
+  const parsed = createMissionSchema.safeParse(body.data ?? {});
+  if (!parsed.success) return validationError(parsed.error);
+  const { name, description, template, home, vehicleType } = parsed.data;
+
+  let items;
+  if (template) {
+    if (!templateName(template)) return apiError(400, 'VALIDATION_FAILED', `Unknown template "${template}"`);
+    if (!home) return apiError(400, 'VALIDATION_FAILED', 'home: a home position is required to place a template');
+    items = templateWaypoints(template, home) ?? [];
   }
 
-  let user;
-  try {
-    user = await requireUser();
-  } catch (err) {
-    if (err instanceof UnauthorizedError) return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    throw err;
-  }
+  const id = await createMissionDocument(user.id, {
+    name: name ?? (template && template !== 'blank' ? templateName(template)! : 'Untitled Mission'),
+    description,
+    vehicleType,
+    home: home ?? null,
+    items,
+  });
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    body = {};
-  }
-
-  const parsed = createMissionSchema.safeParse(body ?? {});
-  const name = parsed.success ? parsed.data.name : 'Untitled Mission';
-
-  const mission = await db.orm.public.Mission.create({ name, userId: user.id });
-  await db.orm.public.MissionSettings.create({ missionId: mission.id });
-
-  const full = await db.orm.public.Mission.where({ id: mission.id })
-    .include('waypoints', (w) => w)
-    .include('settings', (s) => s)
-    .first();
-
-  return Response.json({ ok: true, mission: toMissionPlan(full!) }, { status: 201 });
+  const full = await loadFullMission(id);
+  return Response.json({ ok: true, mission: toMissionPlan(asDbMission(full!)) }, { status: 201 });
 }
