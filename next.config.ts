@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
-const isProd = process.env.NODE_ENV === "production";
+// HTTPS-only directives apply to real deployments, not `next start` on http://localhost
+// (E2E and local prod checks). Vercel sets VERCEL=1; elsewhere set FORCE_HTTPS=1.
+const httpsDeploy = process.env.NODE_ENV === "production" && (process.env.VERCEL === "1" || process.env.FORCE_HTTPS === "1");
 
 // Third-party hosts the browser talks to directly (TECHNICAL_SPEC §4.2 S5).
 // Nominatim and Open-Elevation stay listed until every client call goes
@@ -33,7 +35,7 @@ const csp = [
   "form-action 'self'",
   "frame-ancestors 'none'",
   "manifest-src 'self'",
-  ...(isProd ? ["upgrade-insecure-requests"] : []),
+  ...(httpsDeploy ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
 const securityHeaders = [
@@ -45,7 +47,7 @@ const securityHeaders = [
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), payment=(), usb=(), geolocation=(self)",
   },
-  ...(isProd
+  ...(httpsDeploy
     ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }]
     : []),
 ];
