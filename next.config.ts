@@ -6,14 +6,13 @@ const isDev = process.env.NODE_ENV === "development";
 const httpsDeploy = process.env.NODE_ENV === "production" && (process.env.VERCEL === "1" || process.env.FORCE_HTTPS === "1");
 
 // Third-party hosts the browser talks to directly (TECHNICAL_SPEC §4.2 S5).
-// Nominatim and Open-Elevation stay listed until every client call goes
-// through /api/geo/*; drop them then.
+// Geocoding and elevation go through /api/geo/* server-side, so their hosts
+// are not needed here.
 const MAP_HOSTS = [
   "https://tiles.openfreemap.org",
   "https://server.arcgisonline.com",
   "https://*.arcgisonline.com",
 ];
-const GEO_HOSTS = ["https://nominatim.openstreetmap.org", "https://api.open-elevation.com"];
 const FONT_CSS = "https://fonts.googleapis.com";
 const FONT_FILES = "https://fonts.gstatic.com";
 
@@ -26,7 +25,7 @@ const csp = [
   `img-src 'self' data: blob: ${MAP_HOSTS.join(" ")}`,
   `font-src 'self' data: ${FONT_FILES}`,
   // MapLibre fetches styles, vector tiles, glyphs and sprites with fetch().
-  `connect-src 'self' ${[...MAP_HOSTS, ...GEO_HOSTS].join(" ")}${isDev ? " ws: wss:" : ""}`,
+  `connect-src 'self' ${MAP_HOSTS.join(" ")}${isDev ? " ws: wss:" : ""}`,
   // MapLibre spins up its tile workers from a blob: URL.
   "worker-src 'self' blob:",
   "child-src 'self' blob:",
