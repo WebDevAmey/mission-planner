@@ -14,6 +14,7 @@
     "db:sign": "prisma db sign",
     "db:seed": "tsx src/prisma/seed.ts",
     "test": "vitest run --passWithNoTests",
+    "test:integration": "vitest run --config tests/integration/vitest.config.ts",
     "typecheck": "tsc --noEmit --incremental false"
   },
   "dependencies": {

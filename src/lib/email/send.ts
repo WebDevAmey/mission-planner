@@ -7,6 +7,15 @@
  * each call site's `NODE_ENV` guard.
  */
 
+/** `jane.doe@example.com` → `j***@e***.com`, for logs (S11: no raw addresses in logs). */
+export function redactEmail(address: string): string {
+  const [local = '', domain = ''] = address.split('@');
+  const dot = domain.lastIndexOf('.');
+  const host = dot > 0 ? domain.slice(0, dot) : domain;
+  const tld = dot > 0 ? domain.slice(dot) : '';
+  return `${local.slice(0, 1)}***@${host.slice(0, 1)}***${tld}`;
+}
+
 interface SendEmailInput {
   to: string;
   subject: string;
@@ -20,7 +29,7 @@ export async function sendEmail(input: SendEmailInput): Promise<{ delivered: boo
 
   if (!apiKey) {
     console.warn(
-      `[email] RESEND_API_KEY is not set — no email was sent. Would have sent "${input.subject}" to ${input.to}.`
+      `[email] RESEND_API_KEY is not set — no email was sent. Would have sent "${input.subject}" to ${redactEmail(input.to)}.`
     );
     return { delivered: false };
   }
@@ -43,7 +52,7 @@ export async function sendEmail(input: SendEmailInput): Promise<{ delivered: boo
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      console.error('[email] Resend API returned an error', res.status, body);
+      console.error('[email] Resend API returned an error', res.status, body.replaceAll(input.to, redactEmail(input.to)));
       return { delivered: false };
     }
 
