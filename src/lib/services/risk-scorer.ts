@@ -1,5 +1,8 @@
-import { haversineDistance, clamp } from '@/lib/utils';
-import { supportsCoordinates } from '@/lib/mavlink/commands';
+import { distPointSegment, projectionFor, type LngLat } from '@/lib/domain/geo';
+import { missionFromItems, spatialPoints } from '@/lib/domain/mission';
+import { computeRisk, limitsFromConstraintConfig, validateMission, type Issue } from '@/lib/domain/validate';
+import { fromNoFlyZone } from '@/lib/domain/zones';
+import { computeMissionMetrics } from '@/lib/domain/metrics';
 import type { MissionItem } from '@/types/mission';
 import type { ConstraintConfig, NoFlyZone } from '@/lib/store/constraints-store';
 
@@ -18,154 +21,79 @@ export interface SegmentRisk {
   color: string;
 }
 
-function totalDistance(items: MissionItem[]): number {
-  const spatial = items.filter(
-    (i) => supportsCoordinates(i.action) && i.latitude !== null && i.longitude !== null
-  );
-  let d = 0;
-  for (let i = 1; i < spatial.length; i++) {
-    d += haversineDistance(
-      spatial[i - 1].latitude!,
-      spatial[i - 1].longitude!,
-      spatial[i].latitude!,
-      spatial[i].longitude!
-    );
-  }
-  return d;
+/** Issue codes that count as constraint violations in the legacy UI. */
+const VIOLATION_CODES = new Set<Issue['code']>([
+  'DISTANCE_LIMIT',
+  'ALT_ABOVE_MAX',
+  'ALT_BELOW_MIN',
+  'SPEED_ABOVE_MAX',
+  'ZONE_NO_FLY_POINT',
+  'ZONE_NO_FLY_CROSS',
+  'ZONE_KEEP_OUT_POINT',
+  'ZONE_KEEP_OUT_CROSS',
+  'ZONE_KEEP_IN_POINT',
+  'ZONE_KEEP_IN_EXIT',
+]);
+
+function constraintIssues(items: MissionItem[], config: ConstraintConfig, nfzs: NoFlyZone[]): Issue[] {
+  return validateMission(missionFromItems(items, { settings: { defaultSpeed: config.defaultSpeedMs } }), {
+    zones: nfzs.map(fromNoFlyZone),
+    limits: limitsFromConstraintConfig(config),
+  }).filter((i) => VIOLATION_CODES.has(i.code));
 }
 
-function minNfzClearance(items: MissionItem[], nfzs: NoFlyZone[]): number {
-  if (nfzs.length === 0) return Infinity;
-  let min = Infinity;
-  for (const item of items) {
-    if (!supportsCoordinates(item.action) || item.latitude === null || item.longitude === null) {
-      continue;
-    }
-    for (const nfz of nfzs) {
-      const d =
-        haversineDistance(item.latitude!, item.longitude!, nfz.latitude, nfz.longitude) -
-        nfz.radiusM;
-      if (d < min) min = d;
-    }
-  }
-  return min;
-}
-
-function maxAltitude(items: MissionItem[]): number {
-  let max = 0;
-  for (const item of items) {
-    if (item.altitude !== null && item.altitude > max) max = item.altitude;
-  }
-  return max;
-}
-
+/** Number of limit and zone violations (legs are checked by real intersection). */
 export function computeViolationCount(
   items: MissionItem[],
   config: ConstraintConfig,
   nfzs: NoFlyZone[],
-  totalDist: number
+  totalDist?: number
 ): number {
-  let count = 0;
-  if (totalDist > config.maxDistanceM) count++;
-  if (maxAltitude(items) > config.maxAltM) count++;
-
-  for (const item of items) {
-    if (
-      supportsCoordinates(item.action) &&
-      item.altitude !== null &&
-      item.altitude < config.minAltM
-    ) {
-      count++;
-      break;
-    }
-  }
-
-  for (const item of items) {
-    if (!supportsCoordinates(item.action) || item.latitude === null || item.longitude === null) {
-      continue;
-    }
-    for (const nfz of nfzs) {
-      const d = haversineDistance(item.latitude!, item.longitude!, nfz.latitude, nfz.longitude);
-      if (d < nfz.radiusM) {
-        count++;
-        break;
-      }
-    }
-  }
-
-  return count;
+  void totalDist;
+  return constraintIssues(items, config, nfzs).length;
 }
 
-export function computeRiskScore(
-  items: MissionItem[],
-  config: ConstraintConfig,
-  nfzs: NoFlyZone[]
-): RiskBreakdown {
-  const totalDist = totalDistance(items);
-  const distanceScore = clamp(totalDist / config.maxDistanceM, 0, 1) * 40;
-
-  const clearance = minNfzClearance(items, nfzs);
-  const nfzScore =
-    nfzs.length === 0
-      ? 0
-      : (1 - clamp(clearance / 500, 0, 1)) * 30;
-
-  const maxAlt = maxAltitude(items);
-  const altScore = clamp(maxAlt / config.maxAltM, 0, 1) * 20;
-
-  const violations = computeViolationCount(items, config, nfzs, totalDist);
-  const violationScore = Math.min(violations * 5, 10);
-
-  const total = distanceScore + nfzScore + altScore + violationScore;
-
-  const level: 'LOW' | 'MEDIUM' | 'HIGH' =
-    total <= 30 ? 'LOW' : total <= 60 ? 'MEDIUM' : 'HIGH';
-
+/** Legacy adapter over the informational `computeRisk` (see its doc for weights). */
+export function computeRiskScore(items: MissionItem[], config: ConstraintConfig, nfzs: NoFlyZone[]): RiskBreakdown {
+  const mission = missionFromItems(items, { settings: { defaultSpeed: config.defaultSpeedMs } });
+  const issues = constraintIssues(items, config, nfzs);
+  const r = computeRisk(mission, {
+    zones: nfzs.map(fromNoFlyZone),
+    limits: limitsFromConstraintConfig(config),
+    issues,
+    distanceM: computeMissionMetrics(mission).distanceM,
+  });
   return {
-    distanceScore: Math.round(distanceScore * 10) / 10,
-    nfzScore: Math.round(nfzScore * 10) / 10,
-    altScore: Math.round(altScore * 10) / 10,
-    violationScore,
-    total: Math.round(total * 10) / 10,
-    level,
+    distanceScore: r.distanceScore,
+    nfzScore: r.zoneScore,
+    altScore: r.altScore,
+    violationScore: r.issueScore,
+    total: r.total,
+    level: r.level,
   };
 }
 
+/** Per-leg colour: red within 500 m of a no-fly zone, amber above max altitude. */
 export function computeSegmentRisks(
   items: MissionItem[],
   config: ConstraintConfig,
   nfzs: NoFlyZone[],
   accentColor: string = '#00ff41'
 ): SegmentRisk[] {
-  const spatial = items.filter(
-    (i) => supportsCoordinates(i.action) && i.latitude !== null && i.longitude !== null
-  );
+  const pts = spatialPoints(items);
+  const all: LngLat[] = [...pts.map((p) => p.pos), ...nfzs.map((z) => [z.longitude, z.latitude] as LngLat)];
+  const proj = all.length > 0 ? projectionFor(all) : null;
   const segments: SegmentRisk[] = [];
-
-  for (let i = 0; i < spatial.length - 1; i++) {
-    const midLat = ((spatial[i].latitude!) + (spatial[i + 1].latitude!)) / 2;
-    const midLng = ((spatial[i].longitude!) + (spatial[i + 1].longitude!)) / 2;
-    const midAlt = ((spatial[i].altitude ?? 0) + (spatial[i + 1].altitude ?? 0)) / 2;
-
+  for (let i = 0; i < pts.length - 1; i++) {
     let color = accentColor;
-
-    if (midAlt > config.maxAltM) {
-      color = '#ffaa00';
+    if (Math.max(pts[i].alt, pts[i + 1].alt) > config.maxAltM) color = '#ffaa00';
+    if (proj && nfzs.length > 0) {
+      const a = proj.toLocal(pts[i].pos);
+      const b = proj.toLocal(pts[i + 1].pos);
+      const minD = Math.min(...nfzs.map((z) => distPointSegment(proj.toLocal([z.longitude, z.latitude]), a, b) - z.radiusM));
+      if (minD < 500) color = '#ff3333';
     }
-
-    if (nfzs.length > 0) {
-      const minD = Math.min(
-        ...nfzs.map((nfz) =>
-          haversineDistance(midLat, midLng, nfz.latitude, nfz.longitude) - nfz.radiusM
-        )
-      );
-      if (minD < 500) {
-        color = '#ff3333';
-      }
-    }
-
     segments.push({ fromIdx: i, toIdx: i + 1, color });
   }
-
   return segments;
 }
