@@ -20,8 +20,8 @@ describe('autosave payload', () => {
     const body = buildMissionPatch(mission, 3);
     const parsed = updateMissionSchema.safeParse(body);
     expect(parsed.success).toBe(true);
-    expect(body.items).toHaveLength(3);
-    expect(body.items[1]).toMatchObject({ sequence: 1, latitude: 47.2, param1: expect.any(Number) });
+    expect(body.items!).toHaveLength(3);
+    expect(body.items![1]).toMatchObject({ sequence: 1, latitude: 47.2, param1: expect.any(Number) });
     expect(body.baseVersion).toBe(3);
   });
 });
