@@ -5,6 +5,7 @@ import { generateToken, hashToken } from '@/lib/auth/tokens';
 import { isSameOriginRequest } from '@/lib/http/same-origin';
 import { sendVerificationEmail } from '@/lib/email/send';
 import { toIsoString } from '@/lib/db/serialize';
+import { checkRateLimit, recordAttempt } from '@/lib/auth/rate-limit';
 
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -20,6 +21,15 @@ export async function POST(request: Request) {
   if (user.emailVerified) {
     return Response.json({ ok: true, alreadyVerified: true });
   }
+
+  const rateKey = `user:${user.id}`;
+  if (!(await checkRateLimit(rateKey, 'resend_verification'))) {
+    return Response.json(
+      { ok: false, error: 'Too many verification emails. Try again later.', code: 'RATE_LIMITED' },
+      { status: 429 }
+    );
+  }
+  await recordAttempt(rateKey, 'resend_verification', true);
 
   await db.orm.public.EmailVerificationToken.where({ userId: user.id }).deleteAll();
 
