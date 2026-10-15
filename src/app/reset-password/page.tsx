@@ -1,16 +1,12 @@
 'use client';
 
 import React, { Suspense, useState } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowRight, Check, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import { AuthShell } from '@/components/auth/auth-shell';
+import { AuthLink, AuthShell } from '@/components/auth/auth-shell';
 import { PasswordInput } from '@/components/auth/password-input';
+import { PasswordRule } from '@/components/auth/password-rule';
 import { FormMessage } from '@/components/auth/form-message';
-import { cn } from '@/lib/utils';
+import { SubmitButton } from '@/components/auth/submit-button';
 
 const MIN_PASSWORD_LENGTH = 10;
 
@@ -28,8 +24,10 @@ function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <AuthShell title="Invalid reset link" footer={<Link href="/forgot-password" className="font-semibold text-text hover:text-green">Request a new link</Link>}>
-        <FormMessage variant="error">This password reset link is missing its token. Request a new one.</FormMessage>
+      <AuthShell title="Invalid reset link" footer={<AuthLink href="/forgot-password">Request a new link</AuthLink>}>
+        <FormMessage variant="error" className="mb-0">
+          This password reset link is missing its token. Request a new one.
+        </FormMessage>
       </AuthShell>
     );
   }
@@ -61,34 +59,26 @@ function ResetPasswordForm() {
 
   return (
     <AuthShell title="Set a new password" subtitle="Choose a new password for your account.">
-      <form onSubmit={submit} noValidate>
-        {error && <FormMessage variant="error">{error}</FormMessage>}
+      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+        {error && <FormMessage variant="error" className="mb-0">{error}</FormMessage>}
 
-        <Label htmlFor="password">New password</Label>
         <PasswordInput
           id="password"
+          name="password"
+          label="New password"
           value={password}
           autoFocus
           autoComplete="new-password"
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={setPassword}
           onBlur={() => setTouched(true)}
-          aria-invalid={touched && !passwordLongEnough}
-          placeholder="••••••••"
-          className="h-9 text-[13px]"
+          isInvalid={touched && !passwordLongEnough}
+          placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
+          aside={<PasswordRule met={passwordLongEnough} minLength={MIN_PASSWORD_LENGTH} />}
         />
-        <div
-          className={cn(
-            'mb-5 mt-1.5 flex items-center gap-1.5 font-mono text-[10.5px]',
-            passwordLongEnough ? 'text-green' : 'text-text-muted'
-          )}
-        >
-          {passwordLongEnough ? <Check size={11} /> : <X size={11} />}
-          At least {MIN_PASSWORD_LENGTH} characters
-        </div>
 
-        <Button type="submit" variant="primary" disabled={!passwordLongEnough || loading} className="w-full font-sans">
-          {loading ? <Spinner size={14} className="text-background" /> : <>Reset password <ArrowRight size={14} /></>}
-        </Button>
+        <SubmitButton loading={loading} disabled={!passwordLongEnough || loading}>
+          {loading ? 'Saving…' : 'Reset password'}
+        </SubmitButton>
       </form>
     </AuthShell>
   );

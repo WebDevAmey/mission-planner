@@ -1,13 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
-import { ArrowRight, ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input, Label } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import { AuthShell } from '@/components/auth/auth-shell';
+import { RiArrowLeftLine } from '@remixicon/react';
+import { Input } from '@/components/base/input/input';
+import { AuthLink, AuthShell } from '@/components/auth/auth-shell';
 import { FormMessage } from '@/components/auth/form-message';
+import { SubmitButton } from '@/components/auth/submit-button';
+
+function BackToSignIn() {
+  return (
+    <AuthLink href="/login" className="inline-flex items-center gap-1">
+      <RiArrowLeftLine className="size-4" aria-hidden /> Back to sign in
+    </AuthLink>
+  );
+}
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -44,26 +50,19 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <AuthShell
-        title="Check your email"
-        footer={
-          <Link href="/login" className="inline-flex items-center gap-1 font-semibold text-text hover:text-green">
-            <ArrowLeft size={12} /> Back to sign in
-          </Link>
-        }
-      >
+      <AuthShell title="Check your email" footer={<BackToSignIn />}>
         <FormMessage variant="success">
-          If an account exists for <strong>{email}</strong>, we&apos;ve sent a link to reset your password. It
-          expires in 1 hour.
+          If an account exists for <strong className="break-all">{email}</strong>, we&apos;ve sent a link to reset
+          your password. It expires in 1 hour.
         </FormMessage>
         {devResetUrl && (
-          <div className="rounded-sm border border-amber/40 bg-amber-bg px-3 py-2 font-mono text-[11px] text-amber">
+          <FormMessage variant="info" className="mb-0">
             Email delivery isn&apos;t configured in this environment. Use this link to continue:
             <br />
-            <a href={devResetUrl} className="break-all underline">
+            <a href={devResetUrl} className="break-all font-mono underline">
               {devResetUrl}
             </a>
-          </div>
+          </FormMessage>
         )}
       </AuthShell>
     );
@@ -73,30 +72,26 @@ export default function ForgotPasswordPage() {
     <AuthShell
       title="Reset your password"
       subtitle="Enter the email on your account and we'll send you a reset link."
-      footer={
-        <Link href="/login" className="inline-flex items-center gap-1 font-semibold text-text hover:text-green">
-          <ArrowLeft size={12} /> Back to sign in
-        </Link>
-      }
+      footer={<BackToSignIn />}
     >
-      <form onSubmit={submit} noValidate>
-        {error && <FormMessage variant="error">{error}</FormMessage>}
+      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+        {error && <FormMessage variant="error" className="mb-0">{error}</FormMessage>}
 
-        <Label htmlFor="email">Email</Label>
         <Input
           id="email"
+          name="email"
           type="email"
+          label="Email"
           value={email}
           autoFocus
           autoComplete="email"
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={setEmail}
           placeholder="you@example.com"
-          className="mb-5 h-9 text-[13px]"
         />
 
-        <Button type="submit" variant="primary" disabled={!email || loading} className="w-full font-sans">
-          {loading ? <Spinner size={14} className="text-background" /> : <>Send reset link <ArrowRight size={14} /></>}
-        </Button>
+        <SubmitButton loading={loading} disabled={!email || loading}>
+          {loading ? 'Sending…' : 'Send reset link'}
+        </SubmitButton>
       </form>
     </AuthShell>
   );
