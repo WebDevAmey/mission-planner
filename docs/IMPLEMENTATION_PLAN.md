@@ -1,6 +1,6 @@
 # Mission Planner: Implementation Plan
 
-Status: **Draft for review** · Baseline `0f7aab3` · Specs: [PRODUCT_SPEC](PRODUCT_SPEC.md), [TECHNICAL_SPEC](TECHNICAL_SPEC.md), [DECISIONS](DECISIONS.md)
+Status: **In progress** (statuses updated 2026-10-15 after the revamp merge on `feature/revamp`) · Baseline `0f7aab3` · Specs: [PRODUCT_SPEC](PRODUCT_SPEC.md), [TECHNICAL_SPEC](TECHNICAL_SPEC.md), [DECISIONS](DECISIONS.md)
 
 The order differs from the brief's suggested sequence because the audit found that **saving is broken in production** (PRODUCT_SPEC §2.1-1). Postgres, auth and mission CRUD already exist, so the plan starts by stopping data loss, then adds the test harness, then builds on top.
 
@@ -8,18 +8,18 @@ The order differs from the brief's suggested sequence because the audit found th
 
 | # | Phase | Depends on | Status |
 |---|---|---|---|
-| 0 | Baseline and test harness | none | Not started |
-| 1 | Stop data loss: save fix, blank editor, local data leak | 0 | Not started |
-| 2 | Shared domain layer and unified validator | 0 | Not started |
-| 3 | Schema: version, summary, zones, limits on server | 1, 2 | Not started |
-| 4 | API hardening and new endpoints | 3 | Not started |
-| 5 | Editor redesign: declutter, layout, tokens, a11y | 1, 2 | Not started |
-| 6 | Map rendering rewrite (GeoJSON layers, zones, tools) | 5 | Not started |
-| 7 | Path planning algorithms | 2, 6 | Not started |
-| 8 | Exports and import | 2, 3 | Not started |
-| 9 | Dashboard upgrade | 3, 4 | Not started |
-| 10 | Account settings | 4 | Not started |
-| 11 | Landing page revamp | none (parallel) | Not started |
+| 0 | Baseline and test harness | none | Partial: Vitest unit (55) and integration (35, scratch Postgres) done; no Playwright E2E suite or CI workflow yet |
+| 1 | Stop data loss: save fix, blank editor, local data leak | 0 | Done |
+| 2 | Shared domain layer and unified validator | 0 | Done |
+| 3 | Schema: version, summary, zones, limits on server | 1, 2 | Done (no backfill of summary columns; they fill on next save) |
+| 4 | API hardening and new endpoints | 3 | Done |
+| 5 | Editor redesign: declutter, layout, tokens, a11y | 1, 2 | Done |
+| 6 | Map rendering rewrite (GeoJSON layers, zones, tools) | 5 | Done (fit-on-load and tiles not verified: tile hosts blocked in the test container) |
+| 7 | Path planning algorithms | 2, 6 | Done (survey has no polygon holes; planners run on the main thread, no Web Worker) |
+| 8 | Exports and import | 2, 3 | Done |
+| 9 | Dashboard upgrade | 3, 4 | Done (thumbnails fetch each mission; list API has no route geometry) |
+| 10 | Account settings | 4 | Done |
+| 11 | Landing page revamp | none (parallel) | Done (Lighthouse AC not measured) |
 | 12 | Hardening, staging, rollout | all | Not started |
 
 Phases 2, 5 and 11 can run in parallel once Phase 0 lands. Phases 7 and 8 can run in parallel.
@@ -112,4 +112,4 @@ Phases 2, 5 and 11 can run in parallel once Phase 0 lands. Phases 7 and 8 can ru
 - **Done when** production has run 48 h with no P1 issues and the README and these docs are updated.
 
 ## Checklist
-- [ ] Phase 0 · [ ] 1 · [ ] 2 · [ ] 3 · [ ] 4 · [ ] 5 · [ ] 6 · [ ] 7 · [ ] 8 · [ ] 9 · [ ] 10 · [ ] 11 · [ ] 12
+- [~] Phase 0 · [x] 1 · [x] 2 · [x] 3 · [x] 4 · [x] 5 · [x] 6 · [x] 7 · [x] 8 · [x] 9 · [x] 10 · [x] 11 · [ ] 12
