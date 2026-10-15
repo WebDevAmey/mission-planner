@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { SESSION_COOKIE, getSessionUser } from '@/lib/auth/session';
 
 const AUTH_PAGES = ['/login', '/signup'];
-const PROTECTED_PAGES = ['/mission-planner', '/dashboard', '/settings'];
+const PROTECTED_PAGES = ['/mission-planner', '/missions', '/dashboard', '/settings'];
 const PROTECTED_API_PREFIXES = ['/api/flight-deck', '/api/missions', '/api/geo', '/api/account'];
 
 export default async function proxy(request: NextRequest) {
@@ -34,6 +34,7 @@ export default async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     '/mission-planner/:path*',
+    '/missions/:path*',
     '/dashboard/:path*',
     '/settings/:path*',
     '/api/flight-deck/:path*',
