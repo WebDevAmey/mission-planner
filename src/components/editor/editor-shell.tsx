@@ -18,17 +18,8 @@ import { Inspector } from './inspector/inspector';
 import { ParamTable } from './param-table';
 import { ShortcutsDialog } from './shortcuts-dialog';
 
-const PHONE_DISMISS_KEY = 'mps-phone-banner-dismissed';
-
 function PhoneBanner() {
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    try {
-      return window.sessionStorage.getItem(PHONE_DISMISS_KEY) === '1';
-    } catch {
-      return false;
-    }
-  });
+  const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
   return (
     <div role="note" className="flex items-center gap-2 border-b border-separator-border bg-background-secondary-default px-4 py-2 md:hidden">
@@ -39,14 +30,7 @@ function PhoneBanner() {
         iconOnly
         leadingIcon={RiCloseLine}
         aria-label="Dismiss"
-        onClick={() => {
-          setDismissed(true);
-          try {
-            window.sessionStorage.setItem(PHONE_DISMISS_KEY, '1');
-          } catch {
-            /* storage unavailable */
-          }
-        }}
+        onClick={() => setDismissed(true)}
       />
     </div>
   );
