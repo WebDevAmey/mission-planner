@@ -33,9 +33,14 @@ export async function POST(request: Request) {
   }
   const { email, password, name } = parsed.data;
 
+  // S6: keyed on both the client IP (when known) and the email, so neither a
+  // shared NAT nor rotating IPs against one address gets unlimited attempts.
   const ip = getClientIp(request);
-  const rateLimitKey = normalizeIdentifier(ip ?? email);
-  if (!(await checkRateLimit(rateLimitKey, 'signup'))) {
+  const emailKey = `email:${normalizeIdentifier(email)}`;
+  const rateLimitKey = ip ? `ip:${normalizeIdentifier(ip)}` : emailKey;
+  const keys = rateLimitKey === emailKey ? [emailKey] : [rateLimitKey, emailKey];
+  const allowed = await Promise.all(keys.map((k) => checkRateLimit(k, 'signup')));
+  if (allowed.includes(false)) {
     return Response.json(
       { ok: false, error: 'Too many signup attempts. Try again later.' },
       { status: 429 }
@@ -44,7 +49,7 @@ export async function POST(request: Request) {
 
   const existing = await db.orm.public.User.where((u) => u.email.eq(email)).first();
   if (existing) {
-    await recordAttempt(rateLimitKey, 'signup', false);
+    await Promise.all(keys.map((k) => recordAttempt(k, 'signup', false)));
     return Response.json(
       { ok: false, error: 'An account with this email already exists' },
       { status: 409 }
@@ -86,7 +91,7 @@ export async function POST(request: Request) {
     expires: expiresAt,
   });
 
-  await recordAttempt(rateLimitKey, 'signup', true);
+  await Promise.all(keys.map((k) => recordAttempt(k, 'signup', true)));
 
   return Response.json({
     ok: true,
