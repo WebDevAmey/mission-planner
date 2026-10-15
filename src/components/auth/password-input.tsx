@@ -1,27 +1,27 @@
 'use client';
 
-import * as React from 'react';
-import { Eye, EyeOff } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import { useState, type ReactNode } from 'react';
+import { Checkbox } from '@/components/base/checkbox/checkbox';
+import { Input, type InputProps } from '@/components/base/input/input';
 
-export const PasswordInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  function PasswordInput({ className, ...props }, ref) {
-    const [visible, setVisible] = React.useState(false);
-
-    return (
-      <div className="relative">
-        <Input ref={ref} type={visible ? 'text' : 'password'} className={cn('pr-8', className)} {...props} />
-        <button
-          type="button"
-          onClick={() => setVisible((v) => !v)}
-          aria-label={visible ? 'Hide password' : 'Show password'}
-          tabIndex={-1}
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted transition-colors hover:text-text"
-        >
-          {visible ? <EyeOff size={14} /> : <Eye size={14} />}
-        </button>
+/**
+ * BoardUI Input for passwords, with a "Show password" checkbox under the field.
+ * `aside` renders on the same row as the checkbox (e.g. "Forgot password?").
+ */
+export function PasswordInput({
+  aside,
+  ...props
+}: Omit<InputProps, 'type'> & { aside?: ReactNode }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="flex flex-col gap-2.5">
+      <Input {...props} type={visible ? 'text' : 'password'} />
+      <div className="flex items-center justify-between gap-3">
+        <Checkbox size="sm" isSelected={visible} onChange={setVisible}>
+          Show password
+        </Checkbox>
+        {aside}
       </div>
-    );
-  }
-);
+    </div>
+  );
+}
