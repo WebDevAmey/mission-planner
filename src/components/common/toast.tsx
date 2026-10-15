@@ -1,51 +1,31 @@
 'use client';
 
+import { Notification, NotificationViewport, type NotificationStatus } from '@/components/base/notification/notification';
 import { useUIStore, type Toast } from '@/lib/store/ui-store';
-import { X } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
-const TOAST_CLASSES: Record<Toast['type'], string> = {
-  success: 'border-green text-green shadow-[0_4px_16px_rgba(0,0,0,0.5),0_0_0_1px_var(--color-green-bg)]',
-  error: 'border-red text-red shadow-[0_4px_16px_rgba(0,0,0,0.5),0_0_0_1px_var(--color-red-bg)]',
-  warning: 'border-amber text-amber shadow-[0_4px_16px_rgba(0,0,0,0.5),0_0_0_1px_var(--color-amber-bg)]',
-  info: 'border-cyan text-cyan shadow-[0_4px_16px_rgba(0,0,0,0.5),0_0_0_1px_var(--color-blue-bg)]',
+const STATUS: Record<Toast['type'], NotificationStatus> = {
+  success: 'success',
+  error: 'error',
+  warning: 'neutral',
+  info: 'information',
 };
 
-function ToastItem({ toast }: { toast: Toast }) {
-  const { removeToast } = useUIStore();
+/** App-wide toasts (editor + dashboard), rendered with BoardUI notifications. */
+export function ToastContainer({ position = 'bottom-end' }: { position?: 'bottom-end' | 'top-end' | 'bottom-start' }) {
+  const toasts = useUIStore((s) => s.toasts);
+  const removeToast = useUIStore((s) => s.removeToast);
 
   return (
-    <div
-      className={cn(
-        'flex min-w-[200px] max-w-[320px] items-center gap-2 rounded-md border bg-bg-raised px-2.5 py-1.5',
-        'animate-[slideInRight_200ms_ease] font-mono text-[11px] backdrop-blur-sm',
-        TOAST_CLASSES[toast.type]
-      )}
-    >
-      <span className="flex-1">{toast.message}</span>
-      <button
-        onClick={() => removeToast(toast.id)}
-        aria-label="Dismiss notification"
-        className="shrink-0 p-0.5 text-text-muted transition-colors hover:text-text"
-      >
-        <X size={11} />
-      </button>
-    </div>
-  );
-}
-
-export function ToastContainer() {
-  const { toasts } = useUIStore();
-
-  if (toasts.length === 0) return null;
-
-  return (
-    <div className="pointer-events-none fixed bottom-5 right-4 z-[99999] flex flex-col gap-1.5">
-      {toasts.map((toast) => (
-        <div key={toast.id} className="pointer-events-auto">
-          <ToastItem toast={toast} />
-        </div>
+    <NotificationViewport position={position} className="z-[2000]">
+      {toasts.map((t) => (
+        <Notification
+          key={t.id}
+          status={STATUS[t.type]}
+          title={t.message}
+          onDismiss={() => removeToast(t.id)}
+          actions={t.action ? [{ label: t.action.label, onClick: () => { t.action?.onClick(); removeToast(t.id); }, variant: 'secondary' }] : undefined}
+        />
       ))}
-    </div>
+    </NotificationViewport>
   );
 }

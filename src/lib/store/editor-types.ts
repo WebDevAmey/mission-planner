@@ -1,4 +1,13 @@
-import type { MissionPlan } from '@/types/mission';
+import type { MissionPlan, MissionPlanSettings } from '@/types/mission';
+
+/** Mission settings incl. the server's newer optional columns. */
+export type EditorSettings = MissionPlanSettings & {
+  cruiseSpeed?: number;
+  hoverSpeed?: number;
+  turnaroundM?: number;
+  homeElevationM?: number | null;
+  ratedEnduranceS?: number;
+};
 
 /**
  * Editor-side document types. A mission open in the editor carries its zones and
@@ -43,6 +52,7 @@ export const DEFAULT_LIMITS: MissionLimits = {
 };
 
 export type EditorMission = MissionPlan & {
+  settings: EditorSettings;
   zones: MissionZone[];
   limits: MissionLimits;
 };

@@ -1,27 +1,36 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { X, ShieldCheck, ShieldAlert, Bot, Terminal, Check, XCircle, History, Download } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  RiCheckLine,
+  RiCloseLine,
+  RiDownloadLine,
+  RiRobot2Line,
+  RiShieldCheckLine,
+  RiShieldLine,
+  RiTerminalLine,
+} from '@remixicon/react';
+import { Button } from '@/components/base/buttons/button';
+import { Tab, TabList, TabPanel, Tabs } from '@/components/base/tabs/tabs';
 import { useAgentStore } from '@/lib/store/agent-store';
 import { useMissionStore } from '@/lib/store/mission-store';
 import { useUIStore } from '@/lib/store/ui-store';
 import { buildMissionItemsFromDraft } from '@/lib/agents/sentinel-audit';
 import type { AgentEvent } from '@/lib/agents/schemas';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
+import { cx } from '@/utils/cx';
+import { MissionPromptBar } from './mission-prompt-bar';
 
-const AGENT_TEXT_CLASS: Record<AgentEvent['agent'], string> = {
+const AGENT_TEXT: Record<AgentEvent['agent'], string> = {
   ATLAS: 'text-blue',
   SENTINEL: 'text-amber',
-  SYSTEM: 'text-text-dim',
+  SYSTEM: 'text-text-secondary',
 };
 
 function AgentIcon({ agent }: { agent: AgentEvent['agent'] }) {
-  const className = AGENT_TEXT_CLASS[agent];
-  if (agent === 'ATLAS') return <Bot size={13} className={className} />;
-  if (agent === 'SENTINEL') return <ShieldCheck size={13} className={className} />;
-  return <Terminal size={13} className={className} />;
+  const cls = cx('size-4 shrink-0', AGENT_TEXT[agent]);
+  if (agent === 'ATLAS') return <RiRobot2Line className={cls} aria-hidden />;
+  if (agent === 'SENTINEL') return <RiShieldCheckLine className={cls} aria-hidden />;
+  return <RiTerminalLine className={cls} aria-hidden />;
 }
 
 function EventRow({ event }: { event: AgentEvent }) {
@@ -30,107 +39,89 @@ function EventRow({ event }: { event: AgentEvent }) {
   const isVeto = event.type === 'audit' && event.payload.verdict === 'VETO';
 
   return (
-    <div
-      className={cn(
-        'mb-1.5 rounded-sm border px-2.5 py-1.5',
-        isVeto
-          ? 'border-red bg-red-bg'
-          : event.type === 'audit'
-            ? 'border-green-dim bg-green-bg'
-            : 'border-border-mid bg-bg-raised'
+    <li
+      className={cx(
+        'rounded-lg border px-3 py-2',
+        isVeto ? 'border-red bg-red-bg' : event.type === 'audit' ? 'border-green bg-green-bg' : 'border-separator-border'
       )}
     >
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
         <AgentIcon agent={event.agent} />
-        <span className={cn('font-mono text-[9px] font-bold uppercase tracking-wide', AGENT_TEXT_CLASS[event.agent])}>
-          {event.agent}
-        </span>
-        <span className="flex-1 font-mono text-[10px] text-text">{event.title}</span>
+        <span className="min-w-0 flex-1 text-body-2-medium text-text-primary">{event.title}</span>
         {hasDetail && (
-          <button onClick={() => setOpen((v) => !v)} className="font-mono text-[9px] text-text-muted transition-colors hover:text-text">
-            {open ? 'hide' : 'details'}
-          </button>
+          <Button size="xs" variant="ghost" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+            {open ? 'Hide' : 'Details'}
+          </Button>
         )}
       </div>
-
-      {open && (event.type === 'tool_call' || event.type === 'tool_result') && (
-        <pre className="mt-1.5 max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-[9px] text-text-dim">
+      {open && hasDetail && (
+        <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-caption-1-regular text-text-secondary">
           {event.detail}
         </pre>
       )}
-
       {event.type === 'audit' && (
-        <div className="mt-1.5">
-          <div className="mb-1 font-mono text-[9px] text-text-dim">
-            Risk score: {event.payload.riskScore.toFixed(0)}/100
-          </div>
+        <div className="mt-2 flex flex-col gap-1">
+          <span className="text-caption-1-regular text-text-secondary">Risk score {event.payload.riskScore.toFixed(0)}/100</span>
           {event.payload.findings.map((f, i) => (
-            <div
+            <span
               key={i}
-              className={cn(
-                'py-0.5 font-mono text-[9px]',
-                f.severity === 'blocker' ? 'text-red' : f.severity === 'warning' ? 'text-amber' : 'text-text-muted'
+              className={cx(
+                'text-caption-1-regular',
+                f.severity === 'blocker' ? 'text-red' : f.severity === 'warning' ? 'text-amber' : 'text-text-secondary'
               )}
             >
-              [{f.severity}] {f.message}
-            </div>
+              {f.message}
+            </span>
           ))}
         </div>
       )}
-
-      {event.type === 'error' && (
-        <div className="mt-1 font-mono text-[9px] text-red">{event.detail}</div>
-      )}
-    </div>
+      {event.type === 'error' && <p className="mt-1 text-caption-1-regular text-red">{event.detail}</p>}
+    </li>
   );
 }
 
 function ApprovalCard() {
   const { result, clearRun, setConsoleOpen } = useAgentStore();
-  const { mission, replaceItems } = useMissionStore();
-  const { addToast } = useUIStore();
+  const mission = useMissionStore((s) => s.mission);
+  const replaceItems = useMissionStore((s) => s.replaceItems);
+  const addToast = useUIStore((s) => s.addToast);
 
   if (!result || !result.draftMission) return null;
-
   const isVeto = result.status === 'needs_human_input';
 
   const approve = () => {
     if (!mission || !result.draftMission) return;
-    const items = buildMissionItemsFromDraft(result.draftMission, mission.settings);
-    replaceItems(items, 'Load Flight Deck draft');
-    addToast('Flight Deck draft loaded. Undo to restore your previous items.', 'success');
+    replaceItems(buildMissionItemsFromDraft(result.draftMission, mission.settings), 'Load Flight Deck draft');
+    addToast('Flight Deck draft loaded', 'success', { label: 'Undo', onClick: () => useMissionStore.getState().undo() });
     clearRun();
-  };
-
-  const discard = () => {
-    addToast('Flight Deck draft discarded', 'info');
-    clearRun();
-    setConsoleOpen(false);
   };
 
   return (
-    <div className={cn('mt-1 rounded-md border bg-bg-raised p-2.5', isVeto ? 'border-red' : 'border-green')}>
-      <div className="mb-2 flex items-center gap-1.5">
-        {isVeto ? <ShieldAlert size={14} className="text-red" /> : <ShieldCheck size={14} className="text-green" />}
-        <span className="font-mono text-[11px] font-bold text-text">
-          {isVeto ? `SENTINEL could not clear this mission after ${result.vetoCount} attempts` : 'SENTINEL passed — ready for your approval'}
+    <div className={cx('flex flex-col gap-3 rounded-lg border p-3', isVeto ? 'border-red' : 'border-green')}>
+      <div className="flex items-center gap-2">
+        {isVeto ? <RiShieldLine className="size-4 text-red" aria-hidden /> : <RiShieldCheckLine className="size-4 text-green" aria-hidden />}
+        <span className="text-body-2-semibold text-text-primary">
+          {isVeto ? `Not cleared after ${result.vetoCount} attempts` : 'Checks passed: ready to load'}
         </span>
       </div>
-      <div className="mb-2.5 font-mono text-[9px] text-text-dim">
+      <p className="text-caption-1-regular text-text-secondary">
         {result.draftMission.waypoints.length} waypoints proposed.
-        {isVeto ? ' Review the blockers above, edit the request, and try again.' : ' Nothing is written to your mission until you approve.'}
-      </div>
+        {isVeto ? ' Review the blockers above, adjust the request and try again.' : ' Loading replaces the current items as one undo step.'}
+      </p>
       <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={discard} className="font-mono">
-          <XCircle size={11} /> Discard
+        <Button
+          size="small"
+          variant="secondary"
+          onClick={() => {
+            clearRun();
+            setConsoleOpen(false);
+          }}
+        >
+          Discard
         </Button>
         {!isVeto && (
-          <Button
-            size="sm"
-            onClick={approve}
-            className="border-green bg-green-bg font-mono font-bold text-green hover:bg-green/20"
-          >
-            <Check size={11} /> Approve &amp; Load
+          <Button size="small" variant="primary" leadingIcon={RiCheckLine} onClick={approve}>
+            Load into mission
           </Button>
         )}
       </div>
@@ -138,21 +129,6 @@ function ApprovalCard() {
   );
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  approved_ready: 'PASS',
-  needs_human_input: 'VETO',
-  error: 'ERROR',
-};
-
-const STATUS_CLASS: Record<string, string> = {
-  approved_ready: 'text-green',
-  needs_human_input: 'text-red',
-  error: 'text-red',
-};
-
-/** Read-only audit trail of past Flight Deck runs — every prompt ATLAS drafted and
- * every verdict SENTINEL returned, persisted on-device so an operator can produce a
- * planning record for a given flight after the fact. */
 function HistoryPanel() {
   const { history, clearHistory } = useAgentStore();
 
@@ -167,52 +143,54 @@ function HistoryPanel() {
   };
 
   return (
-    <div className="p-2.5">
-      <div className="mb-2 flex items-center gap-1.5">
-        <span className="flex-1 font-mono text-[9px] text-text-dim">
-          {history.length} run{history.length === 1 ? '' : 's'} recorded on this device
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <span className="flex-1 text-caption-1-regular text-text-secondary">
+          {history.length} run{history.length === 1 ? '' : 's'} on this device
         </span>
         {history.length > 0 && (
           <>
-            <button onClick={exportLog} title="Export audit log as JSON" className="flex items-center gap-1 font-mono text-[9px] text-text-muted transition-colors hover:text-text">
-              <Download size={10} /> export
-            </button>
-            <button onClick={clearHistory} title="Clear history" className="font-mono text-[9px] text-text-muted transition-colors hover:text-text">
-              clear
-            </button>
+            <Button size="xs" variant="ghost" leadingIcon={RiDownloadLine} onClick={exportLog}>
+              Export
+            </Button>
+            <Button size="xs" variant="ghost" onClick={clearHistory}>
+              Clear
+            </Button>
           </>
         )}
       </div>
-
-      {history.length === 0 && (
-        <EmptyState icon={History} title="No runs yet" description="Completed Flight Deck runs land here as an audit trail." />
+      {history.length === 0 ? (
+        <p className="py-8 text-center text-body-2-regular text-text-secondary">Completed runs appear here as an audit trail.</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {history.map((run) => (
+            <li key={run.id} className="flex flex-col gap-1 rounded-lg border border-separator-border px-3 py-2">
+              <div className="flex items-center gap-2">
+                <span
+                  className={cx(
+                    'text-caption-1-semibold',
+                    run.status === 'approved_ready' ? 'text-green' : 'text-red'
+                  )}
+                >
+                  {run.status === 'approved_ready' ? 'Passed' : run.status === 'needs_human_input' ? 'Vetoed' : 'Error'}
+                </span>
+                <span className="flex-1 text-end text-caption-1-regular text-text-tertiary">{new Date(run.timestamp).toLocaleString()}</span>
+              </div>
+              <span className="truncate text-body-2-medium text-text-primary">{run.prompt}</span>
+              <span className="text-caption-1-regular text-text-secondary">
+                {run.waypointCount} waypoints · {run.blockerCount} blocker{run.blockerCount === 1 ? '' : 's'}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
-
-      {history.map((run) => (
-        <div key={run.id} className="mb-1.5 rounded-sm border border-border-mid bg-bg-raised px-2.5 py-1.5">
-          <div className="mb-0.5 flex items-center gap-1.5">
-            <span className={cn('font-mono text-[9px] font-bold', STATUS_CLASS[run.status] ?? 'text-text-muted')}>
-              {STATUS_LABEL[run.status] ?? run.status.toUpperCase()}
-            </span>
-            <span className="flex-1 text-right font-mono text-[9px] text-text-muted">
-              {new Date(run.timestamp).toLocaleString()}
-            </span>
-          </div>
-          <div className="mb-0.5 truncate font-mono text-[10px] text-text">
-            {run.prompt}
-          </div>
-          <div className="font-mono text-[9px] text-text-dim">
-            {run.waypointCount} waypoints · risk {run.riskScore !== null ? run.riskScore.toFixed(0) : '—'}/100 · {run.blockerCount} blocker{run.blockerCount === 1 ? '' : 's'} · {run.vetoCount} veto{run.vetoCount === 1 ? '' : 's'}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
 
+/** Flight Deck drawer: prompt, live run and audit log. Sits over the inspector column. */
 export function AgentConsole() {
   const { consoleOpen, setConsoleOpen, events, status, clearRun } = useAgentStore();
-  const [tab, setTab] = useState<'run' | 'history'>('run');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -222,56 +200,52 @@ export function AgentConsole() {
   if (!consoleOpen) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 top-[70px] z-[1000] flex w-[340px] flex-col overflow-hidden rounded-md border border-border-mid bg-bg-panel shadow-2xl">
-      <div className="flex shrink-0 items-center gap-1.5 border-b border-border-mid px-3 py-2">
-        <Bot size={13} className="text-cyan" />
-        <span className="flex-1 font-mono text-[11px] font-bold uppercase tracking-wide text-text">
-          Flight Deck
-        </span>
-        {tab === 'run' && status !== 'idle' && status !== 'running' && (
-          <button onClick={clearRun} title="Clear run" className="font-mono text-[9px] text-text-muted transition-colors hover:text-text">
-            clear
-          </button>
+    <aside
+      aria-label="Flight Deck"
+      className="fixed inset-x-0 bottom-10 top-14 z-40 flex flex-col border-l border-separator-border bg-background-primary-default shadow-2xl sm:left-auto sm:w-[360px]"
+    >
+      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-separator-border px-4">
+        <RiRobot2Line className="size-5 text-text-secondary" aria-hidden />
+        <h2 className="flex-1 text-body-semibold text-text-primary">Ask AI</h2>
+        {status !== 'idle' && status !== 'running' && (
+          <Button size="xs" variant="ghost" onClick={clearRun}>
+            Clear
+          </Button>
         )}
-        <button onClick={() => setConsoleOpen(false)} aria-label="Close Flight Deck console" className="text-text-muted transition-colors hover:text-text">
-          <X size={13} />
-        </button>
+        <Button size="small" variant="ghost" iconOnly leadingIcon={RiCloseLine} aria-label="Close" onClick={() => setConsoleOpen(false)} />
       </div>
-
-      <div className="flex shrink-0 gap-3.5 border-b border-border-mid px-3 pt-2">
-        <button
-          onClick={() => setTab('run')}
-          className={cn(
-            'flex items-center gap-1 border-b-2 pb-0.5 font-mono text-[9px] font-bold',
-            tab === 'run' ? 'border-cyan text-text' : 'border-transparent text-text-muted'
-          )}
-        >
-          <Terminal size={10} /> Run
-        </button>
-        <button
-          onClick={() => setTab('history')}
-          className={cn(
-            'flex items-center gap-1 border-b-2 pb-0.5 font-mono text-[9px] font-bold',
-            tab === 'history' ? 'border-cyan text-text' : 'border-transparent text-text-muted'
-          )}
-        >
-          <History size={10} /> Audit log
-        </button>
-      </div>
-
-      {tab === 'run' ? (
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-2.5">
-          {events.length === 0 && (
-            <EmptyState title="No activity yet" description="Ask Flight Deck to plan a mission using the prompt bar above the map." />
-          )}
-          {events.map((event) => <EventRow key={event.id} event={event} />)}
-          {(status === 'awaiting_approval' || status === 'needs_human_input') && <ApprovalCard />}
-        </div>
-      ) : (
-        <div className="flex-1 overflow-y-auto">
+      <Tabs className="min-h-0 flex-1 gap-0">
+        <TabList aria-label="Flight Deck views" className="px-4">
+          <Tab id="run">Run</Tab>
+          <Tab id="history">Audit log</Tab>
+        </TabList>
+        <TabPanel id="run" className="flex min-h-0 flex-1 flex-col">
+          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto p-4">
+            {events.length === 0 ? (
+              <p className="py-8 text-center text-body-2-regular text-text-secondary">
+                Describe the mission below. ATLAS drafts it and SENTINEL checks it against your zones and limits.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {events.map((event) => (
+                  <EventRow key={event.id} event={event} />
+                ))}
+              </ul>
+            )}
+            {(status === 'awaiting_approval' || status === 'needs_human_input') && (
+              <div className="mt-3">
+                <ApprovalCard />
+              </div>
+            )}
+          </div>
+          <div className="border-t border-separator-border p-4">
+            <MissionPromptBar />
+          </div>
+        </TabPanel>
+        <TabPanel id="history" className="min-h-0 flex-1 overflow-y-auto p-4">
           <HistoryPanel />
-        </div>
-      )}
-    </div>
+        </TabPanel>
+      </Tabs>
+    </aside>
   );
 }

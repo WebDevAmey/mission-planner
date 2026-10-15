@@ -1,112 +1,106 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { useMissionStore } from '@/lib/store/mission-store';
-import { useUIStore } from '@/lib/store/ui-store';
-import type { MissionExportFormat } from '@/lib/services/mission-builder';
+import { useUIStore, type MapTool } from '@/lib/store/ui-store';
+import { useSaveStore } from '@/lib/store/save-store';
 
-interface ShortcutAction {
-  key: string;
-  ctrl?: boolean;
-  shift?: boolean;
-  alt?: boolean;
-  action: () => void;
+const TOOL_KEYS: Record<string, MapTool> = {
+  v: 'select',
+  a: 'add-wp',
+  p: 'draw-area',
+  z: 'draw-zone',
+  h: 'set-home',
+  m: 'measure',
+};
+
+export const SHORTCUTS: { keys: string[]; label: string }[] = [
+  { keys: ['V'], label: 'Select and move' },
+  { keys: ['A'], label: 'Add waypoints' },
+  { keys: ['P'], label: 'Draw survey area' },
+  { keys: ['Z'], label: 'Draw zone' },
+  { keys: ['H'], label: 'Set home' },
+  { keys: ['M'], label: 'Measure' },
+  { keys: ['Enter'], label: 'Finish drawing' },
+  { keys: ['Esc'], label: 'Cancel tool / clear selection' },
+  { keys: ['Delete'], label: 'Delete selected item or zone' },
+  { keys: ['Ctrl', 'Z'], label: 'Undo' },
+  { keys: ['Ctrl', 'Shift', 'Z'], label: 'Redo (also Ctrl Y)' },
+  { keys: ['Ctrl', 'S'], label: 'Save now' },
+  { keys: [']'], label: 'Show or hide the inspector' },
+  { keys: ['?'], label: 'Show this list' },
+];
+
+function isTyping(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el) return false;
+  const tag = el.tagName?.toLowerCase();
+  return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable;
 }
 
-export function useKeyboardShortcuts(shortcuts: ShortcutAction[]) {
+/** Editor keyboard shortcuts (PRODUCT_SPEC §6.2). Ignored while typing or in dialogs. */
+export function useMissionPlannerShortcuts() {
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      const tagName = target?.tagName.toLowerCase();
-      const isEditable =
-        tagName === 'input' ||
-        tagName === 'textarea' ||
-        target?.getAttribute('contenteditable') === 'true';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      const mod = e.ctrlKey || e.metaKey;
+      const key = e.key.toLowerCase();
+      const ui = useUIStore.getState();
+      const store = useMissionStore.getState();
 
-      if (isEditable && !event.metaKey && !event.ctrlKey) {
+      if (mod) {
+        if (key === 's') {
+          e.preventDefault();
+          void useSaveStore.getState().flush();
+          return;
+        }
+        if (isTyping(e.target)) return;
+        if (key === 'z' && !e.shiftKey) {
+          e.preventDefault();
+          store.undo();
+        } else if ((key === 'z' && e.shiftKey) || key === 'y') {
+          e.preventDefault();
+          store.redo();
+        }
         return;
       }
+      if (e.altKey || isTyping(e.target)) return;
+      if ((e.target as HTMLElement | null)?.closest?.('[role="dialog"],[role="menu"],[role="listbox"]')) return;
 
-      for (const shortcut of shortcuts) {
-        const ctrlMatch = Boolean(shortcut.ctrl) === (event.ctrlKey || event.metaKey);
-        const shiftMatch = Boolean(shortcut.shift) === event.shiftKey;
-        const altMatch = Boolean(shortcut.alt) === event.altKey;
-        const keyMatch = shortcut.key.toLowerCase() === event.key.toLowerCase();
-
-        if (ctrlMatch && shiftMatch && altMatch && keyMatch) {
-          event.preventDefault();
-          shortcut.action();
-          break;
+      if (TOOL_KEYS[key] && !e.shiftKey) {
+        ui.setActiveTool(TOOL_KEYS[key]);
+        return;
+      }
+      switch (e.key) {
+        case '?':
+          ui.setShortcutsOpen(true);
+          return;
+        case ']':
+          ui.toggleInspector();
+          return;
+        case 'Escape':
+          if (ui.activeTool !== 'select') ui.setActiveTool('select');
+          else if (ui.planPanel) ui.openPlanPanel(null);
+          else ui.resetSelection();
+          return;
+        case 'Delete':
+        case 'Backspace': {
+          if (ui.selectedMissionItemId) {
+            e.preventDefault();
+            store.deleteMissionItem(ui.selectedMissionItemId);
+            ui.selectMissionItem(null);
+            ui.addToast('Item deleted', 'info', { label: 'Undo', onClick: () => useMissionStore.getState().undo() });
+          } else if (ui.selectedZoneId) {
+            e.preventDefault();
+            store.deleteZone(ui.selectedZoneId);
+            ui.selectZone(null);
+            ui.addToast('Zone deleted', 'info', { label: 'Undo', onClick: () => useMissionStore.getState().undo() });
+          }
+          return;
         }
       }
     };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [shortcuts]);
-}
-
-export function useMissionPlannerShortcuts() {
-  const { undo, redo, mission, exportMission: storeExport, deleteMissionItem } =
-    useMissionStore();
-  const {
-    resetSelection, setActiveTool, selectedMissionItemId, addToast,
-    toggleTemplatePicker, toggleTimeline, toggleGeofencePanel,
-  } = useUIStore();
-
-  const handleExport = useCallback(() => {
-    if (!mission) {
-      addToast('No mission to export', 'error');
-      return;
-    }
-    if (mission.items.length === 0) {
-      addToast('⚠ Export blocked — empty mission', 'error');
-      return;
-    }
-    const payload = storeExport('json' as MissionExportFormat);
-    if (!payload) return;
-    const blob = new Blob([payload.content], { type: payload.mimeType });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `${mission.name.replace(/\s+/g, '_')}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    addToast(`✓ Exported ${mission.name}.json`, 'success');
-  }, [mission, storeExport, addToast]);
-
-  const handleDeleteSelected = useCallback(() => {
-    if (!selectedMissionItemId) return;
-    deleteMissionItem(selectedMissionItemId);
-    addToast('Waypoint deleted', 'info');
-  }, [selectedMissionItemId, deleteMissionItem, addToast]);
-
-  const handleUndo = useCallback(() => {
-    undo();
-    addToast('Undo', 'info');
-  }, [undo, addToast]);
-
-  const handleRedo = useCallback(() => {
-    redo();
-    addToast('Redo', 'info');
-  }, [redo, addToast]);
-
-  useKeyboardShortcuts([
-    { key: 'z', ctrl: true, action: handleUndo },
-    { key: 'z', ctrl: true, shift: true, action: handleRedo },
-    { key: 'y', ctrl: true, action: handleRedo },
-    { key: 's', ctrl: true, action: handleExport },
-    { key: 'Delete', action: handleDeleteSelected },
-    { key: 'Backspace', action: handleDeleteSelected },
-    { key: 'Escape', action: resetSelection },
-    { key: 'a', action: () => setActiveTool('add-wp') },
-    { key: 'r', action: () => setActiveTool('remove-wp') },
-    { key: 's', action: () => setActiveTool('select') },
-    { key: 'w', action: () => setActiveTool('add-wp') },
-    { key: 'd', action: () => setActiveTool('remove-wp') },
-    // Part 9 additions
-    { key: 't', ctrl: true, action: toggleTimeline },
-    { key: 't', action: toggleTemplatePicker },
-    { key: 'g', action: toggleGeofencePanel },
-  ]);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 }
