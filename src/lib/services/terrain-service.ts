@@ -1,3 +1,6 @@
+import { haversineDistance } from '@/lib/utils';
+import { aglM, sampleSpacingM } from '@/lib/domain/metrics';
+
 const elevationCache = new Map<string, number>();
 
 function cacheKey(lat: number, lng: number): string {
@@ -71,41 +74,43 @@ export function clearElevationCache(): void {
   elevationCache.clear();
 }
 
-export function getGroundClearance(waypointAltM: number, terrainElevM: number): number {
-  return waypointAltM - terrainElevM;
+/**
+ * Height above ground. Altitudes are relative to home, so the home elevation must be added:
+ * `agl = relAlt + homeElev - terrainElev`. `homeElevM` defaults to 0 only for backward
+ * compatibility; always pass it (see `aglM` in `@/lib/domain/metrics`).
+ */
+export function getGroundClearance(waypointAltM: number, terrainElevM: number, homeElevM = 0): number {
+  return aglM(waypointAltM, homeElevM, terrainElevM);
 }
 
-/** Build sample points along the route: waypoints + one midpoint per segment */
+export { aglM, buildClearanceSamples, computeClearanceProfile, sampleSpacingM } from '@/lib/domain/metrics';
+
+/**
+ * Sample points along the route: every waypoint plus points every max(30 m, leg/50) along
+ * each leg (not just midpoints).
+ */
 export function buildTerrainSamplePoints(
   spatialItems: { latitude: number; longitude: number; altitude: number | null }[]
 ): { lat: number; lng: number; distFromStart: number }[] {
   const out: { lat: number; lng: number; distFromStart: number }[] = [];
   let cumDist = 0;
-
   for (let i = 0; i < spatialItems.length; i++) {
     const item = spatialItems[i];
     out.push({ lat: item.latitude, lng: item.longitude, distFromStart: cumDist });
-
     if (i < spatialItems.length - 1) {
       const next = spatialItems[i + 1];
-      const R = 6371000;
-      const φ1 = (item.latitude * Math.PI) / 180;
-      const φ2 = (next.latitude * Math.PI) / 180;
-      const Δφ = ((next.latitude - item.latitude) * Math.PI) / 180;
-      const Δλ = ((next.longitude - item.longitude) * Math.PI) / 180;
-      const a =
-        Math.sin(Δφ / 2) ** 2 +
-        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
-      const segDist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-      // Midpoint
-      const midLat = (item.latitude + next.latitude) / 2;
-      const midLng = (item.longitude + next.longitude) / 2;
-      out.push({ lat: midLat, lng: midLng, distFromStart: cumDist + segDist / 2 });
-
+      const segDist = haversineDistance(item.latitude, item.longitude, next.latitude, next.longitude);
+      const n = Math.max(1, Math.ceil(segDist / sampleSpacingM(segDist)));
+      for (let k = 1; k < n; k++) {
+        const t = k / n;
+        out.push({
+          lat: item.latitude + (next.latitude - item.latitude) * t,
+          lng: item.longitude + (next.longitude - item.longitude) * t,
+          distFromStart: cumDist + segDist * t,
+        });
+      }
       cumDist += segDist;
     }
   }
-
   return out;
 }

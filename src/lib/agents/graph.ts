@@ -68,6 +68,8 @@ async function sentinelNode(state: FlightDeckStateType) {
     config: context.constraints,
     nfzs: context.nfzs,
     geofences: context.geofences,
+    zones: context.zones?.map((z, i) => ({ ...z, id: z.id ?? `zone-${i}` })),
+    ratedEnduranceS: context.ratedEnduranceS,
     homePosition: context.homePosition,
   });
 
