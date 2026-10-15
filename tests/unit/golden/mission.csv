@@ -1,0 +1,8 @@
+seq,command,lat,lon,alt_rel_m,speed_ms,param1,param2,param3,param4,notes
+1,MAV_CMD_NAV_TAKEOFF,47,8,30,,0,0,0,0,
+2,MAV_CMD_NAV_WAYPOINT,47.001,8,50,8,0,2,0,0,
+3,MAV_CMD_NAV_LOITER_TIME,47.001,8.0015,50,,30,0,25,0,"orbit, ""tower"""
+4,MAV_CMD_DO_SET_CAM_TRIGG_DIST,,,,,25,0,0,0,
+5,MAV_CMD_NAV_WAYPOINT,47,8.0015,60,,0,2,0,0,
+6,MAV_CMD_DO_JUMP,,,,,3,2,0,0,
+7,MAV_CMD_NAV_RETURN_TO_LAUNCH,,,,,0,0,0,0,
