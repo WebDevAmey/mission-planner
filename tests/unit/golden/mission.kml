@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+<name>Golden Field #1</name>
+<Style id="route"><LineStyle><color>ff00c8ff</color><width>3</width></LineStyle></Style>
+<Style id="zone-exclusion"><LineStyle><color>ff3333ff</color><width>2</width></LineStyle><PolyStyle><color>403333ff</color></PolyStyle></Style>
+<Style id="zone-inclusion"><LineStyle><color>ffd27d2d</color><width>2</width></LineStyle><PolyStyle><color>20d27d2d</color></PolyStyle></Style>
+<Placemark><name>Route</name><styleUrl>#route</styleUrl><LineString><altitudeMode>relativeToGround</altitudeMode>
+<coordinates>8,47,30 8,47.001,50 8.0015,47.001,50 8.0015,47,60</coordinates>
+</LineString></Placemark>
+<Folder><name>Waypoints</name>
+<Placemark><name>1 TAKEOFF</name><Point><altitudeMode>relativeToGround</altitudeMode><coordinates>8,47,30</coordinates></Point></Placemark>
+<Placemark><name>2 WAYPOINT</name><Point><altitudeMode>relativeToGround</altitudeMode><coordinates>8,47.001,50</coordinates></Point></Placemark>
+<Placemark><name>3 LOITER_TIME</name><Point><altitudeMode>relativeToGround</altitudeMode><coordinates>8.0015,47.001,50</coordinates></Point></Placemark>
+<Placemark><name>5 WAYPOINT</name><Point><altitudeMode>relativeToGround</altitudeMode><coordinates>8.0015,47,60</coordinates></Point></Placemark>
+</Folder>
+<Folder><name>Zones</name>
+<Placemark><name>Keep-out: Barn &amp; yard</name><styleUrl>#zone-exclusion</styleUrl><Polygon><outerBoundaryIs><LinearRing><coordinates>8.002,47.002,0 8.003,47.002,0 8.003,47.003,0 8.002,47.002,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+<Placemark><name>No-fly: Mast</name><styleUrl>#zone-exclusion</styleUrl><Polygon><outerBoundaryIs><LinearRing><coordinates>8.0036586,46.999,0 8.0036529,46.9990586,0 8.0036361,46.9991163,0 8.0036084,46.9991719,0 8.0035703,46.9992246,0 8.0035225,46.9992734,0 8.0034657,46.9993176,0 8.0034009,46.9993563,0 8.0033293,46.999389,0 8.003252,46.999415,0 8.0031705,46.9994339,0 8.003086,46.9994453,0 8.003,46.9994492,0 8.002914,46.9994453,0 8.0028295,46.9994339,0 8.002748,46.999415,0 8.0026707,46.999389,0 8.0025991,46.9993563,0 8.0025343,46.9993176,0 8.0024775,46.9992734,0 8.0024297,46.9992246,0 8.0023916,46.9991719,0 8.0023639,46.9991163,0 8.0023471,46.9990586,0 8.0023414,46.999,0 8.0023471,46.9989414,0 8.0023639,46.9988837,0 8.0023916,46.9988281,0 8.0024297,46.9987754,0 8.0024775,46.9987266,0 8.0025343,46.9986824,0 8.0025991,46.9986437,0 8.0026707,46.998611,0 8.002748,46.998585,0 8.0028295,46.9985661,0 8.002914,46.9985547,0 8.003,46.9985508,0 8.003086,46.9985547,0 8.0031705,46.9985661,0 8.003252,46.998585,0 8.0033293,46.998611,0 8.0034009,46.9986437,0 8.0034657,46.9986824,0 8.0035225,46.9987266,0 8.0035703,46.9987754,0 8.0036084,46.9988281,0 8.0036361,46.9988837,0 8.0036529,46.9989414,0 8.0036586,46.999,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+<Placemark><name>Keep-in: Site</name><styleUrl>#zone-inclusion</styleUrl><Polygon><outerBoundaryIs><LinearRing><coordinates>7.99,46.99,0 8.01,46.99,0 8.01,47.01,0 7.99,47.01,0 7.99,46.99,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+</Folder>
+</Document>
+</kml>
