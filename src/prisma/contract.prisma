@@ -25,6 +25,7 @@ model Session {
   createdAt TimestamptzString @default(now())
   userAgent String?
   ipAddress String?
+  lastSeenAt TimestamptzString?
 
   @@index([userId])
 }
@@ -83,6 +84,23 @@ enum MissionActionType {
   do_jump
 }
 
+enum MissionStatus {
+  draft
+  ready
+  archived
+}
+
+enum ZoneKind {
+  no_fly
+  keep_in
+  keep_out
+}
+
+enum ZoneShape {
+  circle
+  polygon
+}
+
 model Mission {
   id          String   @id @default(uuid())
   name        String
@@ -94,13 +112,33 @@ model Mission {
   homeLongitude Float?
   homeAltitude  Float?
 
+  // Optimistic concurrency: PATCH with a stale baseVersion gets a 409.
+  version     Int           @default(1)
+  status      MissionStatus @default(draft)
+  vehicleType String        @default("multirotor")
+
+  // Denormalised summary, recomputed by the server on every save so the
+  // dashboard never has to load waypoints.
+  distanceM       Float?
+  durationS       Float?
+  waypointCount   Int?
+  errorCount      Int?
+  warningCount    Int?
+  bboxMinLat      Float?
+  bboxMinLng      Float?
+  bboxMaxLat      Float?
+  bboxMaxLng      Float?
+  lastValidatedAt TimestamptzString?
+
   createdAt TimestamptzString @default(now())
   updatedAt TimestamptzString @default(now())
 
   waypoints Waypoint[]
   settings  MissionSettings?
+  zones     Zone[]
 
   @@index([userId])
+  @@index([userId, updatedAt])
 }
 
 // 1:1 with Mission — flight defaults plus the safety-limit configuration
@@ -122,6 +160,38 @@ model MissionSettings {
   minAltM         Float @default(10)
   maxSpeedMs      Float @default(20)
   minAGLClearance Float @default(30)
+
+  cruiseSpeed      Float  @default(12)
+  hoverSpeed       Float  @default(5)
+  turnaroundM      Float  @default(10)
+  homeElevationM   Float?
+  ratedEnduranceS  Float  @default(1200)
+}
+
+// Geofence / no-fly zones attached to a mission. Polygon vertices are stored
+// whole as JSONB ([lng, lat] pairs) — they are variable length and always
+// read together (DECISIONS D-08).
+model Zone {
+  id        String    @id @default(uuid())
+  missionId String
+  mission   Mission   @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  kind      ZoneKind
+  shape     ZoneShape
+  label     String    @default("")
+  enabled   Boolean   @default(true)
+
+  centerLat Float?
+  centerLng Float?
+  radiusM   Float?
+  vertices  Jsonb?
+
+  minAltM Float?
+  maxAltM Float?
+
+  createdAt TimestamptzString @default(now())
+  updatedAt TimestamptzString @default(now())
+
+  @@index([missionId])
 }
 
 model Waypoint {

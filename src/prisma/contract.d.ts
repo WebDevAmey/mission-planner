@@ -18,9 +18,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'797d2cd086c0759828e87e956f9f06eaae2e677fba19abcd8dbafd267194ecea'>;
+  StorageHashBase<'99949b9337b98556cf784c06d24138af8dfc080fac930dc4c663577bbf38dba9'>;
 export type ExecutionHash =
-  ExecutionHashBase<'e078d18a9694c71466ce89877417b89d24f86ccbbe44648f3a7ceb9588e476e7'>;
+  ExecutionHashBase<'4ec102d9d444bf9d516db864c65230b6f011a90485242e082d53913926c8b4d2'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -249,28 +249,46 @@ export type FieldOutputTypes = {
       readonly userId: CodecTypes['pg/text@1']['output'];
     };
     readonly Mission: {
+      readonly bboxMaxLat: CodecTypes['pg/float8@1']['output'] | null;
+      readonly bboxMaxLng: CodecTypes['pg/float8@1']['output'] | null;
+      readonly bboxMinLat: CodecTypes['pg/float8@1']['output'] | null;
+      readonly bboxMinLng: CodecTypes['pg/float8@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly description: CodecTypes['pg/text@1']['output'] | null;
+      readonly distanceM: CodecTypes['pg/float8@1']['output'] | null;
+      readonly durationS: CodecTypes['pg/float8@1']['output'] | null;
+      readonly errorCount: CodecTypes['pg/int4@1']['output'] | null;
       readonly homeAltitude: CodecTypes['pg/float8@1']['output'] | null;
       readonly homeLatitude: CodecTypes['pg/float8@1']['output'] | null;
       readonly homeLongitude: CodecTypes['pg/float8@1']['output'] | null;
       readonly id: CodecTypes['pg/text@1']['output'];
+      readonly lastValidatedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly name: CodecTypes['pg/text@1']['output'];
+      readonly status: 'draft' | 'ready' | 'archived';
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly userId: CodecTypes['pg/text@1']['output'];
+      readonly vehicleType: CodecTypes['pg/text@1']['output'];
+      readonly version: CodecTypes['pg/int4@1']['output'];
+      readonly warningCount: CodecTypes['pg/int4@1']['output'] | null;
+      readonly waypointCount: CodecTypes['pg/int4@1']['output'] | null;
     };
     readonly MissionSettings: {
       readonly altitudeReference: CodecTypes['pg/text@1']['output'];
+      readonly cruiseSpeed: CodecTypes['pg/float8@1']['output'];
       readonly defaultAltitude: CodecTypes['pg/float8@1']['output'];
       readonly defaultLoiterTime: CodecTypes['pg/float8@1']['output'];
       readonly defaultSpeed: CodecTypes['pg/float8@1']['output'];
       readonly defaultWaitTime: CodecTypes['pg/float8@1']['output'];
+      readonly homeElevationM: CodecTypes['pg/float8@1']['output'] | null;
+      readonly hoverSpeed: CodecTypes['pg/float8@1']['output'];
       readonly maxAltM: CodecTypes['pg/float8@1']['output'];
       readonly maxDistanceM: CodecTypes['pg/float8@1']['output'];
       readonly maxSpeedMs: CodecTypes['pg/float8@1']['output'];
       readonly minAGLClearance: CodecTypes['pg/float8@1']['output'];
       readonly minAltM: CodecTypes['pg/float8@1']['output'];
       readonly missionId: CodecTypes['pg/text@1']['output'];
+      readonly ratedEnduranceS: CodecTypes['pg/float8@1']['output'];
+      readonly turnaroundM: CodecTypes['pg/float8@1']['output'];
     };
     readonly PasswordResetToken: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -285,6 +303,7 @@ export type FieldOutputTypes = {
       readonly expiresAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly ipAddress: CodecTypes['pg/text@1']['output'] | null;
+      readonly lastSeenAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly tokenHash: CodecTypes['pg/text@1']['output'];
       readonly userAgent: CodecTypes['pg/text@1']['output'] | null;
       readonly userId: CodecTypes['pg/text@1']['output'];
@@ -335,6 +354,22 @@ export type FieldOutputTypes = {
       readonly sequence: CodecTypes['pg/int4@1']['output'];
       readonly speed: CodecTypes['pg/float8@1']['output'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly Zone: {
+      readonly centerLat: CodecTypes['pg/float8@1']['output'] | null;
+      readonly centerLng: CodecTypes['pg/float8@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly enabled: CodecTypes['pg/bool@1']['output'];
+      readonly id: CodecTypes['pg/text@1']['output'];
+      readonly kind: 'no_fly' | 'keep_in' | 'keep_out';
+      readonly label: CodecTypes['pg/text@1']['output'];
+      readonly maxAltM: CodecTypes['pg/float8@1']['output'] | null;
+      readonly minAltM: CodecTypes['pg/float8@1']['output'] | null;
+      readonly missionId: CodecTypes['pg/text@1']['output'];
+      readonly radiusM: CodecTypes['pg/float8@1']['output'] | null;
+      readonly shape: 'circle' | 'polygon';
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly vertices: CodecTypes['pg/jsonb@1']['output'] | null;
     };
   };
 };
@@ -355,28 +390,46 @@ export type FieldInputTypes = {
       readonly userId: CodecTypes['pg/text@1']['input'];
     };
     readonly Mission: {
+      readonly bboxMaxLat: CodecTypes['pg/float8@1']['input'] | null;
+      readonly bboxMaxLng: CodecTypes['pg/float8@1']['input'] | null;
+      readonly bboxMinLat: CodecTypes['pg/float8@1']['input'] | null;
+      readonly bboxMinLng: CodecTypes['pg/float8@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly description: CodecTypes['pg/text@1']['input'] | null;
+      readonly distanceM: CodecTypes['pg/float8@1']['input'] | null;
+      readonly durationS: CodecTypes['pg/float8@1']['input'] | null;
+      readonly errorCount: CodecTypes['pg/int4@1']['input'] | null;
       readonly homeAltitude: CodecTypes['pg/float8@1']['input'] | null;
       readonly homeLatitude: CodecTypes['pg/float8@1']['input'] | null;
       readonly homeLongitude: CodecTypes['pg/float8@1']['input'] | null;
       readonly id: CodecTypes['pg/text@1']['input'];
+      readonly lastValidatedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly name: CodecTypes['pg/text@1']['input'];
+      readonly status: 'draft' | 'ready' | 'archived';
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly userId: CodecTypes['pg/text@1']['input'];
+      readonly vehicleType: CodecTypes['pg/text@1']['input'];
+      readonly version: CodecTypes['pg/int4@1']['input'];
+      readonly warningCount: CodecTypes['pg/int4@1']['input'] | null;
+      readonly waypointCount: CodecTypes['pg/int4@1']['input'] | null;
     };
     readonly MissionSettings: {
       readonly altitudeReference: CodecTypes['pg/text@1']['input'];
+      readonly cruiseSpeed: CodecTypes['pg/float8@1']['input'];
       readonly defaultAltitude: CodecTypes['pg/float8@1']['input'];
       readonly defaultLoiterTime: CodecTypes['pg/float8@1']['input'];
       readonly defaultSpeed: CodecTypes['pg/float8@1']['input'];
       readonly defaultWaitTime: CodecTypes['pg/float8@1']['input'];
+      readonly homeElevationM: CodecTypes['pg/float8@1']['input'] | null;
+      readonly hoverSpeed: CodecTypes['pg/float8@1']['input'];
       readonly maxAltM: CodecTypes['pg/float8@1']['input'];
       readonly maxDistanceM: CodecTypes['pg/float8@1']['input'];
       readonly maxSpeedMs: CodecTypes['pg/float8@1']['input'];
       readonly minAGLClearance: CodecTypes['pg/float8@1']['input'];
       readonly minAltM: CodecTypes['pg/float8@1']['input'];
       readonly missionId: CodecTypes['pg/text@1']['input'];
+      readonly ratedEnduranceS: CodecTypes['pg/float8@1']['input'];
+      readonly turnaroundM: CodecTypes['pg/float8@1']['input'];
     };
     readonly PasswordResetToken: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -391,6 +444,7 @@ export type FieldInputTypes = {
       readonly expiresAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly ipAddress: CodecTypes['pg/text@1']['input'] | null;
+      readonly lastSeenAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly tokenHash: CodecTypes['pg/text@1']['input'];
       readonly userAgent: CodecTypes['pg/text@1']['input'] | null;
       readonly userId: CodecTypes['pg/text@1']['input'];
@@ -442,6 +496,22 @@ export type FieldInputTypes = {
       readonly speed: CodecTypes['pg/float8@1']['input'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
+    readonly Zone: {
+      readonly centerLat: CodecTypes['pg/float8@1']['input'] | null;
+      readonly centerLng: CodecTypes['pg/float8@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly enabled: CodecTypes['pg/bool@1']['input'];
+      readonly id: CodecTypes['pg/text@1']['input'];
+      readonly kind: 'no_fly' | 'keep_in' | 'keep_out';
+      readonly label: CodecTypes['pg/text@1']['input'];
+      readonly maxAltM: CodecTypes['pg/float8@1']['input'] | null;
+      readonly minAltM: CodecTypes['pg/float8@1']['input'] | null;
+      readonly missionId: CodecTypes['pg/text@1']['input'];
+      readonly radiusM: CodecTypes['pg/float8@1']['input'] | null;
+      readonly shape: 'circle' | 'polygon';
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly vertices: CodecTypes['pg/jsonb@1']['input'] | null;
+    };
   };
 };
 export type StorageColumnTypes = {
@@ -461,28 +531,46 @@ export type StorageColumnTypes = {
       readonly userId: CodecTypes['pg/text@1']['output'];
     };
     readonly Mission: {
+      readonly bboxMaxLat: CodecTypes['pg/float8@1']['output'] | null;
+      readonly bboxMaxLng: CodecTypes['pg/float8@1']['output'] | null;
+      readonly bboxMinLat: CodecTypes['pg/float8@1']['output'] | null;
+      readonly bboxMinLng: CodecTypes['pg/float8@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly description: CodecTypes['pg/text@1']['output'] | null;
+      readonly distanceM: CodecTypes['pg/float8@1']['output'] | null;
+      readonly durationS: CodecTypes['pg/float8@1']['output'] | null;
+      readonly errorCount: CodecTypes['pg/int4@1']['output'] | null;
       readonly homeAltitude: CodecTypes['pg/float8@1']['output'] | null;
       readonly homeLatitude: CodecTypes['pg/float8@1']['output'] | null;
       readonly homeLongitude: CodecTypes['pg/float8@1']['output'] | null;
       readonly id: CodecTypes['pg/text@1']['output'];
+      readonly lastValidatedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly name: CodecTypes['pg/text@1']['output'];
+      readonly status: 'draft' | 'ready' | 'archived';
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly userId: CodecTypes['pg/text@1']['output'];
+      readonly vehicleType: CodecTypes['pg/text@1']['output'];
+      readonly version: CodecTypes['pg/int4@1']['output'];
+      readonly warningCount: CodecTypes['pg/int4@1']['output'] | null;
+      readonly waypointCount: CodecTypes['pg/int4@1']['output'] | null;
     };
     readonly MissionSettings: {
       readonly altitudeReference: CodecTypes['pg/text@1']['output'];
+      readonly cruiseSpeed: CodecTypes['pg/float8@1']['output'];
       readonly defaultAltitude: CodecTypes['pg/float8@1']['output'];
       readonly defaultLoiterTime: CodecTypes['pg/float8@1']['output'];
       readonly defaultSpeed: CodecTypes['pg/float8@1']['output'];
       readonly defaultWaitTime: CodecTypes['pg/float8@1']['output'];
+      readonly homeElevationM: CodecTypes['pg/float8@1']['output'] | null;
+      readonly hoverSpeed: CodecTypes['pg/float8@1']['output'];
       readonly maxAltM: CodecTypes['pg/float8@1']['output'];
       readonly maxDistanceM: CodecTypes['pg/float8@1']['output'];
       readonly maxSpeedMs: CodecTypes['pg/float8@1']['output'];
       readonly minAGLClearance: CodecTypes['pg/float8@1']['output'];
       readonly minAltM: CodecTypes['pg/float8@1']['output'];
       readonly missionId: CodecTypes['pg/text@1']['output'];
+      readonly ratedEnduranceS: CodecTypes['pg/float8@1']['output'];
+      readonly turnaroundM: CodecTypes['pg/float8@1']['output'];
     };
     readonly PasswordResetToken: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -497,6 +585,7 @@ export type StorageColumnTypes = {
       readonly expiresAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly ipAddress: CodecTypes['pg/text@1']['output'] | null;
+      readonly lastSeenAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly tokenHash: CodecTypes['pg/text@1']['output'];
       readonly userAgent: CodecTypes['pg/text@1']['output'] | null;
       readonly userId: CodecTypes['pg/text@1']['output'];
@@ -548,6 +637,22 @@ export type StorageColumnTypes = {
       readonly speed: CodecTypes['pg/float8@1']['output'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly Zone: {
+      readonly centerLat: CodecTypes['pg/float8@1']['output'] | null;
+      readonly centerLng: CodecTypes['pg/float8@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly enabled: CodecTypes['pg/bool@1']['output'];
+      readonly id: CodecTypes['pg/text@1']['output'];
+      readonly kind: 'no_fly' | 'keep_in' | 'keep_out';
+      readonly label: CodecTypes['pg/text@1']['output'];
+      readonly maxAltM: CodecTypes['pg/float8@1']['output'] | null;
+      readonly minAltM: CodecTypes['pg/float8@1']['output'] | null;
+      readonly missionId: CodecTypes['pg/text@1']['output'];
+      readonly radiusM: CodecTypes['pg/float8@1']['output'] | null;
+      readonly shape: 'circle' | 'polygon';
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly vertices: CodecTypes['pg/jsonb@1']['output'] | null;
+    };
   };
 };
 export type StorageColumnInputTypes = {
@@ -567,28 +672,46 @@ export type StorageColumnInputTypes = {
       readonly userId: CodecTypes['pg/text@1']['input'];
     };
     readonly Mission: {
+      readonly bboxMaxLat: CodecTypes['pg/float8@1']['input'] | null;
+      readonly bboxMaxLng: CodecTypes['pg/float8@1']['input'] | null;
+      readonly bboxMinLat: CodecTypes['pg/float8@1']['input'] | null;
+      readonly bboxMinLng: CodecTypes['pg/float8@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly description: CodecTypes['pg/text@1']['input'] | null;
+      readonly distanceM: CodecTypes['pg/float8@1']['input'] | null;
+      readonly durationS: CodecTypes['pg/float8@1']['input'] | null;
+      readonly errorCount: CodecTypes['pg/int4@1']['input'] | null;
       readonly homeAltitude: CodecTypes['pg/float8@1']['input'] | null;
       readonly homeLatitude: CodecTypes['pg/float8@1']['input'] | null;
       readonly homeLongitude: CodecTypes['pg/float8@1']['input'] | null;
       readonly id: CodecTypes['pg/text@1']['input'];
+      readonly lastValidatedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly name: CodecTypes['pg/text@1']['input'];
+      readonly status: 'draft' | 'ready' | 'archived';
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly userId: CodecTypes['pg/text@1']['input'];
+      readonly vehicleType: CodecTypes['pg/text@1']['input'];
+      readonly version: CodecTypes['pg/int4@1']['input'];
+      readonly warningCount: CodecTypes['pg/int4@1']['input'] | null;
+      readonly waypointCount: CodecTypes['pg/int4@1']['input'] | null;
     };
     readonly MissionSettings: {
       readonly altitudeReference: CodecTypes['pg/text@1']['input'];
+      readonly cruiseSpeed: CodecTypes['pg/float8@1']['input'];
       readonly defaultAltitude: CodecTypes['pg/float8@1']['input'];
       readonly defaultLoiterTime: CodecTypes['pg/float8@1']['input'];
       readonly defaultSpeed: CodecTypes['pg/float8@1']['input'];
       readonly defaultWaitTime: CodecTypes['pg/float8@1']['input'];
+      readonly homeElevationM: CodecTypes['pg/float8@1']['input'] | null;
+      readonly hoverSpeed: CodecTypes['pg/float8@1']['input'];
       readonly maxAltM: CodecTypes['pg/float8@1']['input'];
       readonly maxDistanceM: CodecTypes['pg/float8@1']['input'];
       readonly maxSpeedMs: CodecTypes['pg/float8@1']['input'];
       readonly minAGLClearance: CodecTypes['pg/float8@1']['input'];
       readonly minAltM: CodecTypes['pg/float8@1']['input'];
       readonly missionId: CodecTypes['pg/text@1']['input'];
+      readonly ratedEnduranceS: CodecTypes['pg/float8@1']['input'];
+      readonly turnaroundM: CodecTypes['pg/float8@1']['input'];
     };
     readonly PasswordResetToken: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -603,6 +726,7 @@ export type StorageColumnInputTypes = {
       readonly expiresAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly ipAddress: CodecTypes['pg/text@1']['input'] | null;
+      readonly lastSeenAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly tokenHash: CodecTypes['pg/text@1']['input'];
       readonly userAgent: CodecTypes['pg/text@1']['input'] | null;
       readonly userId: CodecTypes['pg/text@1']['input'];
@@ -653,6 +777,22 @@ export type StorageColumnInputTypes = {
       readonly sequence: CodecTypes['pg/int4@1']['input'];
       readonly speed: CodecTypes['pg/float8@1']['input'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly Zone: {
+      readonly centerLat: CodecTypes['pg/float8@1']['input'] | null;
+      readonly centerLng: CodecTypes['pg/float8@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly enabled: CodecTypes['pg/bool@1']['input'];
+      readonly id: CodecTypes['pg/text@1']['input'];
+      readonly kind: 'no_fly' | 'keep_in' | 'keep_out';
+      readonly label: CodecTypes['pg/text@1']['input'];
+      readonly maxAltM: CodecTypes['pg/float8@1']['input'] | null;
+      readonly minAltM: CodecTypes['pg/float8@1']['input'] | null;
+      readonly missionId: CodecTypes['pg/text@1']['input'];
+      readonly radiusM: CodecTypes['pg/float8@1']['input'] | null;
+      readonly shape: 'circle' | 'polygon';
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly vertices: CodecTypes['pg/jsonb@1']['input'] | null;
     };
   };
 };
@@ -676,32 +816,51 @@ export namespace Models {
     readonly [RelationKeys]?: 'user';
   };
   export type public_Mission = {
+    bboxMaxLat: CodecTypes['pg/float8@1']['output'] | null;
+    bboxMaxLng: CodecTypes['pg/float8@1']['output'] | null;
+    bboxMinLat: CodecTypes['pg/float8@1']['output'] | null;
+    bboxMinLng: CodecTypes['pg/float8@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     description: CodecTypes['pg/text@1']['output'] | null;
+    distanceM: CodecTypes['pg/float8@1']['output'] | null;
+    durationS: CodecTypes['pg/float8@1']['output'] | null;
+    errorCount: CodecTypes['pg/int4@1']['output'] | null;
     homeAltitude: CodecTypes['pg/float8@1']['output'] | null;
     homeLatitude: CodecTypes['pg/float8@1']['output'] | null;
     homeLongitude: CodecTypes['pg/float8@1']['output'] | null;
     id: CodecTypes['pg/text@1']['output'];
+    lastValidatedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     name: CodecTypes['pg/text@1']['output'];
+    status: 'draft' | 'ready' | 'archived';
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     userId: CodecTypes['pg/text@1']['output'];
+    vehicleType: CodecTypes['pg/text@1']['output'];
+    version: CodecTypes['pg/int4@1']['output'];
+    warningCount: CodecTypes['pg/int4@1']['output'] | null;
+    waypointCount: CodecTypes['pg/int4@1']['output'] | null;
     settings: public_MissionSettings | null;
     user: public_User;
     waypoints: public_Waypoint[];
-    readonly [RelationKeys]?: 'settings' | 'user' | 'waypoints';
+    zones: public_Zone[];
+    readonly [RelationKeys]?: 'settings' | 'user' | 'waypoints' | 'zones';
   };
   export type public_MissionSettings = {
     altitudeReference: CodecTypes['pg/text@1']['output'];
+    cruiseSpeed: CodecTypes['pg/float8@1']['output'];
     defaultAltitude: CodecTypes['pg/float8@1']['output'];
     defaultLoiterTime: CodecTypes['pg/float8@1']['output'];
     defaultSpeed: CodecTypes['pg/float8@1']['output'];
     defaultWaitTime: CodecTypes['pg/float8@1']['output'];
+    homeElevationM: CodecTypes['pg/float8@1']['output'] | null;
+    hoverSpeed: CodecTypes['pg/float8@1']['output'];
     maxAltM: CodecTypes['pg/float8@1']['output'];
     maxDistanceM: CodecTypes['pg/float8@1']['output'];
     maxSpeedMs: CodecTypes['pg/float8@1']['output'];
     minAGLClearance: CodecTypes['pg/float8@1']['output'];
     minAltM: CodecTypes['pg/float8@1']['output'];
     missionId: CodecTypes['pg/text@1']['output'];
+    ratedEnduranceS: CodecTypes['pg/float8@1']['output'];
+    turnaroundM: CodecTypes['pg/float8@1']['output'];
     mission: public_Mission;
     readonly [RelationKeys]?: 'mission';
   };
@@ -720,6 +879,7 @@ export namespace Models {
     expiresAt: CodecTypes['pg/timestamptz-string@1']['output'];
     id: CodecTypes['pg/text@1']['output'];
     ipAddress: CodecTypes['pg/text@1']['output'] | null;
+    lastSeenAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     tokenHash: CodecTypes['pg/text@1']['output'];
     userAgent: CodecTypes['pg/text@1']['output'] | null;
     userId: CodecTypes['pg/text@1']['output'];
@@ -781,6 +941,24 @@ export namespace Models {
     mission: public_Mission;
     readonly [RelationKeys]?: 'mission';
   };
+  export type public_Zone = {
+    centerLat: CodecTypes['pg/float8@1']['output'] | null;
+    centerLng: CodecTypes['pg/float8@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    enabled: CodecTypes['pg/bool@1']['output'];
+    id: CodecTypes['pg/text@1']['output'];
+    kind: 'no_fly' | 'keep_in' | 'keep_out';
+    label: CodecTypes['pg/text@1']['output'];
+    maxAltM: CodecTypes['pg/float8@1']['output'] | null;
+    minAltM: CodecTypes['pg/float8@1']['output'] | null;
+    missionId: CodecTypes['pg/text@1']['output'];
+    radiusM: CodecTypes['pg/float8@1']['output'] | null;
+    shape: 'circle' | 'polygon';
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    vertices: CodecTypes['pg/jsonb@1']['output'] | null;
+    mission: public_Mission;
+    readonly [RelationKeys]?: 'mission';
+  };
 }
 
 export declare const models: {
@@ -793,6 +971,7 @@ export declare const models: {
     Session: Models.public_Session;
     User: Models.public_User;
     Waypoint: Models.public_Waypoint;
+    Zone: Models.public_Zone;
   };
 };
 
@@ -921,6 +1100,30 @@ type ContractBase = Omit<
             };
             readonly Mission: {
               columns: {
+                readonly bboxMaxLat: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly bboxMaxLng: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly bboxMinLat: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly bboxMinLng: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly createdAt: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -931,6 +1134,24 @@ type ContractBase = Omit<
                 readonly description: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly distanceM: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly durationS: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly errorCount: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
                   readonly nullable: true;
                   readonly many: false;
                 };
@@ -958,10 +1179,26 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly lastValidatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly name: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'draft'>;
+                  };
                   readonly many: false;
                 };
                 readonly updatedAt: {
@@ -977,6 +1214,38 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly vehicleType: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'multirotor'>;
+                  };
+                  readonly many: false;
+                };
+                readonly version: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 1>;
+                  };
+                  readonly many: false;
+                };
+                readonly warningCount: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly waypointCount: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
               };
               primaryKey: { readonly columns: readonly ['id'] };
               uniques: readonly [];
@@ -985,6 +1254,12 @@ type ContractBase = Omit<
                   readonly name: 'Mission_userId_idx_a489d58a';
                   readonly prefix: 'Mission_userId_idx';
                   readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'Mission_userId_updatedAt_idx_42f5280d';
+                  readonly prefix: 'Mission_userId_updatedAt_idx';
+                  readonly columns: readonly ['userId', 'updatedAt'];
                   readonly unique: false;
                 },
               ];
@@ -1012,6 +1287,16 @@ type ContractBase = Omit<
                   readonly default: {
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/text@1', 'relative'>;
+                  };
+                  readonly many: false;
+                };
+                readonly cruiseSpeed: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/float8@1', 12>;
                   };
                   readonly many: false;
                 };
@@ -1052,6 +1337,22 @@ type ContractBase = Omit<
                   readonly default: {
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/float8@1', 10>;
+                  };
+                  readonly many: false;
+                };
+                readonly homeElevationM: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly hoverSpeed: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/float8@1', 5>;
                   };
                   readonly many: false;
                 };
@@ -1109,6 +1410,26 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly ratedEnduranceS: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/float8@1', 1200>;
+                  };
+                  readonly many: false;
+                };
+                readonly turnaroundM: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/float8@1', 10>;
+                  };
                   readonly many: false;
                 };
               };
@@ -1219,6 +1540,12 @@ type ContractBase = Omit<
                 readonly ipAddress: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lastSeenAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
                   readonly nullable: true;
                   readonly many: false;
                 };
@@ -1502,6 +1829,128 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly Zone: {
+              columns: {
+                readonly centerLat: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly centerLng: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly enabled: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly kind: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly label: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', ''>;
+                  };
+                  readonly many: false;
+                };
+                readonly maxAltM: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly minAltM: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly missionId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly radiusM: {
+                  readonly dataType: 'pg/float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly shape: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly vertices: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'Zone_missionId_idx_25ef2118';
+                  readonly prefix: 'Zone_missionId_idx';
+                  readonly columns: readonly ['missionId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Zone';
+                    readonly columns: readonly ['missionId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Mission';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
           };
           readonly valueSet: {
             readonly MissionActionType: {
@@ -1523,6 +1972,18 @@ type ContractBase = Omit<
                 'cam_trigg_dist',
                 'do_jump',
               ];
+            };
+            readonly MissionStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['draft', 'ready', 'archived'];
+            };
+            readonly ZoneKind: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['no_fly', 'keep_in', 'keep_out'];
+            };
+            readonly ZoneShape: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['circle', 'polygon'];
             };
           };
         };
@@ -1555,6 +2016,7 @@ type ContractBase = Omit<
     readonly Session: { readonly namespace: 'public' & NamespaceId; readonly model: 'Session' };
     readonly User: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
     readonly Waypoint: { readonly namespace: 'public' & NamespaceId; readonly model: 'Waypoint' };
+    readonly Zone: { readonly namespace: 'public' & NamespaceId; readonly model: 'Zone' };
   };
   readonly domain: {
     readonly namespaces: {
@@ -1653,6 +2115,22 @@ type ContractBase = Omit<
           };
           readonly Mission: {
             readonly fields: {
+              readonly bboxMaxLat: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
+              readonly bboxMaxLng: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
+              readonly bboxMinLat: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
+              readonly bboxMinLng: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -1663,6 +2141,18 @@ type ContractBase = Omit<
               readonly description: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly distanceM: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
+              readonly durationS: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
+              readonly errorCount: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
               readonly homeAltitude: {
                 readonly nullable: true;
@@ -1680,7 +2170,18 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly lastValidatedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
               readonly name: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
@@ -1694,6 +2195,22 @@ type ContractBase = Omit<
               readonly userId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly vehicleType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly version: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly warningCount: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly waypointCount: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
             };
             readonly relations: {
@@ -1729,20 +2246,41 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['missionId'];
                 };
               };
+              readonly zones: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Zone' };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['missionId'];
+                };
+              };
             };
             readonly storage: {
               readonly table: 'Mission';
               readonly namespaceId: 'public';
               readonly fields: {
+                readonly bboxMaxLat: { readonly column: 'bboxMaxLat' };
+                readonly bboxMaxLng: { readonly column: 'bboxMaxLng' };
+                readonly bboxMinLat: { readonly column: 'bboxMinLat' };
+                readonly bboxMinLng: { readonly column: 'bboxMinLng' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly description: { readonly column: 'description' };
+                readonly distanceM: { readonly column: 'distanceM' };
+                readonly durationS: { readonly column: 'durationS' };
+                readonly errorCount: { readonly column: 'errorCount' };
                 readonly homeAltitude: { readonly column: 'homeAltitude' };
                 readonly homeLatitude: { readonly column: 'homeLatitude' };
                 readonly homeLongitude: { readonly column: 'homeLongitude' };
                 readonly id: { readonly column: 'id' };
+                readonly lastValidatedAt: { readonly column: 'lastValidatedAt' };
                 readonly name: { readonly column: 'name' };
+                readonly status: { readonly column: 'status' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly userId: { readonly column: 'userId' };
+                readonly vehicleType: { readonly column: 'vehicleType' };
+                readonly version: { readonly column: 'version' };
+                readonly warningCount: { readonly column: 'warningCount' };
+                readonly waypointCount: { readonly column: 'waypointCount' };
               };
             };
           };
@@ -1751,6 +2289,10 @@ type ContractBase = Omit<
               readonly altitudeReference: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly cruiseSpeed: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
               };
               readonly defaultAltitude: {
                 readonly nullable: false;
@@ -1765,6 +2307,14 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
               };
               readonly defaultWaitTime: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
+              readonly homeElevationM: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
+              readonly hoverSpeed: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
               };
@@ -1792,6 +2342,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly ratedEnduranceS: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
+              readonly turnaroundM: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
             };
             readonly relations: {
               readonly mission: {
@@ -1812,16 +2370,21 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly altitudeReference: { readonly column: 'altitudeReference' };
+                readonly cruiseSpeed: { readonly column: 'cruiseSpeed' };
                 readonly defaultAltitude: { readonly column: 'defaultAltitude' };
                 readonly defaultLoiterTime: { readonly column: 'defaultLoiterTime' };
                 readonly defaultSpeed: { readonly column: 'defaultSpeed' };
                 readonly defaultWaitTime: { readonly column: 'defaultWaitTime' };
+                readonly homeElevationM: { readonly column: 'homeElevationM' };
+                readonly hoverSpeed: { readonly column: 'hoverSpeed' };
                 readonly maxAltM: { readonly column: 'maxAltM' };
                 readonly maxDistanceM: { readonly column: 'maxDistanceM' };
                 readonly maxSpeedMs: { readonly column: 'maxSpeedMs' };
                 readonly minAGLClearance: { readonly column: 'minAGLClearance' };
                 readonly minAltM: { readonly column: 'minAltM' };
                 readonly missionId: { readonly column: 'missionId' };
+                readonly ratedEnduranceS: { readonly column: 'ratedEnduranceS' };
+                readonly turnaroundM: { readonly column: 'turnaroundM' };
               };
             };
           };
@@ -1909,6 +2472,13 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly lastSeenAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
               readonly tokenHash: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -1941,6 +2511,7 @@ type ContractBase = Omit<
                 readonly expiresAt: { readonly column: 'expiresAt' };
                 readonly id: { readonly column: 'id' };
                 readonly ipAddress: { readonly column: 'ipAddress' };
+                readonly lastSeenAt: { readonly column: 'lastSeenAt' };
                 readonly tokenHash: { readonly column: 'tokenHash' };
                 readonly userAgent: { readonly column: 'userAgent' };
                 readonly userId: { readonly column: 'userId' };
@@ -2182,6 +2753,106 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly Zone: {
+            readonly fields: {
+              readonly centerLat: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
+              readonly centerLng: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly enabled: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly kind: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly label: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly maxAltM: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
+              readonly minAltM: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
+              readonly missionId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly radiusM: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
+              readonly shape: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly vertices: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+            };
+            readonly relations: {
+              readonly mission: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Mission';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['missionId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'Zone';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly centerLat: { readonly column: 'centerLat' };
+                readonly centerLng: { readonly column: 'centerLng' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly enabled: { readonly column: 'enabled' };
+                readonly id: { readonly column: 'id' };
+                readonly kind: { readonly column: 'kind' };
+                readonly label: { readonly column: 'label' };
+                readonly maxAltM: { readonly column: 'maxAltM' };
+                readonly minAltM: { readonly column: 'minAltM' };
+                readonly missionId: { readonly column: 'missionId' };
+                readonly radiusM: { readonly column: 'radiusM' };
+                readonly shape: { readonly column: 'shape' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly vertices: { readonly column: 'vertices' };
+              };
+            };
+          };
         };
         readonly enum: {
           readonly MissionActionType: {
@@ -2204,6 +2875,29 @@ type ContractBase = Omit<
               { readonly name: 'do_jump'; readonly value: 'do_jump' },
             ];
           };
+          readonly MissionStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'draft'; readonly value: 'draft' },
+              { readonly name: 'ready'; readonly value: 'ready' },
+              { readonly name: 'archived'; readonly value: 'archived' },
+            ];
+          };
+          readonly ZoneKind: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'no_fly'; readonly value: 'no_fly' },
+              { readonly name: 'keep_in'; readonly value: 'keep_in' },
+              { readonly name: 'keep_out'; readonly value: 'keep_out' },
+            ];
+          };
+          readonly ZoneShape: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'circle'; readonly value: 'circle' },
+              { readonly name: 'polygon'; readonly value: 'polygon' },
+            ];
+          };
         };
         readonly enumMemberTypes?: {
           readonly MissionActionType: readonly [
@@ -2222,6 +2916,20 @@ type ContractBase = Omit<
             { readonly name: 'set_roi'; readonly value: 'set_roi' },
             { readonly name: 'cam_trigg_dist'; readonly value: 'cam_trigg_dist' },
             { readonly name: 'do_jump'; readonly value: 'do_jump' },
+          ];
+          readonly MissionStatus: readonly [
+            { readonly name: 'draft'; readonly value: 'draft' },
+            { readonly name: 'ready'; readonly value: 'ready' },
+            { readonly name: 'archived'; readonly value: 'archived' },
+          ];
+          readonly ZoneKind: readonly [
+            { readonly name: 'no_fly'; readonly value: 'no_fly' },
+            { readonly name: 'keep_in'; readonly value: 'keep_in' },
+            { readonly name: 'keep_out'; readonly value: 'keep_out' },
+          ];
+          readonly ZoneShape: readonly [
+            { readonly name: 'circle'; readonly value: 'circle' },
+            { readonly name: 'polygon'; readonly value: 'polygon' },
           ];
         };
       };
@@ -2311,6 +3019,14 @@ type ContractBase = Omit<
           readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'Waypoint';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'Zone';
             readonly field: 'id';
             readonly namespace: 'public';
           };
