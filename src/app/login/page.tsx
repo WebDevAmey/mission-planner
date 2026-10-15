@@ -1,15 +1,12 @@
 'use client';
 
 import React, { Suspense, useState } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input, Label } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import { AuthShell } from '@/components/auth/auth-shell';
+import { Input } from '@/components/base/input/input';
+import { AuthLink, AuthShell } from '@/components/auth/auth-shell';
 import { PasswordInput } from '@/components/auth/password-input';
 import { FormMessage } from '@/components/auth/form-message';
+import { SubmitButton } from '@/components/auth/submit-button';
 
 function LoginForm() {
   const router = useRouter();
@@ -52,46 +49,43 @@ function LoginForm() {
       subtitle="Sign in to continue to the mission planner."
       footer={
         <>
-          Don&apos;t have an account?{' '}
-          <Link href="/signup" className="font-semibold text-text hover:text-green">
-            Sign up
-          </Link>
+          Don&apos;t have an account? <AuthLink href="/signup">Sign up</AuthLink>
         </>
       }
     >
-      <form onSubmit={submit} noValidate>
-        {error && <FormMessage variant="error">{error}</FormMessage>}
+      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+        {error && <FormMessage variant="error" className="mb-0">{error}</FormMessage>}
 
-        <Label htmlFor="email">Email</Label>
         <Input
           id="email"
+          name="email"
           type="email"
+          label="Email"
           value={email}
           autoFocus
           autoComplete="email"
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={setEmail}
           placeholder="you@example.com"
-          className="mb-3 h-9 text-[13px]"
         />
 
-        <div className="mb-1.5 flex items-center justify-between">
-          <Label htmlFor="password" className="mb-0">Password</Label>
-          <Link href="/forgot-password" className="font-sans text-[11px] text-text-dim hover:text-text">
-            Forgot password?
-          </Link>
-        </div>
         <PasswordInput
           id="password"
+          name="password"
+          label="Password"
           value={password}
           autoComplete="current-password"
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••"
-          className="mb-5 h-9 text-[13px]"
+          onChange={setPassword}
+          placeholder="Enter your password"
+          aside={
+            <AuthLink href="/forgot-password" size="small" variant="secondary">
+              Forgot password?
+            </AuthLink>
+          }
         />
 
-        <Button type="submit" variant="primary" disabled={!email || !password || loading} className="w-full font-sans">
-          {loading ? <Spinner size={14} className="text-background" /> : <>Sign in <ArrowRight size={14} /></>}
-        </Button>
+        <SubmitButton loading={loading} disabled={!email || !password || loading}>
+          {loading ? 'Signing in…' : 'Sign in'}
+        </SubmitButton>
       </form>
     </AuthShell>
   );
