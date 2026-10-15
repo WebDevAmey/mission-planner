@@ -66,3 +66,14 @@ export function segmentsCrossProperly(p1: Vec, p2: Vec, p3: Vec, p4: Vec): boole
   const d4 = orient(p1, p2, p4);
   return d1 * d2 < 0 && d3 * d4 < 0;
 }
+
+/** Minimum distance between segments `ab` and `cd` (0 when they intersect). */
+export function distSegmentSegment(a: Vec, b: Vec, c: Vec, d: Vec): number {
+  if (segmentsIntersect(a, b, c, d)) return 0;
+  return Math.min(
+    distPointSegment(a, c, d),
+    distPointSegment(b, c, d),
+    distPointSegment(c, a, b),
+    distPointSegment(d, a, b)
+  );
+}
