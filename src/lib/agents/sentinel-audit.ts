@@ -1,9 +1,10 @@
 import type { MissionItem, MissionPlan, MissionPlanSettings } from '@/types/mission';
-import { PlannerAction, supportsCoordinates } from '@/lib/mavlink/commands';
-import { createMissionItem, missionSanityCheck } from '@/lib/services/mission-builder';
-import { computeRiskScore } from '@/lib/services/risk-scorer';
-import { computeMissionMetrics } from '@/lib/services/metrics-service';
-import { checkGeofences } from '@/lib/services/geofence-checker';
+import type { PlannerAction } from '@/lib/mavlink/commands';
+import { createMissionItem } from '@/lib/domain/items';
+import { buildClearanceSamples, computeClearanceProfile, computeMissionMetrics, formatDurationShort } from '@/lib/domain/metrics';
+import { homeOf } from '@/lib/domain/mission';
+import { computeRisk, limitsFromConstraintConfig, validateMission, type Issue } from '@/lib/domain/validate';
+import { zonesFromLegacy, type Zone } from '@/lib/domain/zones';
 import { getElevations } from '@/lib/services/terrain-service';
 import type { ConstraintConfig, NoFlyZone } from '@/lib/store/constraints-store';
 import type { GeofenceItem } from '@/lib/store/geofence-store';
@@ -15,10 +16,10 @@ import type { AuditFinding, AuditReport, MissionDraft } from '@/lib/agents/schem
  * point of giving it veto power in the graph.
  */
 
-// No battery-capacity model exists in this app; assume a conservative small-multirotor
-// endurance so SENTINEL has *some* energy floor rather than none.
-const ASSUMED_MAX_ENDURANCE_SEC = 20 * 60;
-const RISK_VETO_THRESHOLD = 65;
+/** Fallback rated endurance when the mission has none: a conservative small multirotor. */
+export const DEFAULT_RATED_ENDURANCE_S = 20 * 60;
+/** Upper bound on terrain samples per audit, to keep the public elevation API calls bounded. */
+const MAX_TERRAIN_SAMPLES = 400;
 
 export function buildMissionItemsFromDraft(
   draft: MissionDraft,
@@ -39,9 +40,25 @@ export function buildMissionItemsFromDraft(
 export interface SentinelAuditContext {
   settings: MissionPlanSettings;
   config: ConstraintConfig;
-  nfzs: NoFlyZone[];
-  geofences: GeofenceItem[];
+  /** Unified zones. When omitted, legacy `nfzs` + `geofences` are converted. */
+  zones?: Zone[];
+  nfzs?: NoFlyZone[];
+  geofences?: GeofenceItem[];
   homePosition: { latitude: number; longitude: number; altitude: number } | null;
+  /** Rated vehicle endurance in seconds (defaults to DEFAULT_RATED_ENDURANCE_S). */
+  ratedEnduranceS?: number | null;
+  /** Terrain lookup; defaults to the public elevation service. Injected in tests. */
+  elevations?: (points: { lat: number; lng: number }[]) => Promise<number[]>;
+}
+
+function toFinding(issue: Issue, indexOf: Map<string, number>): AuditFinding {
+  const idx = issue.itemIds.map((id) => indexOf.get(id)).filter((i): i is number => i !== undefined);
+  return {
+    severity: issue.severity === 'error' ? 'blocker' : 'warning',
+    code: issue.code,
+    message: issue.message,
+    waypointIndexes: idx.length > 0 ? idx : undefined,
+  };
 }
 
 export async function runSentinelAudit(
@@ -49,9 +66,7 @@ export async function runSentinelAudit(
   ctx: SentinelAuditContext
 ): Promise<{ report: AuditReport; items: MissionItem[] }> {
   const items = buildMissionItemsFromDraft(draft, ctx.settings);
-  const findings: AuditFinding[] = [];
-
-  const stubPlan: MissionPlan = {
+  const mission: MissionPlan = {
     id: 'draft',
     name: 'draft',
     createdAt: new Date().toISOString(),
@@ -60,96 +75,48 @@ export async function runSentinelAudit(
     settings: ctx.settings,
     homePosition: ctx.homePosition,
   };
+  const zones = ctx.zones ?? zonesFromLegacy(ctx.nfzs ?? [], ctx.geofences ?? []);
+  const ratedEnduranceS = ctx.ratedEnduranceS ?? DEFAULT_RATED_ENDURANCE_S;
+  const limits = { ...limitsFromConstraintConfig(ctx.config), ratedEnduranceS };
+  const metrics = computeMissionMetrics(mission, {
+    model: { cruiseSpeedMs: ctx.config.defaultSpeedMs || ctx.settings.defaultSpeed },
+    ratedEnduranceS,
+  });
 
-  for (const w of missionSanityCheck(stubPlan)) {
-    findings.push({
-      severity: w.severity === 'error' ? 'blocker' : 'warning',
-      code: 'SANITY',
-      message: w.message,
-      waypointIndexes: w.seq !== undefined ? [w.seq] : undefined,
-    });
-  }
+  const findings: AuditFinding[] = [];
+  const terrain = await terrainClearance(mission, ctx, findings);
+  const issues = validateMission(mission, { zones, limits, terrain, estimatedTimeS: metrics.timeS, distanceM: metrics.distanceM });
+  const indexOf = new Map(items.map((it, i) => [it.id, i]));
+  findings.unshift(...issues.map((i) => toFinding(i, indexOf)));
 
-  for (const v of checkGeofences(items, ctx.geofences)) {
-    findings.push({
-      severity: 'blocker',
-      code: 'GEOFENCE',
-      message: v.message,
-      waypointIndexes: [v.waypointIndex],
-    });
-  }
+  // Informational only: the verdict comes from validator errors, never from the score.
+  const risk = computeRisk(mission, { zones, limits, issues, distanceM: metrics.distanceM });
+  findings.push({
+    severity: 'info',
+    code: 'SUMMARY',
+    message: `${(metrics.distanceM / 1000).toFixed(2)} km, ~${formatDurationShort(metrics.timeS)} (${Math.round((metrics.enduranceFraction ?? 0) * 100)}% of rated endurance), risk ${risk.total.toFixed(0)}/100 ${risk.level}`,
+  });
 
-  const risk = computeRiskScore(items, ctx.config, ctx.nfzs);
-  if (risk.total > RISK_VETO_THRESHOLD) {
-    findings.push({
-      severity: 'blocker',
-      code: 'RISK_SCORE',
-      message: `Risk score ${risk.total.toFixed(0)}/100 exceeds veto threshold of ${RISK_VETO_THRESHOLD}`,
-    });
-  } else if (risk.total > 45) {
-    findings.push({
-      severity: 'warning',
-      code: 'RISK_SCORE',
-      message: `Risk score ${risk.total.toFixed(0)}/100 is elevated`,
-    });
-  }
-
-  const metrics = computeMissionMetrics(items, ctx.config, ctx.nfzs, ctx.homePosition);
-  const enduranceFraction = metrics.estimatedFlightTimeSec / ASSUMED_MAX_ENDURANCE_SEC;
-  if (enduranceFraction > 0.8) {
-    findings.push({
-      severity: 'blocker',
-      code: 'ENERGY',
-      message: `Estimated flight time ${metrics.estimatedFlightTimeFormatted} exceeds 80% of assumed ${Math.round(ASSUMED_MAX_ENDURANCE_SEC / 60)}min endurance`,
-    });
-  }
-
-  await appendTerrainFindings(items, ctx, findings);
-
-  const verdict: AuditReport['verdict'] = findings.some((f) => f.severity === 'blocker')
-    ? 'VETO'
-    : 'PASS';
-
-  return {
-    report: { verdict, riskScore: risk.total, findings },
-    items,
-  };
+  const verdict: AuditReport['verdict'] = findings.some((f) => f.severity === 'blocker') ? 'VETO' : 'PASS';
+  return { report: { verdict, riskScore: risk.total, findings }, items };
 }
 
-async function appendTerrainFindings(
-  items: MissionItem[],
-  ctx: SentinelAuditContext,
-  findings: AuditFinding[]
-): Promise<void> {
-  const spatial = items
-    .map((item, index) => ({ item, index }))
-    .filter(
-      ({ item }) => supportsCoordinates(item.action) && item.latitude !== null && item.longitude !== null
-    );
-  if (spatial.length === 0) return;
-
-  const homePoint = ctx.homePosition
-    ? { lat: ctx.homePosition.latitude, lng: ctx.homePosition.longitude }
-    : { lat: spatial[0].item.latitude!, lng: spatial[0].item.longitude! };
-
+/** Home-relative terrain clearance along every leg; adds a warning when terrain is unavailable. */
+async function terrainClearance(mission: MissionPlan, ctx: SentinelAuditContext, findings: AuditFinding[]) {
+  const home = homeOf(mission);
+  let samples = buildClearanceSamples(mission);
+  if (!home || samples.length === 0) return undefined;
+  if (samples.length > MAX_TERRAIN_SAMPLES) {
+    const stride = samples.length / MAX_TERRAIN_SAMPLES;
+    samples = Array.from({ length: MAX_TERRAIN_SAMPLES }, (_, i) => samples[Math.floor(i * stride)]);
+  }
   try {
-    const [homeElev, ...wpElevs] = await getElevations([
-      homePoint,
-      ...spatial.map(({ item }) => ({ lat: item.latitude!, lng: item.longitude! })),
+    const lookup = ctx.elevations ?? getElevations;
+    const [homeElev, ...elevs] = await lookup([
+      { lat: home[1], lng: home[0] },
+      ...samples.map((s) => ({ lat: s.pos[1], lng: s.pos[0] })),
     ]);
-
-    spatial.forEach(({ item, index }, i) => {
-      const terrainDeltaFromHome = wpElevs[i] - homeElev;
-      const clearance = (item.altitude ?? 0) - terrainDeltaFromHome;
-      if (clearance < ctx.config.minAGLClearance) {
-        findings.push({
-          severity: 'blocker',
-          code: 'TERRAIN_CLEARANCE',
-          message: `Waypoint ${index + 1} clears terrain by ~${Math.round(clearance)}m, below the ${ctx.config.minAGLClearance}m minimum`,
-          waypointIndexes: [index],
-        });
-      }
-    });
+    return computeClearanceProfile(samples, elevs, homeElev);
   } catch {
     // Public elevation API is best-effort; don't hard-fail the whole mission on a flaky network call.
     findings.push({
@@ -157,5 +124,6 @@ async function appendTerrainFindings(
       code: 'TERRAIN_UNAVAILABLE',
       message: 'Terrain data unavailable — clearance was not verified',
     });
+    return undefined;
   }
 }

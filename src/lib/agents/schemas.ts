@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { zoneInputSchema } from '@/lib/domain/zones/schema';
 import { PlannerAction } from '@/lib/mavlink/commands';
 
 const plannerActionValues = Object.values(PlannerAction) as [PlannerAction, ...PlannerAction[]];
@@ -99,5 +100,9 @@ export const FlightDeckRequestSchema = z.object({
   homePosition: z
     .object({ latitude: z.number(), longitude: z.number(), altitude: z.number() })
     .nullable(),
+  /** Unified mission zones; when present they replace `nfzs` and `geofences` for the audit. */
+  zones: z.array(zoneInputSchema).max(200).optional(),
+  /** Rated vehicle endurance in seconds for SENTINEL's energy budget. */
+  ratedEnduranceS: z.number().positive().max(86400).optional(),
 });
 export type FlightDeckRequest = z.infer<typeof FlightDeckRequestSchema>;

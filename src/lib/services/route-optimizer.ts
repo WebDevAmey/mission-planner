@@ -1,5 +1,7 @@
 import { haversineDistance } from '@/lib/utils';
-import { supportsCoordinates, getMissionCommandDefinition, PlannerAction } from '@/lib/mavlink/commands';
+import { missionFromItems } from '@/lib/domain/mission';
+import { optimiseRoute as optimiseDomainRoute } from '@/lib/domain/plan';
+import { supportsCoordinates, PlannerAction } from '@/lib/mavlink/commands';
 import type { MissionItem } from '@/types/mission';
 import type { NoFlyZone } from '@/lib/store/constraints-store';
 
@@ -8,13 +10,6 @@ const TERMINAL_ACTIONS = new Set<PlannerAction>([
   PlannerAction.LAND,
 ]);
 const FIRST_ACTIONS = new Set<PlannerAction>([PlannerAction.TAKEOFF]);
-const NON_SPATIAL_ACTIONS = new Set<PlannerAction>([
-  PlannerAction.WAIT,
-  PlannerAction.SET_SPEED,
-  PlannerAction.CONDITION_DISTANCE,
-  PlannerAction.DO_JUMP,
-  PlannerAction.CAM_TRIGG_DIST,
-]);
 
 function totalPathDistance(items: MissionItem[]): number {
   const spatial = items.filter(
@@ -108,64 +103,16 @@ interface OptimiseResult {
   alreadyOptimal: boolean;
 }
 
-export function optimiseRoute(items: MissionItem[]): OptimiseResult {
-  const leaders: MissionItem[] = [];
-  const terminals: MissionItem[] = [];
-  const spatialMiddle: MissionItem[] = [];
-  const nonSpatialPre: Array<{ item: MissionItem; attachedToId: string }> = [];
-
-  let pendingNonSpatial: MissionItem[] = [];
-
-  for (const item of items) {
-    const def = getMissionCommandDefinition(item.action);
-    if (FIRST_ACTIONS.has(item.action)) {
-      for (const ns of pendingNonSpatial) {
-        leaders.push(ns);
-      }
-      pendingNonSpatial = [];
-      leaders.push(item);
-    } else if (TERMINAL_ACTIONS.has(item.action)) {
-      for (const ns of pendingNonSpatial) {
-        terminals.push(ns);
-      }
-      pendingNonSpatial = [];
-      terminals.push(item);
-    } else if (NON_SPATIAL_ACTIONS.has(item.action) || !def.supportsCoordinates) {
-      pendingNonSpatial.push(item);
-    } else {
-      const attachedTo = item.id;
-      for (const ns of pendingNonSpatial) {
-        nonSpatialPre.push({ item: ns, attachedToId: attachedTo });
-      }
-      pendingNonSpatial = [];
-      spatialMiddle.push(item);
-    }
-  }
-
-  for (const ns of pendingNonSpatial) {
-    terminals.unshift(ns);
-  }
-
-  const original = totalPathDistance([...leaders, ...spatialMiddle, ...terminals]);
-  const reordered = greedyNearestNeighbour(spatialMiddle);
-  const optimised = totalPathDistance([...leaders, ...reordered, ...terminals]);
-
-  const savedM = original - optimised;
-  const alreadyOptimal = Math.abs(savedM) < 1;
-
-  const expandedMiddle: MissionItem[] = [];
-  for (const item of reordered) {
-    const pre = nonSpatialPre
-      .filter((e) => e.attachedToId === item.id)
-      .map((e) => e.item);
-    expandedMiddle.push(...pre, item);
-  }
-
-  return {
-    reorderedItems: [...leaders, ...expandedMiddle, ...terminals],
-    savedM: Math.max(0, savedM),
-    alreadyOptimal,
-  };
+/**
+ * Legacy adapter over `optimiseRoute` from `@/lib/domain/plan` (nearest neighbour + 2-opt +
+ * Or-opt, fixed start, RTL-aware end, DO_JUMP remapping). Apply as one undo step.
+ */
+export function optimiseRoute(
+  items: MissionItem[],
+  home?: { latitude: number; longitude: number; altitude: number } | null
+): OptimiseResult {
+  const res = optimiseDomainRoute(missionFromItems(items, { homePosition: home ?? null }));
+  return { reorderedItems: res.items, savedM: res.savedM, alreadyOptimal: !res.changed || res.savedM < 1 };
 }
 
 export function generateAlternativeRoutes(
@@ -190,7 +137,8 @@ export function generateAlternativeRoutes(
   const leaders = items.filter((i) => FIRST_ACTIONS.has(i.action));
   const terminals = items.filter((i) => TERMINAL_ACTIONS.has(i.action));
 
-  const routeA = greedyNearestNeighbour(spatialMiddle);
+  const optimised = optimiseDomainRoute(missionFromItems(items)).items;
+  const routeA = optimised.filter((i) => spatialMiddle.includes(i));
   const routeB = maxNfzDistance(spatialMiddle, nfzs);
 
   const make = (
