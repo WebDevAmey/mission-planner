@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Spinner } from '@/components/ui/spinner';
 import { Dialog, DialogBody, DialogFooter } from '@/components/ui/dialog';
+import { LegacyImportPrompt } from '@/components/common/legacy-import-prompt';
+import { signOut } from '@/lib/store/local-data';
 
 interface MissionSummary {
   id: string;
@@ -158,7 +160,7 @@ export default function DashboardPage() {
       });
       const data = await res.json();
       if (res.ok && data.ok) {
-        router.push(`/mission-planner?mission=${data.mission.id}`);
+        router.push(`/missions/${data.mission.id}`);
         return;
       }
     } finally {
@@ -187,10 +189,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/';
-  };
+  const handleLogout = () => signOut('/');
 
   const handleResendVerification = async () => {
     await fetch('/api/auth/resend-verification', { method: 'POST' });
@@ -221,6 +220,7 @@ export default function DashboardPage() {
 
       <main className="mx-auto max-w-5xl px-6 py-8 sm:px-8">
         {user && !user.emailVerified && <VerificationBanner onResend={handleResendVerification} />}
+        <LegacyImportPrompt serverMissions={error ? null : missions} onImported={loadAll} />
 
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -264,7 +264,7 @@ export default function DashboardPage() {
               <MissionCard
                 key={mission.id}
                 mission={mission}
-                onOpen={() => router.push(`/mission-planner?mission=${mission.id}`)}
+                onOpen={() => router.push(`/missions/${mission.id}`)}
                 onDuplicate={() => handleDuplicate(mission)}
                 onDelete={() => setDeleteTarget(mission)}
               />

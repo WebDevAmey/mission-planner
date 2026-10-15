@@ -51,7 +51,7 @@ export function useMissionPlannerShortcuts() {
     useMissionStore();
   const {
     resetSelection, setActiveTool, selectedMissionItemId, addToast,
-    toggleMissionLibrary, toggleTemplatePicker, toggleTimeline, toggleGeofencePanel,
+    toggleTemplatePicker, toggleTimeline, toggleGeofencePanel,
   } = useUIStore();
 
   const handleExport = useCallback(() => {
@@ -105,7 +105,6 @@ export function useMissionPlannerShortcuts() {
     { key: 'w', action: () => setActiveTool('add-wp') },
     { key: 'd', action: () => setActiveTool('remove-wp') },
     // Part 9 additions
-    { key: 'm', ctrl: true, action: toggleMissionLibrary },
     { key: 't', ctrl: true, action: toggleTimeline },
     { key: 't', action: toggleTemplatePicker },
     { key: 'g', action: toggleGeofencePanel },
