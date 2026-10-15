@@ -1,9 +1,24 @@
 /**
- * Global Design System — ArduPilot Mission Planner Style
- * Aerospace dark theme: deep black + matrix green + amber/red status colors
+ * Flight Deck global styles.
+ *
+ * Layering:
+ *   1. src/styles/globals.css  — Tailwind + BoardUI theme/typography/base
+ *      (vendored from boardui.com; semantic tokens flip under `.dark`).
+ *   2. The app @theme below    — the editor's existing tokens (bg-bg-base,
+ *      text-text, text-text-dim, border-border-mid, green/amber/red, …).
+ *   3. `.dark` overrides       — tune BoardUI's dark palette to the app's
+ *      near-black base and WCAG AA text contrast.
+ *
+ * The app is dark-first: <html class="dark"> is set in app/layout.tsx.
+ * Name clashes resolved deliberately:
+ *   - --color-text-primary/-secondary/-tertiary now come from BoardUI (the
+ *     app's old aliases with the same names were removed; values match).
+ *   - --radius-sm/-md/-lg now use Tailwind/BoardUI defaults (4/6/8px) so
+ *     BoardUI components render as designed.
+ *   - --font-sans/--font-mono are re-pointed below to the next/font variables.
  */
 
-@import "tailwindcss";
+@import "../styles/globals.css";
 
 /* ============ DESIGN TOKENS ============ */
 
@@ -39,7 +54,7 @@
   /* Text */
   --color-text:       #e0e0e0;
   --color-text-dim:   #888888;
-  --color-text-muted: #444444;
+  --color-text-muted: #8a8a8a; /* WCAG AA on bg-base (was #444, ~2:1) */
   --color-text-green: #00ff41;
   --color-text-amber: #ffaa00;
   --color-text-red:   #ff3333;
@@ -53,9 +68,6 @@
   --color-accent-green:       #00ff41;
   --color-accent-amber:       #ffaa00;
   --color-accent-red:         #ff3333;
-  --color-text-primary:       #e0e0e0;
-  --color-text-secondary:     #888888;
-  --color-text-tertiary:      #444444;
   --color-bg-panel-compat:    #111111;
 
   /* -------- MARKETING SURFACE PALETTE --------
@@ -103,10 +115,6 @@
   --sidebar-width:     280px;
   --timeline-height:   180px;
 
-  /* -------- BORDER RADIUS -------- */
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 6px;
 
   /* -------- ANIMATIONS -------- */
   @keyframes pulse-green {
@@ -147,6 +155,18 @@
     from { transform: translateX(8px); opacity: 0; }
     to   { transform: translateX(0);   opacity: 1; }
   }
+}
+
+/* ============ BOARDUI DARK TUNING ============ */
+
+/* BoardUI's dark ramp uses neutral-600/-500 for secondary/tertiary text,
+ * which fails AA on the app's near-black base. Lift both, and sit BoardUI's
+ * page background on the app's base so both systems share one canvas. */
+.dark {
+  --color-background-full: var(--color-bg-base);
+  --color-text-secondary: var(--color-neutral-400);
+  --color-text-tertiary: color-mix(in srgb, var(--color-neutral-400) 55%, var(--color-neutral-500));
+  --color-text-placeholder: color-mix(in srgb, var(--color-neutral-400) 55%, var(--color-neutral-500));
 }
 
 /* ============ BASE ============ */
