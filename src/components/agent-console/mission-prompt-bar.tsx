@@ -1,74 +1,89 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { Sparkles } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import { RiSparklingLine } from '@remixicon/react';
+import { Button } from '@/components/base/buttons/button';
+import { Textarea } from '@/components/base/textarea/textarea';
 import { useMissionStore } from '@/lib/store/mission-store';
-import { useConstraintsStore } from '@/lib/store/constraints-store';
-import { useGeofenceStore } from '@/lib/store/geofence-store';
+import { missionToConfig, zonesToNfzs } from '@/lib/store/constraints-store';
+import { zonesToGeofences } from '@/lib/store/geofence-store';
 import { useAgentStore } from '@/lib/store/agent-store';
 import { runFlightDeck } from '@/lib/agents/client';
 import type { FlightDeckRequest } from '@/lib/agents/schemas';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
 
+/** Prompt form inside the Flight Deck drawer. Sends the mission's zones and rated
+ * endurance so SENTINEL audits against the same rules as the Checks tab. */
 export function MissionPromptBar() {
   const [value, setValue] = useState('');
-  const { mission } = useMissionStore();
-  const { config, nfzs } = useConstraintsStore();
-  const { geofences } = useGeofenceStore();
-  const { status, startRun, addEvent, finishRun, fail, setConsoleOpen } = useAgentStore();
-
+  const mission = useMissionStore((s) => s.mission);
+  const { status, startRun, addEvent, finishRun, fail } = useAgentStore();
   const running = status === 'running';
 
   const submit = useCallback(async () => {
     if (!mission || !value.trim() || running) return;
-
-    const request: FlightDeckRequest = {
+    const enabledZones = mission.zones.filter((z) => z.enabled);
+    const s = mission.settings;
+    const base: FlightDeckRequest = {
       prompt: value.trim(),
-      settings: mission.settings,
-      constraints: config,
-      nfzs,
-      geofences,
+      settings: {
+        defaultAltitude: s.defaultAltitude,
+        defaultSpeed: s.defaultSpeed,
+        defaultLoiterTime: s.defaultLoiterTime,
+        defaultWaitTime: s.defaultWaitTime,
+        altitudeReference: 'relative',
+      },
+      constraints: missionToConfig(mission),
+      nfzs: zonesToNfzs(enabledZones),
+      geofences: zonesToGeofences(enabledZones),
       homePosition: mission.homePosition ?? null,
     };
+    // `zones` / `ratedEnduranceS` are optional on the request schema; when present the
+    // audit uses the unified zone list instead of the legacy nfzs/geofences.
+    const extra = { zones: enabledZones, ...(s.ratedEnduranceS ? { ratedEnduranceS: s.ratedEnduranceS } : {}) };
+    const request = { ...base, ...extra } as FlightDeckRequest;
 
     startRun(request.prompt);
-    setConsoleOpen(true);
     setValue('');
-
     await runFlightDeck(request, {
       onEvent: (event) => {
         addEvent(event);
-        if (event.type === 'done') {
-          finishRun(event.payload);
-        }
+        if (event.type === 'done') finishRun(event.payload);
       },
       onDone: () => {},
       onError: (message) => fail(message),
     });
-  }, [mission, value, running, config, nfzs, geofences, startRun, setConsoleOpen, addEvent, finishRun, fail]);
+  }, [mission, value, running, startRun, addEvent, finishRun, fail]);
 
   return (
-    <div className="flex h-7 min-w-[160px] max-w-[420px] flex-1 items-center gap-1.5 px-2">
-      <Sparkles size={12} className="shrink-0 text-cyan" />
-      <Input
-        type="text"
+    <form
+      className="flex flex-col gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void submit();
+      }}
+    >
+      <Textarea
+        aria-label="Describe the mission"
+        placeholder="e.g. Survey the field north of home at 60 m, then return"
+        rows={2}
+        autoResize
+        maxRows={6}
         value={value}
-        disabled={!mission || running}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
-        placeholder="Ask Flight Deck to plan a mission…"
-        className="h-6 min-w-0 flex-1 px-2"
+        onChange={setValue}
+        isDisabled={!mission || running}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            void submit();
+          }
+        }}
       />
-      <button
-        onClick={submit}
-        disabled={!mission || running || !value.trim()}
-        title="Plan with Flight Deck"
-        className="flex h-6 shrink-0 items-center gap-1 rounded-sm border border-blue bg-blue-bg px-2 font-mono text-[10px] font-bold text-blue transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {running ? <Spinner size={11} className="text-blue" /> : <Sparkles size={11} />}
-        {running ? 'Planning…' : 'Plan'}
-      </button>
-    </div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-caption-1-regular text-text-tertiary">Nothing changes until you approve.</span>
+        <Button type="submit" size="small" variant="primary" leadingIcon={RiSparklingLine} disabled={!mission || running || !value.trim()}>
+          {running ? 'Planning…' : 'Plan'}
+        </Button>
+      </div>
+    </form>
   );
 }

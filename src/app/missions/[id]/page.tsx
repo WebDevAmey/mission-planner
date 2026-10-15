@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArduPilotLayout } from '@/components/layout/ardupilot-layout';
+import { EditorShell } from '@/components/editor/editor-shell';
 import { useMissionStore } from '@/lib/store/mission-store';
 import { useAutosaveMission } from '@/hooks/useAutosaveMission';
 import { ButtonLink } from '@/components/ui/button';
@@ -67,5 +67,5 @@ export default function MissionEditorPage() {
     );
   }
 
-  return <ArduPilotLayout />;
+  return <EditorShell />;
 }

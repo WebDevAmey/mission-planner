@@ -1,271 +1,130 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { RefreshCw, Mountain } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { RiCloseLine } from '@remixicon/react';
+import { Button } from '@/components/base/buttons/button';
 import { useMissionStore } from '@/lib/store/mission-store';
-import { useConstraintsStore } from '@/lib/store/constraints-store';
+import { useTerrainStore } from '@/lib/store/terrain-store';
 import { useUIStore } from '@/lib/store/ui-store';
-import { supportsCoordinates } from '@/lib/mavlink/commands';
-import {
-  getElevations,
-  clearElevationCache,
-  buildTerrainSamplePoints,
-  getGroundClearance,
-} from '@/lib/services/terrain-service';
-import { round7 } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { formatDistance } from '@/components/map/map-geo';
+import { cx } from '@/utils/cx';
 
-interface SamplePoint {
-  distFromStart: number;
-  lat: number;
-  lng: number;
-  terrainElev: number | null;
-  flightAlt: number | null;
-}
+const W = 1000;
+const H = 160;
+const PAD_T = 12;
+const PAD_B = 4;
 
+/**
+ * Terrain clearance profile (opens upward from the status bar). Altitudes are home
+ * relative, so AGL = planned alt + home elevation − terrain (see `aglM`).
+ */
 export function TerrainPanel() {
-  const { mission } = useMissionStore();
-  const { config, updateConfig } = useConstraintsStore();
-  const { addToast } = useUIStore();
-
-  const [samples, setSamples] = useState<SamplePoint[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { samples, status } = useTerrainStore();
+  const minAgl = useMissionStore((s) => s.mission?.limits.minAGLClearance ?? 0);
+  const setTerrainOpen = useUIStore((s) => s.setTerrainOpen);
+  const selectMissionItem = useUIStore((s) => s.selectMissionItem);
+  const focusMap = useUIStore((s) => s.focusMap);
   const [hover, setHover] = useState<number | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const spatialItems = mission?.items.filter(
-    (i) => supportsCoordinates(i.action) && i.latitude !== null && i.longitude !== null
-  ) ?? [];
+  const chart = useMemo(() => {
+    if (!samples || samples.length < 2) return null;
+    const total = samples[samples.length - 1].distanceM || 1;
+    // Absolute heights: flight = terrain + AGL.
+    const flight = samples.map((s) => s.terrainM + s.aglM);
+    const lo = Math.min(...samples.map((s) => s.terrainM));
+    const hi = Math.max(...flight, lo + 10);
+    const span = hi - lo || 1;
+    const x = (d: number) => (d / total) * W;
+    const y = (h: number) => PAD_T + (1 - (h - lo) / span) * (H - PAD_T - PAD_B);
+    const terrainPath =
+      `M0,${H} ` + samples.map((s) => `L${x(s.distanceM).toFixed(1)},${y(s.terrainM).toFixed(1)}`).join(' ') + ` L${W},${H} Z`;
+    const flightPath = samples.map((s, i) => `${i ? 'L' : 'M'}${x(s.distanceM).toFixed(1)},${y(flight[i]).toFixed(1)}`).join(' ');
+    const floorPath = samples
+      .map((s, i) => `${i ? 'L' : 'M'}${x(s.distanceM).toFixed(1)},${y(s.terrainM + minAgl).toFixed(1)}`)
+      .join(' ');
+    const minIdx = samples.reduce((m, s, i) => (s.aglM < samples[m].aglM ? i : m), 0);
+    const low = samples.map((s, i) => ({ s, i })).filter(({ s }) => s.aglM < minAgl);
+    return { total, x, y, flight, terrainPath, flightPath, floorPath, minIdx, low };
+  }, [samples, minAgl]);
 
-  const fetchTerrain = useCallback(async (force = false) => {
-    const spatial = mission?.items.filter(
-      (i) => supportsCoordinates(i.action) && i.latitude !== null && i.longitude !== null
-    ) ?? [];
-    if (spatial.length === 0) { setSamples([]); return; }
-    if (force) clearElevationCache();
-
-    setLoading(true);
-    const rawSamples = buildTerrainSamplePoints(
-      spatial.map((i) => ({
-        latitude: i.latitude!,
-        longitude: i.longitude!,
-        altitude: i.altitude,
-      }))
-    );
-
-    try {
-      const elevs = await getElevations(rawSamples.map((p) => ({ lat: p.lat, lng: p.lng })));
-      const built: SamplePoint[] = rawSamples.map((p, idx) => ({
-        ...p,
-        terrainElev: elevs[idx] ?? null,
-        flightAlt: null,
-      }));
-
-      // Interpolate flight altitudes at sample positions
-      let wpIdx = 0;
-      for (let i = 0; i < built.length; i++) {
-        const s = built[i];
-        const matchingWp = spatial.find((wp) => round7(wp.latitude!) === round7(s.lat) && round7(wp.longitude!) === round7(s.lng));
-        if (matchingWp) {
-          s.flightAlt = matchingWp.altitude;
-          wpIdx = spatial.indexOf(matchingWp);
-        } else {
-          const a = spatial[wpIdx];
-          const b = spatial[Math.min(wpIdx + 1, spatial.length - 1)];
-          s.flightAlt = ((a.altitude ?? 0) + (b.altitude ?? 0)) / 2;
-        }
-      }
-      setSamples(built);
-    } catch {
-      addToast('Terrain data unavailable — working offline', 'warning');
-      setSamples([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [spatialItems, addToast]);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchTerrain(false), 500);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mission?.updatedAt]);
-
-  const W = 540;
-  const H = 180;
-  const PAD = { left: 40, right: 12, top: 12, bottom: 30 };
-
-  const maxDist = samples.length > 0 ? Math.max(...samples.map((s) => s.distFromStart)) : 1;
-  const allElev = samples.flatMap((s) => [s.terrainElev ?? 0, s.flightAlt ?? 0]);
-  const minY = Math.min(...allElev);
-  const maxY = Math.max(...allElev) + 20;
-
-  const xScale = (d: number) =>
-    PAD.left + ((d / maxDist) * (W - PAD.left - PAD.right));
-  const yScale = (v: number) =>
-    H - PAD.bottom - ((v - minY) / (maxY - minY || 1)) * (H - PAD.top - PAD.bottom);
-
-  const terrainPath =
-    samples.length > 1
-      ? samples.map((s, i) => `${i === 0 ? 'M' : 'L'}${xScale(s.distFromStart)},${yScale(s.terrainElev ?? 0)}`).join(' ')
-      : '';
-  const flightPath =
-    samples.length > 1
-      ? samples.map((s, i) => `${i === 0 ? 'M' : 'L'}${xScale(s.distFromStart)},${yScale(s.flightAlt ?? 0)}`).join(' ')
-      : '';
-
-  // Check for conflicts
-  const hasConflict = samples.some((s) => {
-    if (s.terrainElev === null || s.flightAlt === null) return false;
-    return getGroundClearance(s.flightAlt, s.terrainElev) < config.minAGLClearance;
-  });
-
-  const hoverSample = hover !== null ? samples[hover] : null;
+  const hovered = chart && hover !== null ? samples![hover] : null;
+  const minSample = chart ? samples![chart.minIdx] : null;
 
   return (
-    <div className="shrink-0 border-t border-border-mid bg-[#0d0d0d] px-3 pb-2 pt-1.5">
-      {/* Header */}
-      <div className="mb-1 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <Mountain size={12} className="text-text-muted" />
-          <span className="font-mono text-[10px] font-bold uppercase tracking-wide text-text">
-            Terrain Profile
+    <section
+      id="terrain-profile"
+      aria-label="Terrain clearance"
+      className="flex h-52 shrink-0 flex-col border-t border-separator-border bg-background-primary-default"
+    >
+      <div className="flex h-10 shrink-0 items-center gap-4 px-4">
+        <h2 className="text-body-2-semibold text-text-primary">Terrain clearance</h2>
+        {minSample && (
+          <span className={cx('font-mono text-caption-1-medium tabular-nums', minSample.aglM < minAgl ? 'text-red' : 'text-text-secondary')}>
+            Lowest {Math.round(minSample.aglM)} m AGL at {formatDistance(minSample.distanceM)} · minimum {minAgl} m
           </span>
-          {hasConflict && <Badge variant="red">Terrain Conflict</Badge>}
-          {loading && <span className="font-mono text-[9px] text-text-muted">Loading…</span>}
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1 font-mono text-[9px] text-text-muted">
-            Min AGL (m)
-            <Input
-              type="number"
-              value={config.minAGLClearance}
-              onChange={(e) => updateConfig({ minAGLClearance: parseFloat(e.target.value) || 0 })}
-              className="h-5 w-10 px-1 text-[9px]"
-            />
-          </label>
-          <button
-            onClick={() => fetchTerrain(true)}
-            aria-label="Refresh terrain data"
-            className="flex items-center gap-1 font-mono text-[9px] text-text-muted transition-colors hover:text-text"
-          >
-            <RefreshCw size={11} /> Refresh
-          </button>
-        </div>
+        )}
+        {hovered && (
+          <span className="hidden font-mono text-caption-1-regular tabular-nums text-text-secondary md:inline">
+            {formatDistance(hovered.distanceM)} · ground {Math.round(hovered.terrainM)} m · {Math.round(hovered.aglM)} m AGL
+          </span>
+        )}
+        <div className="flex-1" />
+        <Button size="small" variant="ghost" iconOnly leadingIcon={RiCloseLine} aria-label="Close terrain panel" onClick={() => setTerrainOpen(false)} />
       </div>
-
-      {/* SVG Chart */}
-      {samples.length > 0 ? (
-        <div className="relative">
+      <div className="relative min-h-0 flex-1 px-4 pb-3">
+        {!chart ? (
+          <p className="flex h-full items-center justify-center text-body-2-regular text-text-secondary" role="status">
+            {status === 'loading'
+              ? 'Looking up terrain…'
+              : status === 'error'
+                ? 'Terrain data is unavailable right now. Clearance is not being checked.'
+                : 'Add at least two located waypoints to see the profile.'}
+          </p>
+        ) : (
           <svg
-            ref={svgRef}
             viewBox={`0 0 ${W} ${H}`}
-            width="100%"
-            className="block cursor-crosshair"
-            onMouseMove={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const mx = ((e.clientX - rect.left) / rect.width) * W;
-              const dist = ((mx - PAD.left) / (W - PAD.left - PAD.right)) * maxDist;
-              const closest = samples.reduce((best, s, i) =>
-                Math.abs(s.distFromStart - dist) < Math.abs((samples[best]?.distFromStart ?? 0) - dist) ? i : best, 0);
-              setHover(closest);
-            }}
+            preserveAspectRatio="none"
+            className="size-full overflow-visible"
+            role="img"
+            aria-label={`Terrain profile over ${formatDistance(chart.total)}`}
             onMouseLeave={() => setHover(null)}
+            onMouseMove={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              const d = ((e.clientX - r.left) / r.width) * chart.total;
+              let best = 0;
+              samples!.forEach((s, i) => {
+                if (Math.abs(s.distanceM - d) < Math.abs(samples![best].distanceM - d)) best = i;
+              });
+              setHover(best);
+            }}
+            onClick={() => {
+              if (hover === null) return;
+              const s = samples![hover];
+              const id = s.itemIds[s.itemIds.length - 1];
+              if (id) selectMissionItem(id);
+              focusMap({ kind: 'point', point: s.pos });
+            }}
           >
-            {/* Fill: safe clearance */}
-            {samples.length > 1 && (
-              <path
-                d={`${terrainPath} L${xScale(samples[samples.length - 1].distFromStart)},${yScale(samples[samples.length - 1].flightAlt ?? 0)} ${flightPath.split(' ').slice(1).reverse().join(' ')} Z`}
-                fill={hasConflict ? 'rgba(255,51,51,0.15)' : 'rgba(0,255,65,0.1)'}
-              />
-            )}
-
-            {/* Terrain line */}
-            {terrainPath && (
-              <path d={terrainPath} fill="none" stroke="rgba(255,170,0,0.8)" strokeWidth="1.5" />
-            )}
-
-            {/* Flight path */}
-            {flightPath && (
-              <path d={flightPath} fill="none" stroke="var(--color-green)" strokeWidth="1.5" />
-            )}
-
-            {/* Waypoint vertical lines */}
-            {spatialItems.map((item, idx) => {
-              const match = samples.find(
-                (s) => round7(s.lat) === round7(item.latitude!) && round7(s.lng) === round7(item.longitude!)
-              );
-              if (!match) return null;
-              const x = xScale(match.distFromStart);
-              return (
-                <line key={idx} x1={x} y1={PAD.top} x2={x} y2={H - PAD.bottom}
-                  stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="2,2" />
-              );
-            })}
-
-            {/* Crosshair */}
-            {hover !== null && samples[hover] && (
-              <line
-                x1={xScale(samples[hover].distFromStart)} y1={PAD.top}
-                x2={xScale(samples[hover].distFromStart)} y2={H - PAD.bottom}
-                stroke="rgba(255,255,255,0.4)" strokeWidth="1"
-              />
-            )}
-
-            {/* Y-axis labels */}
-            {[minY, (minY + maxY) / 2, maxY].map((v, i) => (
-              <text key={i} x={PAD.left - 4} y={yScale(v) + 3}
-                textAnchor="end" fill="rgba(255,255,255,0.4)"
-                style={{ fontFamily: 'monospace', fontSize: '9px' }}>
-                {Math.round(v)}
-              </text>
+            <path d={chart.terrainPath} className="fill-background-tertiary-default stroke-text-tertiary" vectorEffect="non-scaling-stroke" strokeWidth={1} />
+            <path d={chart.floorPath} className="fill-none stroke-amber" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" strokeWidth={1} />
+            <path d={chart.flightPath} className="fill-none stroke-cyan" vectorEffect="non-scaling-stroke" strokeWidth={2} />
+            {chart.low.map(({ s, i }) => (
+              <circle key={i} cx={chart.x(s.distanceM)} cy={chart.y(chart.flight[i])} r={3} className="fill-red" vectorEffect="non-scaling-stroke" />
             ))}
-
-            {/* X-axis distance label */}
-            <text x={W - PAD.right} y={H - 6} textAnchor="end"
-              fill="rgba(255,255,255,0.3)" style={{ fontFamily: 'monospace', fontSize: '9px' }}>
-              {Math.round(maxDist)}m
-            </text>
+            {hover !== null && (
+              <line
+                x1={chart.x(samples![hover].distanceM)}
+                x2={chart.x(samples![hover].distanceM)}
+                y1={0}
+                y2={H}
+                className="stroke-text-secondary"
+                strokeWidth={1}
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
           </svg>
-
-          {/* Hover tooltip */}
-          {hoverSample && hover !== null && (
-            <div
-              className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-[3px] border border-border-mid bg-[rgba(10,10,10,0.9)] px-1.5 py-1 font-mono text-[9px] text-text"
-              style={{ left: `${(xScale(hoverSample.distFromStart) / W) * 100}%` }}
-            >
-              <div>{Math.round(hoverSample.distFromStart)}m from start</div>
-              <div className="text-amber">Terrain: {Math.round(hoverSample.terrainElev ?? 0)}m AMSL</div>
-              <div className="text-green">Flight: {Math.round(hoverSample.flightAlt ?? 0)}m</div>
-              <div
-                className={
-                  hoverSample.flightAlt !== null && hoverSample.terrainElev !== null && getGroundClearance(hoverSample.flightAlt, hoverSample.terrainElev) < config.minAGLClearance
-                    ? 'text-red'
-                    : 'text-text-muted'
-                }
-              >
-                AGL: {hoverSample.flightAlt !== null && hoverSample.terrainElev !== null ? Math.round(getGroundClearance(hoverSample.flightAlt, hoverSample.terrainElev)) : '—'}m
-              </div>
-            </div>
-          )}
-
-          {/* Legend */}
-          <div className="mt-0.5 flex gap-2.5">
-            <div className="flex items-center gap-1 font-mono text-[9px] text-text-muted">
-              <div className="h-0.5 w-3.5 bg-green" /> Flight path
-            </div>
-            <div className="flex items-center gap-1 font-mono text-[9px] text-text-muted">
-              <div className="h-0.5 w-3.5 bg-[rgba(255,170,0,0.8)]" /> Terrain
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="flex h-[60px] items-center justify-center font-mono text-[11px] text-text-muted">
-          {spatialItems.length < 2 ? 'Add at least 2 waypoints to see terrain profile' : loading ? 'Fetching terrain…' : 'No data'}
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </section>
   );
 }

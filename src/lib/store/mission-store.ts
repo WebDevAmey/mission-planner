@@ -14,12 +14,12 @@ import type {
   MissionExportPayload,
   MissionItem,
   MissionPlan,
-  MissionPlanSettings,
 } from '@/types/mission';
 import {
   DEFAULT_LIMITS,
   toEditorMission,
   type EditorMission,
+  type EditorSettings,
   type MissionLimits,
   type MissionZone,
 } from '@/lib/store/editor-types';
@@ -39,7 +39,7 @@ interface MissionStoreState {
   applyChange: (label: string, updater: (draft: EditorMission) => EditorMission) => void;
   /** Replace all items as one undo step (templates, Flight Deck, planners). */
   replaceItems: (items: MissionItem[], label?: string) => void;
-  updateSettings: (settings: Partial<MissionPlanSettings>) => void;
+  updateSettings: (settings: Partial<EditorSettings>) => void;
   updateLimits: (limits: Partial<MissionLimits>) => void;
   addZone: (zone: Omit<MissionZone, 'id'> & { id?: string }) => string | null;
   updateZone: (id: string, updates: Partial<Omit<MissionZone, 'id'>>) => void;
