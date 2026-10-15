@@ -23,7 +23,7 @@ export function MissionPromptBar() {
     if (!mission || !value.trim() || running) return;
     const enabledZones = mission.zones.filter((z) => z.enabled);
     const s = mission.settings;
-    const base: FlightDeckRequest = {
+    const request: FlightDeckRequest = {
       prompt: value.trim(),
       settings: {
         defaultAltitude: s.defaultAltitude,
@@ -36,11 +36,10 @@ export function MissionPromptBar() {
       nfzs: zonesToNfzs(enabledZones),
       geofences: zonesToGeofences(enabledZones),
       homePosition: mission.homePosition ?? null,
+      // Unified zones replace nfzs/geofences in the audit when present.
+      zones: enabledZones,
+      ...(s.ratedEnduranceS ? { ratedEnduranceS: s.ratedEnduranceS } : {}),
     };
-    // `zones` / `ratedEnduranceS` are optional on the request schema; when present the
-    // audit uses the unified zone list instead of the legacy nfzs/geofences.
-    const extra = { zones: enabledZones, ...(s.ratedEnduranceS ? { ratedEnduranceS: s.ratedEnduranceS } : {}) };
-    const request = { ...base, ...extra } as FlightDeckRequest;
 
     startRun(request.prompt);
     setValue('');
