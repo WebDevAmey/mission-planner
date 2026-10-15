@@ -84,3 +84,27 @@ export function missionLegs(mission: Pick<MissionPlan, 'homePosition' | 'items'>
 
 export const legItemIds = (leg: Leg): string[] =>
   [leg.from?.item.id, leg.to?.item.id].filter((x): x is string => Boolean(x));
+
+const STUB_SETTINGS: MissionPlan['settings'] = {
+  defaultAltitude: 50,
+  defaultSpeed: 10,
+  defaultLoiterTime: 30,
+  defaultWaitTime: 10,
+  altitudeReference: 'relative',
+};
+
+/** Wrap a bare item list as a MissionPlan (for legacy item-only APIs). */
+export function missionFromItems(
+  items: MissionItem[],
+  opts: { settings?: Partial<MissionPlan['settings']>; homePosition?: MissionPlan['homePosition'] } = {}
+): MissionPlan {
+  return {
+    id: 'adhoc',
+    name: 'adhoc',
+    createdAt: '1970-01-01T00:00:00.000Z',
+    updatedAt: '1970-01-01T00:00:00.000Z',
+    items,
+    settings: { ...STUB_SETTINGS, ...opts.settings },
+    homePosition: opts.homePosition ?? null,
+  };
+}

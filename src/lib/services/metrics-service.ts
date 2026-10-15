@@ -1,5 +1,5 @@
-import { haversineDistance } from '@/lib/utils';
-import { supportsCoordinates } from '@/lib/mavlink/commands';
+import { computeMissionMetrics as computeDomainMetrics, formatDurationShort } from '@/lib/domain/metrics';
+import { missionFromItems } from '@/lib/domain/mission';
 import { computeRiskScore, computeViolationCount } from '@/lib/services/risk-scorer';
 import type { MissionItem, HomePosition } from '@/types/mission';
 import type { ConstraintConfig, NoFlyZone } from '@/lib/store/constraints-store';
@@ -20,105 +20,46 @@ export interface MissionMetrics {
   riskScore: number;
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
   constraintViolationCount: number;
+  /** Per leg between consecutive located items (home legs excluded), metres. */
   segmentDistances: number[];
   segmentDurations: number[];
 }
 
-function formatMMSS(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
-
-function batteryEstimate(timeSec: number): string {
-  const totalMin = (timeSec / 60) * 1.1;
-  const m = Math.floor(totalMin);
-  const s = Math.round((totalMin - m) * 60);
-  return `~${m}m ${s}s`;
-}
-
+/**
+ * Legacy adapter over `computeMissionMetrics` from `@/lib/domain/metrics`: trapezoidal
+ * speed profile, climb/descent, dwell, takeoff/landing and the home/RTL legs.
+ */
 export function computeMissionMetrics(
   items: MissionItem[],
   config: ConstraintConfig,
   nfzs: NoFlyZone[],
-  home: HomePosition | null | undefined
+  home: HomePosition | null | undefined,
+  opts: { ratedEnduranceS?: number | null } = {}
 ): MissionMetrics {
-  const spatial = items.filter(
-    (i) => supportsCoordinates(i.action) && i.latitude !== null && i.longitude !== null
-  );
-
-  const altitudes = items
-    .filter((i) => i.altitude !== null)
-    .map((i) => i.altitude!);
-
-  const maxAltitudeM = altitudes.length > 0 ? Math.max(...altitudes) : 0;
-  const minAltitudeM = altitudes.length > 0 ? Math.min(...altitudes) : 0;
-  const avgAltitudeM =
-    altitudes.length > 0
-      ? altitudes.reduce((a, b) => a + b, 0) / altitudes.length
-      : 0;
-
-  const segmentDistances: number[] = [];
-  const segmentDurations: number[] = [];
-  let totalDistanceM = 0;
-  let totalTimeSec = 0;
-  let totalSpeed = 0;
-  let speedCount = 0;
-  let maxSpeed = 0;
-
-  for (let i = 1; i < spatial.length; i++) {
-    const a = spatial[i - 1];
-    const b = spatial[i];
-    const d = haversineDistance(a.latitude!, a.longitude!, b.latitude!, b.longitude!);
-    const segSpeed = b.speed ?? a.speed ?? config.defaultSpeedMs;
-    const effectiveSpeed = segSpeed > 0 ? segSpeed : config.defaultSpeedMs;
-    const duration = effectiveSpeed > 0 ? d / effectiveSpeed : 0;
-
-    segmentDistances.push(d);
-    segmentDurations.push(duration);
-    totalDistanceM += d;
-    totalTimeSec += duration;
-
-    if (effectiveSpeed > 0) {
-      totalSpeed += effectiveSpeed;
-      speedCount++;
-    }
-    if (effectiveSpeed > maxSpeed) maxSpeed = effectiveSpeed;
-  }
-
-  // Add loiter times for LOITER items
-  for (const item of items) {
-    if (item.action === 'loiter' && item.parameters.param1 > 0) {
-      totalTimeSec += item.parameters.param1;
-    }
-    if (item.action === 'wait' && item.parameters.param1 > 0) {
-      totalTimeSec += item.parameters.param1;
-    }
-  }
-
-  const avgSpeedMs = speedCount > 0 ? totalSpeed / speedCount : config.defaultSpeedMs;
+  const mission = missionFromItems(items, { settings: { defaultSpeed: config.defaultSpeedMs }, homePosition: home ?? null });
+  const m = computeDomainMetrics(mission, { ratedEnduranceS: opts.ratedEnduranceS });
+  const inner = m.legs.filter((l) => l.itemIds.length === 2);
+  const alts = items.filter((i) => i.altitude !== null).map((i) => i.altitude!);
+  const speeds = m.legs.map((l) => l.speedMs).filter((s) => s > 0);
   const risk = computeRiskScore(items, config, nfzs);
-  const violationCount = computeViolationCount(items, config, nfzs, totalDistanceM);
-
-  void home;
-
   return {
     totalWaypoints: items.length,
-    spatialWaypoints: spatial.length,
-    totalDistanceM,
-    totalDistanceKm: totalDistanceM / 1000,
-    estimatedFlightTimeSec: totalTimeSec,
-    estimatedFlightTimeFormatted: formatMMSS(totalTimeSec),
-    maxAltitudeM,
-    minAltitudeM,
-    avgAltitudeM,
-    avgSpeedMs,
-    maxSpeedMs: maxSpeed,
-    batteryEstimate: batteryEstimate(totalTimeSec),
+    spatialWaypoints: m.spatialCount,
+    totalDistanceM: m.distanceM,
+    totalDistanceKm: m.distanceM / 1000,
+    estimatedFlightTimeSec: m.timeS,
+    estimatedFlightTimeFormatted: formatDurationShort(m.timeS),
+    maxAltitudeM: m.maxAltM,
+    minAltitudeM: m.minAltM,
+    avgAltitudeM: alts.length ? alts.reduce((a, b) => a + b, 0) / alts.length : 0,
+    avgSpeedMs: speeds.length ? speeds.reduce((a, b) => a + b, 0) / speeds.length : config.defaultSpeedMs,
+    maxSpeedMs: speeds.length ? Math.max(...speeds) : 0,
+    batteryEstimate:
+      m.enduranceFraction !== null ? `${Math.round(m.enduranceFraction * 100)}% of rated endurance` : `~${formatDurationShort(m.timeS)} flight`,
     riskScore: risk.total,
     riskLevel: risk.level,
-    constraintViolationCount: violationCount,
-    segmentDistances,
-    segmentDurations,
+    constraintViolationCount: computeViolationCount(items, config, nfzs),
+    segmentDistances: inner.map((l) => l.distanceM),
+    segmentDurations: inner.map((l) => l.timeS),
   };
 }
