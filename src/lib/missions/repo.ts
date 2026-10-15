@@ -10,7 +10,8 @@ import type {
   ZoneInputData,
 } from '@/lib/validation/mission';
 import { computeMissionSummary } from '@/lib/missions/summary';
-import type { DbMission } from '@/lib/missions/map';
+import { toMissionPlan, type DbMission } from '@/lib/missions/map';
+import { analyseMission } from '@/lib/missions/domain';
 
 /**
  * The single place mission rows are read and written. Every handler goes
@@ -143,6 +144,17 @@ export async function refreshSummary(tx: Tx, missionId: string) {
       : null,
     full.zones
   );
+  // Distance, time and issue counts come from the shared domain layer so the
+  // dashboard agrees with the editor; bbox comes from the simple pass above.
+  try {
+    const analysis = analyseMission(toMissionPlan(asDbMission(full)));
+    summary.distanceM = Math.round(analysis.metrics.distanceM * 10) / 10;
+    summary.durationS = Math.round(analysis.metrics.timeS);
+    summary.errorCount = analysis.errorCount;
+    summary.warningCount = analysis.warningCount;
+  } catch (err) {
+    console.error('[missions] domain analysis failed; keeping fallback summary', err);
+  }
   await tx.orm.public.Mission.where({ id: missionId }).update({
     ...summary,
     lastValidatedAt: toIsoString(new Date()),
