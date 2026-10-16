@@ -12,13 +12,13 @@ export function ShortcutsDialog() {
   return (
     <Dialog open={open} onClose={close} size="sm">
       <DialogHeader onClose={close}>
-        <DialogTitle className="text-body-semibold">Keyboard shortcuts</DialogTitle>
+        <DialogTitle className="text-[16px] font-medium">Keyboard shortcuts</DialogTitle>
       </DialogHeader>
       <DialogBody>
         <dl className="flex flex-col">
           {SHORTCUTS.map((s) => (
             <div key={s.label} className="flex min-h-8 items-center justify-between gap-4 border-b border-separator-border last:border-b-0">
-              <dt className="text-body-2-regular text-text-secondary">{s.label}</dt>
+              <dt className="text-[14px] text-text-secondary">{s.label}</dt>
               <dd className="flex gap-1">
                 {s.keys.map((k) => (
                   <Kbd key={k}>{k}</Kbd>

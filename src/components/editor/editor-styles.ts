@@ -5,10 +5,10 @@
  */
 
 /** Floating map surfaces, menus and popovers: 10px radius + float shadow. */
-export const FLOAT_PANEL = 'rounded-[10px] border border-separator-border bg-background-primary-default shadow-(--fd-shadow-float)';
+export const FLOAT_PANEL = 'rounded-fd-overlay border border-separator-border bg-background-primary-default shadow-fd-float';
 
 /** Popover override for BoardUI dropdowns used in the editor. */
-export const MENU_PANEL = 'rounded-[10px] p-1.5 shadow-(--fd-shadow-float)';
+export const MENU_PANEL = 'rounded-fd-overlay p-1.5 shadow-fd-float';
 
 /** Focus ring: 2px accent, 2px offset (§6). */
 export const FOCUS_RING =
@@ -33,33 +33,33 @@ export const DATA_MONO = 'font-mono text-[13px] leading-[18px] tabular-nums';
 export const PANEL_TITLE = 'text-[13px] leading-[18px] font-medium text-text-primary';
 
 /** Selected list row: accent tint + 2px accent rule on the left edge. */
-export const ROW_SELECTED = 'bg-(--fd-accent-tint) shadow-[inset_2px_0_0_var(--fd-accent)]';
+export const ROW_SELECTED = 'bg-fd-accent-tint shadow-[inset_2px_0_0_var(--fd-accent)]';
 
 /** State colours (text, dot fill). Never used alone: always with text or a shape. */
 export const TONE_TEXT = {
-  ok: 'text-(color:--fd-ok)',
-  warn: 'text-(color:--fd-warn)',
-  danger: 'text-(color:--fd-danger)',
-  info: 'text-(color:--fd-info)',
+  ok: 'text-fd-ok',
+  warn: 'text-fd-warn',
+  danger: 'text-fd-danger',
+  info: 'text-fd-info',
   muted: 'text-text-tertiary',
 } as const;
 export const TONE_DOT = {
-  ok: 'bg-(--fd-ok)',
-  warn: 'bg-(--fd-warn)',
-  danger: 'bg-(--fd-danger)',
-  info: 'bg-(--fd-info)',
+  ok: 'bg-fd-ok',
+  warn: 'bg-fd-warn',
+  danger: 'bg-fd-danger',
+  info: 'bg-fd-info',
   muted: 'bg-text-tertiary',
 } as const;
 export type Tone = keyof typeof TONE_TEXT;
 
 /** Map legend swatches (mirror the MapLibre paint in mission-map.tsx). */
 export const SWATCH = {
-  route: 'h-[3px] w-6 rounded-full bg-(--fd-accent)',
-  routeError: 'h-[3px] w-6 rounded-full bg-(--fd-danger)',
-  routeHome: 'h-0 w-6 border-t-2 border-dashed border-(--fd-accent)',
-  keepOut: 'size-3 rounded-[2px] border-[1.5px] border-dashed border-(--fd-danger) bg-(--fd-danger)/12',
-  keepIn: 'size-3 rounded-[2px] border-[1.5px] border-(--fd-info) bg-(--fd-info)/8',
-  preview: 'h-0 w-6 border-t border-dashed border-(--fd-info)',
+  route: 'h-[3px] w-6 rounded-full bg-fd-accent',
+  routeError: 'h-[3px] w-6 rounded-full bg-fd-danger',
+  routeHome: 'h-0 w-6 border-t-2 border-dashed border-fd-accent',
+  keepOut: 'size-3 rounded-[2px] border-[1.5px] border-dashed border-fd-danger bg-fd-danger/12',
+  keepIn: 'size-3 rounded-[2px] border-[1.5px] border-fd-info bg-fd-info/8',
+  preview: 'h-0 w-6 border-t border-dashed border-fd-info',
   waypoint: 'size-3 rounded-full border-[1.5px] border-text-primary bg-background-primary-default',
   takeoff: 'size-2.5 rounded-[1px] bg-text-primary',
 } as const;
@@ -71,3 +71,11 @@ export const INK_BUTTON =
 
 /** Dense inspector row: 32px, 14px text (DESIGN_SPEC §5.4). */
 export const ROW = 'flex min-h-8 w-full items-center gap-2 px-3 text-start text-[14px] transition-colors duration-[120ms]';
+
+/** Segmented control built on react-aria Tabs (inspector sections, assistant views). */
+export const SEGMENT_LIST = 'flex flex-1 gap-0.5 rounded-fd-control bg-background-secondary-default p-0.5';
+export const SEGMENT_TAB = [
+  'relative flex h-7 flex-1 cursor-default items-center justify-center gap-1.5 rounded-[5px] px-2 text-[13px] whitespace-nowrap text-text-secondary transition-colors duration-[120ms] max-md:h-9',
+  'hover:text-text-primary data-[selected]:bg-background-primary-default data-[selected]:font-medium data-[selected]:text-text-primary data-[selected]:shadow-[0_0_0_1px_var(--color-separator-border)]',
+  FOCUS_RING_INSET,
+].join(' ');

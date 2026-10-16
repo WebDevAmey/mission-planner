@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { RiSparklingLine } from '@remixicon/react';
 import { Button } from '@/components/base/buttons/button';
+import { INK_BUTTON } from '@/components/editor/editor-styles';
 import { Textarea } from '@/components/base/textarea/textarea';
 import { useMissionStore } from '@/lib/store/mission-store';
 import { missionToConfig, zonesToNfzs } from '@/lib/store/constraints-store';
@@ -11,8 +11,8 @@ import { useAgentStore } from '@/lib/store/agent-store';
 import { runFlightDeck } from '@/lib/agents/client';
 import type { FlightDeckRequest } from '@/lib/agents/schemas';
 
-/** Prompt form inside the Flight Deck drawer. Sends the mission's zones and rated
- * endurance so SENTINEL audits against the same rules as the Checks tab. */
+/** Prompt form inside the assistant drawer. Sends the mission's zones and rated
+ * endurance so the pre-flight audit runs against the same rules as the Checks tab. */
 export function MissionPromptBar() {
   const [value, setValue] = useState('');
   const mission = useMissionStore((s) => s.mission);
@@ -78,9 +78,9 @@ export function MissionPromptBar() {
         }}
       />
       <div className="flex items-center justify-between gap-2">
-        <span className="text-caption-1-regular text-text-tertiary">Nothing changes until you approve.</span>
-        <Button type="submit" size="small" variant="primary" leadingIcon={RiSparklingLine} disabled={!mission || running || !value.trim()}>
-          {running ? 'Planning…' : 'Plan'}
+        <span className="text-[12px] text-text-tertiary">Nothing changes until you load the draft.</span>
+        <Button type="submit" size="small" variant="secondary" disabled={!mission || running || !value.trim()} className={INK_BUTTON}>
+          {running ? 'Drafting…' : 'Draft'}
         </Button>
       </div>
     </form>

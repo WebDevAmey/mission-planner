@@ -259,7 +259,7 @@ export function EditorHeader() {
             <DropdownItem onSelect={menu(() => void duplicate())} className={item}>
               Duplicate mission
             </DropdownItem>
-            <DropdownItem onSelect={menu(() => setConfirmDelete(true))} className={cx(item, 'text-(color:--fd-danger)')}>
+            <DropdownItem onSelect={menu(() => setConfirmDelete(true))} className={cx(item, 'text-fd-danger')}>
               Delete mission…
             </DropdownItem>
             <DropdownDivider />

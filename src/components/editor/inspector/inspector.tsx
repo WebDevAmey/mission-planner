@@ -8,7 +8,7 @@ import { useUIStore, type InspectorTab } from '@/lib/store/ui-store';
 import { useTerrainStore } from '@/lib/store/terrain-store';
 import { useMissionAnalysis } from '@/hooks/useMissionAnalysis';
 import { cx } from '@/utils/cx';
-import { FOCUS_RING_INSET, ICON_BUTTON, TONE_DOT } from '../editor-styles';
+import { ICON_BUTTON, SEGMENT_LIST, SEGMENT_TAB, TONE_DOT } from '../editor-styles';
 import { WaypointsTab } from './waypoints-tab';
 import { ItemTab } from './item-tab';
 import { ChecksTab } from './checks-tab';
@@ -24,15 +24,9 @@ function TerrainNote() {
   );
 }
 
-const SEGMENT = cx(
-  'relative flex h-7 max-md:h-9 flex-1 cursor-default items-center justify-center gap-1.5 rounded-[5px] px-2 text-[13px] text-text-secondary transition-colors duration-[120ms]',
-  'hover:text-text-primary data-[selected]:bg-background-primary-default data-[selected]:font-medium data-[selected]:text-text-primary data-[selected]:shadow-[0_0_0_1px_var(--color-separator-border)]',
-  FOCUS_RING_INSET
-);
-
 function Segment({ id, children }: { id: InspectorTab; children: ReactNode }) {
   return (
-    <Tab id={id} className={SEGMENT}>
+    <Tab id={id} className={SEGMENT_TAB}>
       {children}
     </Tab>
   );
@@ -56,7 +50,7 @@ export function Inspector({ className, header, showClose = true }: { className?:
       {header}
       <Tabs selectedKey={tab} onSelectionChange={(k: Key) => setTab(k as InspectorTab)} className="flex min-h-0 flex-1 flex-col">
         <div className="flex shrink-0 items-center gap-1 border-b border-separator-border px-3 py-2 max-md:py-1.5">
-          <TabList aria-label="Inspector sections" className="flex flex-1 gap-0.5 rounded-md bg-background-secondary-default p-0.5">
+          <TabList aria-label="Inspector sections" className={SEGMENT_LIST}>
             <Segment id="waypoints">Waypoints</Segment>
             <Segment id="item">Item</Segment>
             <Segment id="checks">

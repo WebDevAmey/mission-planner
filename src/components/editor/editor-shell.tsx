@@ -93,7 +93,7 @@ export function EditorShell() {
               onClick={() => setInspectorOpen(false)}
               className="absolute inset-0 z-20 bg-text-primary/20 lg:hidden"
             />
-            <Inspector className="absolute inset-y-0 right-0 z-30 w-[360px] max-w-full border-l border-separator-border shadow-(--fd-shadow-float) lg:static lg:z-auto lg:shadow-none" />
+            <Inspector className="absolute inset-y-0 right-0 z-30 w-[360px] max-w-full border-l border-separator-border shadow-fd-float lg:static lg:z-auto lg:shadow-none" />
           </>
         )}
       </div>

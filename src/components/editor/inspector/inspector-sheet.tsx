@@ -40,7 +40,7 @@ export function InspectorSheet() {
   return (
     <div
       className={cx(
-        'absolute inset-x-0 bottom-0 z-20 flex flex-col overflow-hidden rounded-t-[10px] border-t border-separator-border bg-background-primary-default shadow-(--fd-shadow-float)',
+        'absolute inset-x-0 bottom-0 z-20 flex flex-col overflow-hidden rounded-t-[10px] border-t border-separator-border bg-background-primary-default shadow-fd-float',
         'transition-[height] duration-[280ms] ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none',
         HEIGHT[snap]
       )}

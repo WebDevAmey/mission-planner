@@ -7,6 +7,7 @@ import type { ZoneKind } from '@/lib/store/editor-types';
 import { FLOAT_PANEL } from '@/components/editor/editor-styles';
 import { cx } from '@/utils/cx';
 import { formatDistance } from './map-geo';
+import { QuietButton } from '@/components/editor/quiet-button';
 
 interface Props {
   info: { count: number; lengthM: number; radiusM: number };
@@ -92,9 +93,9 @@ export function ToolHint({ info, onFinish, onCancel }: Props) {
             Finish
           </Button>
         )}
-        <Button size="xs" variant="ghost" onClick={onCancel}>
+        <QuietButton size="xs" onPress={onCancel}>
           {tool === 'measure' && info.count > 0 ? 'Clear' : 'Cancel'}
-        </Button>
+        </QuietButton>
       </div>
     </div>
   );

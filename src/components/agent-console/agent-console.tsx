@@ -1,81 +1,78 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import {
-  RiCheckLine,
-  RiCloseLine,
-  RiDownloadLine,
-  RiRobot2Line,
-  RiShieldCheckLine,
-  RiShieldLine,
-  RiTerminalLine,
-} from '@remixicon/react';
+import { RiCloseLine, RiDownloadLine } from '@remixicon/react';
+import { Tab, TabList, TabPanel, Tabs } from 'react-aria-components';
 import { Button } from '@/components/base/buttons/button';
-import { Tab, TabList, TabPanel, Tabs } from '@/components/base/tabs/tabs';
 import { useAgentStore } from '@/lib/store/agent-store';
 import { useMissionStore } from '@/lib/store/mission-store';
 import { useUIStore } from '@/lib/store/ui-store';
 import { buildMissionItemsFromDraft } from '@/lib/agents/sentinel-audit';
 import type { AgentEvent } from '@/lib/agents/schemas';
 import { cx } from '@/utils/cx';
+import { INK_BUTTON, LABEL_MONO, SEGMENT_LIST, SEGMENT_TAB, TONE_DOT, TONE_TEXT, type Tone } from '@/components/editor/editor-styles';
+import { QuietButton } from '@/components/editor/quiet-button';
 import { MissionPromptBar } from './mission-prompt-bar';
 
-const AGENT_TEXT: Record<AgentEvent['agent'], string> = {
-  ATLAS: 'text-blue',
-  SENTINEL: 'text-amber',
-  SYSTEM: 'text-text-secondary',
+/** User-facing names for the run's stages (D-11). Code identifiers and event names are unchanged. */
+const AGENT_LABEL: Record<AgentEvent['agent'], string> = {
+  ATLAS: 'Assistant',
+  SENTINEL: 'Pre-flight checks',
+  SYSTEM: 'System',
 };
+const AGENT_TONE: Record<AgentEvent['agent'], Tone> = { ATLAS: 'info', SENTINEL: 'warn', SYSTEM: 'muted' };
 
-function AgentIcon({ agent }: { agent: AgentEvent['agent'] }) {
-  const cls = cx('size-4 shrink-0', AGENT_TEXT[agent]);
-  if (agent === 'ATLAS') return <RiRobot2Line className={cls} aria-hidden />;
-  if (agent === 'SENTINEL') return <RiShieldCheckLine className={cls} aria-hidden />;
-  return <RiTerminalLine className={cls} aria-hidden />;
+/** Server event titles still carry the internal stage names; translate them for display. */
+export function displayTitle(title: string): string {
+  return title
+    .replace(/SENTINEL:\s*PASS/g, 'Pre-flight checks passed')
+    .replace(/SENTINEL:\s*VETO/g, 'Pre-flight checks blocked the draft')
+    .replace(/after SENTINEL veto/g, 'after failed checks')
+    .replace(/^ATLAS could not/g, 'The assistant could not')
+    .replace(/\bSENTINEL\b/g, 'pre-flight checks')
+    .replace(/\bATLAS\b/g, 'the assistant');
 }
 
 function EventRow({ event }: { event: AgentEvent }) {
   const [open, setOpen] = useState(false);
   const hasDetail = event.type === 'tool_call' || event.type === 'tool_result';
   const isVeto = event.type === 'audit' && event.payload.verdict === 'VETO';
+  const tone: Tone =
+    event.type === 'error' ? 'danger' : event.type === 'audit' ? (isVeto ? 'danger' : 'ok') : AGENT_TONE[event.agent];
 
   return (
-    <li
-      className={cx(
-        'rounded-lg border px-3 py-2',
-        isVeto ? 'border-red bg-red-bg' : event.type === 'audit' ? 'border-green bg-green-bg' : 'border-separator-border'
-      )}
-    >
-      <div className="flex items-center gap-2">
-        <AgentIcon agent={event.agent} />
-        <span className="min-w-0 flex-1 text-body-2-medium text-text-primary">{event.title}</span>
+    <li className="border-b border-separator-border px-4 py-2.5 last:border-b-0">
+      <div className="flex items-start gap-2.5">
+        <span aria-hidden className={cx('mt-[7px] size-1.5 shrink-0 rounded-full', TONE_DOT[tone])} />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className={LABEL_MONO}>{AGENT_LABEL[event.agent]}</span>
+          <span className="text-[14px] text-text-primary">{displayTitle(event.title)}</span>
+        </div>
         {hasDetail && (
-          <Button size="xs" variant="ghost" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+          <QuietButton size="xs" onPress={() => setOpen((v) => !v)} aria-expanded={open}>
             {open ? 'Hide' : 'Details'}
-          </Button>
+          </QuietButton>
         )}
       </div>
       {open && hasDetail && (
-        <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-caption-1-regular text-text-secondary">
+        <pre className="ml-4 mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-fd-control bg-background-secondary-default p-2 font-mono text-[12px] text-text-secondary">
           {event.detail}
         </pre>
       )}
       {event.type === 'audit' && (
-        <div className="mt-2 flex flex-col gap-1">
-          <span className="text-caption-1-regular text-text-secondary">Risk score {event.payload.riskScore.toFixed(0)}/100</span>
+        <div className="ml-4 mt-1.5 flex flex-col gap-1">
+          <span className="text-[12px] tabular-nums text-text-tertiary">Risk score {event.payload.riskScore.toFixed(0)}/100</span>
           {event.payload.findings.map((f, i) => (
             <span
               key={i}
-              className={cx(
-                'text-caption-1-regular',
-                f.severity === 'blocker' ? 'text-red' : f.severity === 'warning' ? 'text-amber' : 'text-text-secondary'
-              )}
+              className={cx('text-[13px]', f.severity === 'blocker' ? TONE_TEXT.danger : f.severity === 'warning' ? TONE_TEXT.warn : 'text-text-secondary')}
             >
               {f.message}
             </span>
           ))}
         </div>
       )}
-      {event.type === 'error' && <p className="mt-1 text-caption-1-regular text-red">{event.detail}</p>}
+      {event.type === 'error' && <p className={cx('ml-4 mt-1 text-[13px]', TONE_TEXT.danger)}>{event.detail}</p>}
     </li>
   );
 }
@@ -91,36 +88,32 @@ function ApprovalCard() {
 
   const approve = () => {
     if (!mission || !result.draftMission) return;
-    replaceItems(buildMissionItemsFromDraft(result.draftMission, mission.settings), 'Load Flight Deck draft');
-    addToast('Flight Deck draft loaded', 'success', { label: 'Undo', onClick: () => useMissionStore.getState().undo() });
+    replaceItems(buildMissionItemsFromDraft(result.draftMission, mission.settings), 'Load assistant draft');
+    addToast('Draft loaded into the mission', 'success', { label: 'Undo', onClick: () => useMissionStore.getState().undo() });
     clearRun();
   };
 
   return (
-    <div className={cx('flex flex-col gap-3 rounded-lg border p-3', isVeto ? 'border-red' : 'border-green')}>
-      <div className="flex items-center gap-2">
-        {isVeto ? <RiShieldLine className="size-4 text-red" aria-hidden /> : <RiShieldCheckLine className="size-4 text-green" aria-hidden />}
-        <span className="text-body-2-semibold text-text-primary">
-          {isVeto ? `Not cleared after ${result.vetoCount} attempts` : 'Checks passed: ready to load'}
-        </span>
-      </div>
-      <p className="text-caption-1-regular text-text-secondary">
-        {result.draftMission.waypoints.length} waypoints proposed.
-        {isVeto ? ' Review the blockers above, adjust the request and try again.' : ' Loading replaces the current items as one undo step.'}
+    <div className="mx-4 my-3 flex flex-col gap-3 rounded-fd-control border border-separator-border bg-background-secondary-default p-3">
+      <p className="flex items-center gap-2 text-[14px] font-medium text-text-primary">
+        <span aria-hidden className={cx('size-2 rounded-full', isVeto ? TONE_DOT.danger : TONE_DOT.ok)} />
+        {isVeto ? `Not cleared after ${result.vetoCount} attempts` : 'Pre-flight checks passed'}
+      </p>
+      <p className="text-[13px] text-text-secondary">
+        <span className="tabular-nums">{result.draftMission.waypoints.length}</span> waypoints proposed.
+        {isVeto ? ' Review the blockers above, adjust the description and try again.' : ' Loading replaces the current items as one undo step.'}
       </p>
       <div className="flex justify-end gap-2">
-        <Button
-          size="small"
-          variant="secondary"
-          onClick={() => {
+        <QuietButton
+          onPress={() => {
             clearRun();
             setConsoleOpen(false);
           }}
         >
           Discard
-        </Button>
+        </QuietButton>
         {!isVeto && (
-          <Button size="small" variant="primary" leadingIcon={RiCheckLine} onClick={approve}>
+          <Button size="small" variant="secondary" onClick={approve} className={INK_BUTTON}>
             Load into mission
           </Button>
         )}
@@ -143,41 +136,37 @@ function HistoryPanel() {
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <span className="flex-1 text-caption-1-regular text-text-secondary">
-          {history.length} run{history.length === 1 ? '' : 's'} on this device
+    <div className="flex flex-col">
+      <div className="flex h-10 items-center gap-1 px-4">
+        <span className="flex-1 text-[13px] text-text-secondary">
+          <span className="tabular-nums">{history.length}</span> run{history.length === 1 ? '' : 's'} on this device
         </span>
         {history.length > 0 && (
           <>
-            <Button size="xs" variant="ghost" leadingIcon={RiDownloadLine} onClick={exportLog}>
+            <QuietButton size="xs" icon={RiDownloadLine} onPress={exportLog}>
               Export
-            </Button>
-            <Button size="xs" variant="ghost" onClick={clearHistory}>
+            </QuietButton>
+            <QuietButton size="xs" onPress={clearHistory}>
               Clear
-            </Button>
+            </QuietButton>
           </>
         )}
       </div>
       {history.length === 0 ? (
-        <p className="py-8 text-center text-body-2-regular text-text-secondary">Completed runs appear here as an audit trail.</p>
+        <p className="px-4 py-6 text-[13px] text-text-secondary">Completed drafts are listed here with their check results.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="border-t border-separator-border">
           {history.map((run) => (
-            <li key={run.id} className="flex flex-col gap-1 rounded-lg border border-separator-border px-3 py-2">
+            <li key={run.id} className="flex flex-col gap-0.5 border-b border-separator-border px-4 py-2.5">
               <div className="flex items-center gap-2">
-                <span
-                  className={cx(
-                    'text-caption-1-semibold',
-                    run.status === 'approved_ready' ? 'text-green' : 'text-red'
-                  )}
-                >
-                  {run.status === 'approved_ready' ? 'Passed' : run.status === 'needs_human_input' ? 'Vetoed' : 'Error'}
+                <span aria-hidden className={cx('size-1.5 rounded-full', run.status === 'approved_ready' ? TONE_DOT.ok : TONE_DOT.danger)} />
+                <span className="text-[12px] font-medium text-text-primary">
+                  {run.status === 'approved_ready' ? 'Passed' : run.status === 'needs_human_input' ? 'Blocked' : 'Error'}
                 </span>
-                <span className="flex-1 text-end text-caption-1-regular text-text-tertiary">{new Date(run.timestamp).toLocaleString()}</span>
+                <span className="flex-1 text-end text-[12px] tabular-nums text-text-tertiary">{new Date(run.timestamp).toLocaleString()}</span>
               </div>
-              <span className="truncate text-body-2-medium text-text-primary">{run.prompt}</span>
-              <span className="text-caption-1-regular text-text-secondary">
+              <span className="truncate text-[14px] text-text-primary">{run.prompt}</span>
+              <span className="text-[12px] tabular-nums text-text-tertiary">
                 {run.waypointCount} waypoints · {run.blockerCount} blocker{run.blockerCount === 1 ? '' : 's'}
               </span>
             </li>
@@ -188,7 +177,8 @@ function HistoryPanel() {
   );
 }
 
-/** Flight Deck drawer: prompt, live run and audit log. Sits over the inspector column. */
+/** Assistant drawer (D-11): opened from the header overflow ("Draft from description").
+ * Same panel style as the inspector; a plain progress line while a draft runs. */
 export function AgentConsole() {
   const { consoleOpen, setConsoleOpen, events, status, clearRun } = useAgentStore();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -198,51 +188,66 @@ export function AgentConsole() {
   }, [events]);
 
   if (!consoleOpen) return null;
+  const running = status === 'running';
 
   return (
     <aside
-      aria-label="Flight Deck"
-      className="fixed inset-x-0 bottom-10 top-14 z-40 flex flex-col border-l border-separator-border bg-background-primary-default shadow-2xl sm:left-auto sm:w-[360px]"
+      aria-label="Assistant"
+      className="fixed inset-x-0 bottom-0 top-12 z-40 flex flex-col border-l border-separator-border bg-background-primary-default shadow-fd-float md:bottom-8 md:left-auto md:w-[380px]"
     >
-      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-separator-border px-4">
-        <RiRobot2Line className="size-5 text-text-secondary" aria-hidden />
-        <h2 className="flex-1 text-body-semibold text-text-primary">Ask AI</h2>
-        {status !== 'idle' && status !== 'running' && (
-          <Button size="xs" variant="ghost" onClick={clearRun}>
+      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-separator-border pl-4 pr-2">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <h2 className="text-[14px] font-medium text-text-primary">Assistant</h2>
+          <p className="text-[12px] text-text-tertiary">Draft from description</p>
+        </div>
+        {status !== 'idle' && !running && (
+          <QuietButton size="xs" onPress={clearRun}>
             Clear
-          </Button>
+          </QuietButton>
         )}
-        <Button size="small" variant="ghost" iconOnly leadingIcon={RiCloseLine} aria-label="Close" onClick={() => setConsoleOpen(false)} />
+        <QuietButton iconOnly icon={RiCloseLine} aria-label="Close assistant" onPress={() => setConsoleOpen(false)} />
       </div>
-      <Tabs className="min-h-0 flex-1 gap-0">
-        <TabList aria-label="Flight Deck views" className="px-4">
-          <Tab id="run">Run</Tab>
-          <Tab id="history">Audit log</Tab>
-        </TabList>
-        <TabPanel id="run" className="flex min-h-0 flex-1 flex-col">
-          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto p-4">
+      <div aria-hidden className={cx('h-0.5 shrink-0', running ? 'animate-pulse bg-text-tertiary motion-reduce:animate-none' : 'bg-transparent')} />
+      {running && (
+        <p role="status" className="sr-only">
+          Drafting
+        </p>
+      )}
+      <Tabs className="flex min-h-0 flex-1 flex-col">
+        <div className="flex shrink-0 px-4 py-2">
+          <TabList aria-label="Assistant views" className={SEGMENT_LIST}>
+            <Tab id="run" className={SEGMENT_TAB}>
+              Draft
+            </Tab>
+            <Tab id="history" className={SEGMENT_TAB}>
+              History
+            </Tab>
+          </TabList>
+        </div>
+        <TabPanel id="run" className="flex min-h-0 flex-1 flex-col outline-none">
+          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto border-t border-separator-border">
             {events.length === 0 ? (
-              <p className="py-8 text-center text-body-2-regular text-text-secondary">
-                Describe the mission below. ATLAS drafts it and SENTINEL checks it against your zones and limits.
-              </p>
+              <div className="flex flex-col gap-2 px-4 py-5">
+                <p className="text-[14px] text-text-primary">Describe the mission you want.</p>
+                <p className="max-w-[40ch] text-[13px] text-text-secondary">
+                  The assistant drafts waypoints, then the draft runs through the same pre-flight checks as your plan: zones,
+                  altitude limits and endurance. Nothing changes until you load it.
+                </p>
+              </div>
             ) : (
-              <ul className="flex flex-col gap-2">
+              <ul>
                 {events.map((event) => (
                   <EventRow key={event.id} event={event} />
                 ))}
               </ul>
             )}
-            {(status === 'awaiting_approval' || status === 'needs_human_input') && (
-              <div className="mt-3">
-                <ApprovalCard />
-              </div>
-            )}
+            {(status === 'awaiting_approval' || status === 'needs_human_input') && <ApprovalCard />}
           </div>
-          <div className="border-t border-separator-border p-4">
+          <div className="shrink-0 border-t border-separator-border p-4">
             <MissionPromptBar />
           </div>
         </TabPanel>
-        <TabPanel id="history" className="min-h-0 flex-1 overflow-y-auto p-4">
+        <TabPanel id="history" className="min-h-0 flex-1 overflow-y-auto border-t border-separator-border outline-none">
           <HistoryPanel />
         </TabPanel>
       </Tabs>

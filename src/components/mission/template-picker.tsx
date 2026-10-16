@@ -5,8 +5,9 @@ import { MISSION_TEMPLATES, instantiateTemplate } from '@/lib/templates/mission-
 import { useMissionStore } from '@/lib/store/mission-store';
 import { useUIStore } from '@/lib/store/ui-store';
 import { Dialog, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/base/buttons/button';
+import { cx } from '@/utils/cx';
+import { FOCUS_RING, INK_BUTTON, TONE_DOT } from '@/components/editor/editor-styles';
 
 /** Where to anchor a template: home, else the first located item, else the map centre. */
 function resolveAnchor(
@@ -51,37 +52,43 @@ export function TemplatePicker() {
   return (
     <Dialog open onClose={close} size="lg" className="flex max-h-[min(640px,90dvh)] w-[640px] max-w-[calc(100vw-32px)] flex-col">
       <DialogHeader onClose={close}>
-        <DialogTitle className="text-base">Start from a template</DialogTitle>
+        <DialogTitle className="text-[16px] font-medium">Start from a template</DialogTitle>
       </DialogHeader>
 
       {replacing && (
-        <div className="border-b border-border-mid bg-amber-bg px-4 py-2 text-[13px] text-amber" role="note">
-          This replaces the {mission?.items.length} items in this mission. You can undo it.
+        <div className="flex items-center gap-2 border-b border-separator-border bg-background-secondary-default px-4 py-2 text-[13px] text-text-secondary" role="note">
+          <span aria-hidden className={cx('size-1.5 shrink-0 rounded-full', TONE_DOT.warn)} />
+          <span>
+            This replaces the <span className="tabular-nums">{mission?.items.length}</span> items in this mission. You can undo it.
+          </span>
         </div>
       )}
 
-      <DialogBody className="grid flex-1 grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2">
+      <DialogBody className="grid flex-1 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
         {MISSION_TEMPLATES.map((tmpl) => (
           <button
             key={tmpl.id}
             type="button"
             onClick={() => setSelectedId(tmpl.id === selectedId ? null : tmpl.id)}
             aria-pressed={tmpl.id === selectedId}
-            className={cn(
-              'flex flex-col items-start gap-1 rounded-md border p-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue',
-              tmpl.id === selectedId ? 'border-blue bg-blue-bg' : 'border-border-mid bg-bg-raised hover:border-border-hi'
+            className={cx(
+              'flex flex-col items-start gap-1 rounded-fd-control border p-3 text-left transition-colors duration-[120ms]',
+              FOCUS_RING,
+              tmpl.id === selectedId
+                ? 'border-fd-accent bg-fd-accent-tint shadow-[inset_0_0_0_1px_var(--fd-accent)]'
+                : 'border-separator-border bg-background-primary-default hover:border-fd-line-strong'
             )}
           >
-            <span className="text-sm font-semibold text-text">{tmpl.name}</span>
-            <span className="text-[13px] leading-snug text-text-dim">{tmpl.description}</span>
-            <span className="mt-1 text-xs text-text-dim">{tmpl.items.length} items</span>
+            <span className="text-[14px] font-medium text-text-primary">{tmpl.name}</span>
+            <span className="text-[13px] leading-snug text-text-secondary">{tmpl.description}</span>
+            <span className="mt-1 text-[12px] tabular-nums text-text-tertiary">{tmpl.items.length} items</span>
           </button>
         ))}
       </DialogBody>
 
       <DialogFooter>
-        <Button variant="outline" size="sm" onClick={close}>Cancel</Button>
-        <Button variant="primary" size="sm" disabled={!selectedId} onClick={handleUse}>
+        <Button variant="secondary" size="small" onClick={close}>Cancel</Button>
+        <Button variant="secondary" size="small" disabled={!selectedId} onClick={handleUse} className={INK_BUTTON}>
           {replacing ? 'Replace items' : 'Use template'}
         </Button>
       </DialogFooter>

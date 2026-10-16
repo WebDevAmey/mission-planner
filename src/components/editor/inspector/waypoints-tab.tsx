@@ -45,7 +45,7 @@ export function ItemBadge({ n, kind, selected }: { n: number; kind: 'spatial' | 
         'inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 font-mono text-[11px] font-medium tabular-nums',
         kind === 'spatial'
           ? selected
-            ? 'bg-(--fd-accent) text-(color:--fd-accent-ink)'
+            ? 'bg-fd-accent text-fd-accent-ink'
             : 'border-[1.5px] border-text-primary text-text-primary'
           : 'text-text-tertiary'
       )}
