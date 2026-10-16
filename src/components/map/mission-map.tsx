@@ -486,11 +486,13 @@ export function MissionMap() {
         }
       }
     });
-    map.on('styleimagemissing', (e: { id: string }) => {
-      const m = /^mp-num-(\d+)$/.exec(e.id);
-      if (!m || map.hasImage(e.id)) return;
+    // Waypoint numbers are drawn on demand (no glyph server). MapLibre 6 asks a
+    // resolver first; the old styleimagemissing event now logs a warning.
+    map.setMissingStyleImageResolver((id) => {
+      const m = /^mp-num-(\d+)$/.exec(id);
+      if (!m || map.hasImage(id)) return;
       const img = numberImage(m[1]);
-      if (img) map.addImage(e.id, img, { sdf: true, pixelRatio: 2 });
+      if (img) map.addImage(id, img, { sdf: true, pixelRatio: 2 });
     });
     map.on('moveend', () => {
       const c = map.getCenter();
