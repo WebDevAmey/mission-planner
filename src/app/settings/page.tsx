@@ -8,7 +8,7 @@ import { AppShell } from '@/components/app-shell/app-shell';
 import { AppDialog } from '@/components/app-shell/app-dialog';
 import { SkeletonBlock } from '@/components/common/skeleton-loader';
 import { ToastItem, ToastStack } from '@/components/common/toast';
-import { clearLocalMissionData } from '@/lib/store/local-data';
+import { clearLocalMissionData, hardNavigate } from '@/lib/store/local-data';
 import { cx } from '@/utils/cx';
 
 interface Profile {
@@ -154,8 +154,7 @@ export default function SettingsPage() {
       const res = await api<{ user: Profile }>('/api/account');
       if (cancelled) return;
       if (!res.ok) {
-        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- session is gone; reload drops in-memory state
-        if (res.code === 'UNAUTHORIZED') window.location.assign('/login?next=/settings');
+        if (res.code === 'UNAUTHORIZED') hardNavigate('/login?next=/settings');
         else setLoadError(res.error);
         return;
       }
@@ -236,8 +235,7 @@ export default function SettingsPage() {
     if (!res.ok) return toast({ status: 'error', title: 'Could not sign out', description: res.error });
     if (res.signedOut) {
       clearLocalMissionData();
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- signed out; reload drops in-memory state
-      window.location.assign('/login');
+      hardNavigate('/login');
       return;
     }
     toast({
@@ -254,8 +252,7 @@ export default function SettingsPage() {
     setDeleting(false);
     if (!res.ok) return setDeleteError(res.error);
     clearLocalMissionData();
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- account deleted; reload drops in-memory state
-    window.location.assign('/?accountDeleted=1');
+    hardNavigate('/?accountDeleted=1');
   }
 
   const otherSessions = sessions?.filter((s) => !s.current).length ?? 0;

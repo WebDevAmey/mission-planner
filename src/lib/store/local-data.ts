@@ -38,6 +38,16 @@ export function clearLocalMissionData(): void {
   useAgentStore.setState({ history: [], events: [], result: null, status: 'idle' });
 }
 
+/**
+ * Full page load of a same-origin path. Used where client-side navigation is
+ * wrong on purpose: after sign-out or account deletion, so no in-memory state
+ * from the old session (stores, router cache) survives. The path is resolved
+ * against this origin, so it can never leave the site.
+ */
+export function hardNavigate(path: string): void {
+  window.location.assign(new URL(path, window.location.origin).href);
+}
+
 /** The one sign-out path for the whole app: revoke the session, wipe local data,
  * leave. Use this everywhere instead of calling /api/auth/logout directly. */
 export async function signOut(redirectTo = '/'): Promise<void> {
@@ -47,7 +57,7 @@ export async function signOut(redirectTo = '/'): Promise<void> {
     // Still clear local data and leave; the session cookie expires server-side.
   }
   clearLocalMissionData();
-  window.location.href = redirectTo;
+  hardNavigate(redirectTo);
 }
 
 function readPersisted<T>(key: string): T | null {
