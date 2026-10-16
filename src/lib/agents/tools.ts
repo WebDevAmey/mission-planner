@@ -28,7 +28,7 @@ export const geocodeTool = tool(
   {
     name: 'geocode',
     description: 'Resolve a named place (e.g. "Central Park, NYC") to latitude/longitude. Skip this if the user already gave coordinates.',
-    schema: z.object({ query: z.string().describe('Place name or address to resolve') }),
+    schema: z.object({ query: z.string().min(1).max(200).describe('Place name or address to resolve') }),
   }
 );
 
@@ -45,7 +45,10 @@ export const getTerrainElevationTool = tool(
     name: 'get_terrain_elevation',
     description: 'Look up ground elevation (meters, MSL) for a set of lat/lng points in the operating area.',
     schema: z.object({
-      points: z.array(z.object({ lat: z.number(), lng: z.number() })).min(1).max(50),
+      points: z
+        .array(z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }))
+        .min(1)
+        .max(50),
     }),
   }
 );

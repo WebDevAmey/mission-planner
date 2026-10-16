@@ -57,9 +57,24 @@ export async function POST(request: Request) {
   }
 
   const graph = buildFlightDeckGraph();
+  // Stop the run (and its model calls) when the client goes away, the stream is
+  // cancelled, or the overall timeout passes, so nobody pays for unread output.
+  const cancelled = new AbortController();
+  const signal = AbortSignal.any([request.signal, cancelled.signal, AbortSignal.timeout(RUN_TIMEOUT_MS)]);
 
   const stream = new ReadableStream<Uint8Array>({
+    cancel() {
+      cancelled.abort();
+    },
     async start(controller) {
+      const send = (event: AgentEvent) => {
+        if (request.signal.aborted) return;
+        try {
+          controller.enqueue(sseFrame(event));
+        } catch {
+          // The reader is gone; nothing left to deliver to.
+        }
+      };
       let previousLogLength = 0;
       let lastState: FlightDeckStateType | null = null;
 
@@ -73,51 +88,51 @@ export async function POST(request: Request) {
             agentLog: [],
             error: null,
           },
-          { streamMode: 'values', recursionLimit: 20, signal: AbortSignal.timeout(RUN_TIMEOUT_MS) }
+          { streamMode: 'values', recursionLimit: 20, signal }
         );
 
         for await (const state of runStream) {
           lastState = state as FlightDeckStateType;
           const newEvents = lastState.agentLog.slice(previousLogLength);
           previousLogLength = lastState.agentLog.length;
-          for (const event of newEvents) {
-            controller.enqueue(sseFrame(event));
-          }
+          for (const event of newEvents) send(event);
         }
 
         const result = lastState
           ? resultFromState(lastState)
           : { status: 'error' as const, draftMission: null, auditReport: null, vetoCount: 0, error: 'Graph produced no state' };
 
-        controller.enqueue(
-          sseFrame({
-            id: `evt-${Date.now()}-done`,
-            agent: 'SYSTEM',
-            type: 'done',
-            title: 'Flight Deck run complete',
-            payload: result,
-            timestamp: new Date().toISOString(),
-          })
-        );
+        send({
+          id: `evt-${Date.now()}-done`,
+          agent: 'SYSTEM',
+          type: 'done',
+          title: 'Flight Deck run complete',
+          payload: result,
+          timestamp: new Date().toISOString(),
+        });
       } catch (err) {
-        controller.enqueue(
-          sseFrame({
-            id: `evt-${Date.now()}-error`,
-            agent: 'SYSTEM',
-            type: 'done',
-            title: 'Flight Deck run failed',
-            payload: {
-              status: 'error',
-              draftMission: null,
-              auditReport: null,
-              vetoCount: 0,
-              error: err instanceof Error ? err.message : 'Unknown error',
-            },
-            timestamp: new Date().toISOString(),
-          })
-        );
+        // Internal errors (provider, network, database) stay in the server log.
+        console.error('[flight-deck] run failed', err instanceof Error ? err.message : err);
+        send({
+          id: `evt-${Date.now()}-error`,
+          agent: 'SYSTEM',
+          type: 'done',
+          title: 'Flight Deck run failed',
+          payload: {
+            status: 'error',
+            draftMission: null,
+            auditReport: null,
+            vetoCount: 0,
+            error: signal.aborted ? 'The run took too long and was stopped.' : 'The run failed. Try again.',
+          },
+          timestamp: new Date().toISOString(),
+        });
       } finally {
-        controller.close();
+        try {
+          controller.close();
+        } catch {
+          // Already closed or cancelled by the reader.
+        }
       }
     },
   });
