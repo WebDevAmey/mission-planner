@@ -4,203 +4,223 @@ import {
   RiArrowLeftSLine,
   RiCursorLine,
   RiDownload2Line,
-  RiHome4Line,
+  RiFocus3Line,
+  RiForbid2Line,
   RiMapPinAddLine,
+  RiMore2Line,
   RiRulerLine,
   RiShapeLine,
-  RiSparkling2Line,
-  RiForbid2Line,
-  RiErrorWarningFill,
-  RiCheckboxCircleFill,
+  RiStackLine,
 } from '@remixicon/react';
-import { Chip } from '@/components/base/badges/chip';
 import { cx } from '@/utils/cx';
+import { hillContours, polyline, type Pt } from './figures/geometry';
+import { type } from './styles';
 
 /**
- * Static, decorative mock of the Flight Deck editor (PRODUCT_SPEC §6.2):
- * 56px header, 48px tool rail, map-first canvas, right inspector with tabs,
- * and a single status bar. Pure markup + SVG, tokens only.
+ * Static picture of the mission editor (DESIGN_SPEC §5.4), drawn with the same
+ * tokens the app uses: 48px header, tool rail, map with a survey and its route,
+ * inspector list and status bar. Decorative markup + SVG; one description for
+ * assistive tech on the wrapper.
  */
 
 const RAIL = [
-  { icon: RiCursorLine, label: 'Select', active: false },
-  { icon: RiMapPinAddLine, label: 'Add waypoint', active: false },
-  { icon: RiShapeLine, label: 'Draw area', active: true },
-  { icon: RiForbid2Line, label: 'Draw zone', active: false },
-  { icon: RiHome4Line, label: 'Set home', active: false },
-  { icon: RiRulerLine, label: 'Measure', active: false },
+  { icon: RiCursorLine, label: 'Select' },
+  { icon: RiMapPinAddLine, label: 'Waypoint' },
+  { icon: RiShapeLine, label: 'Survey area', active: true },
+  { icon: RiForbid2Line, label: 'Zone' },
+  { icon: RiRulerLine, label: 'Measure' },
 ];
 
-const WAYPOINTS = [
-  { n: 1, cmd: 'Takeoff', alt: '30 m' },
-  { n: 2, cmd: 'Survey start', alt: '60 m' },
-  { n: 3, cmd: 'Waypoint', alt: '60 m' },
-  { n: 4, cmd: 'Waypoint', alt: '60 m' },
-  { n: 5, cmd: 'Waypoint', alt: '60 m' },
-  { n: 6, cmd: 'Return to launch', alt: '—' },
+const ROWS = [
+  { n: 1, cmd: 'Takeoff', alt: 30 as number | null },
+  ...Array.from({ length: 10 }, (_, i) => ({ n: i + 2, cmd: 'Waypoint', alt: 60 as number | null })),
+  { n: 12, cmd: 'Return to launch', alt: null },
 ];
+const SELECTED = 4;
 
-// Boustrophedon survey lanes inside the field polygon (viewBox units).
-const LANES = [
-  [168, 118, 436, 104],
-  [450, 136, 160, 150],
-  [154, 182, 462, 168],
-  [474, 200, 150, 214],
-  [146, 246, 486, 232],
-  [498, 264, 142, 278],
+// Survey lanes inside the field (viewBox 640 × 400), flown boustrophedon.
+const LANES: [Pt, Pt][] = [
+  [[196, 112], [430, 98]],
+  [[442, 132], [184, 148]],
+  [[176, 184], [454, 168]],
+  [[466, 204], [168, 220]],
+  [[160, 256], [478, 240]],
+];
+const HOME: Pt = [104, 322];
+const PATH: Pt[] = [HOME, ...LANES.flat()];
+const FIELD = 'M188 92 L 436 80 L 498 262 L 148 278 Z';
+const CONTOURS = [
+  ...hillContours({ cx: 560, cy: 96, r0: 10, step: 18, rings: 5, seed: 1.4, sx: 1.3 }),
+  ...hillContours({ cx: 70, cy: 70, r0: 14, step: 20, rings: 4, seed: 3.2 }),
 ];
 
 function MapCanvas() {
-  const lanePath = LANES.map(([x1, y1, x2, y2], i) => `${i === 0 ? 'M' : 'L'}${x1} ${y1} L${x2} ${y2}`).join(' ');
   return (
-    <div className="relative min-w-0 flex-1 overflow-hidden bg-neutral-900">
+    <div className="relative min-w-0 flex-1 overflow-hidden bg-(--fd-surface-2)">
       <svg viewBox="0 0 640 400" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 size-full" aria-hidden>
-        {/* terrain contours */}
-        <g className="fill-none stroke-neutral-800" strokeWidth="1.5">
-          <path d="M-20 60 C 120 20, 260 90, 380 50 S 600 30, 680 70" />
-          <path d="M-20 340 C 100 300, 240 380, 360 330 S 560 300, 680 350" />
-          <path d="M-20 380 C 140 350, 260 410, 420 370 S 600 360, 680 390" />
-          <ellipse cx="560" cy="110" rx="70" ry="42" />
-          <ellipse cx="560" cy="110" rx="40" ry="22" />
-        </g>
-        {/* roads */}
-        <path d="M-20 320 L 250 300 L 660 330" className="fill-none stroke-neutral-800" strokeWidth="10" strokeLinecap="round" />
-        <path d="M110 -20 L 120 420" className="fill-none stroke-neutral-800" strokeWidth="6" strokeLinecap="round" />
-        {/* field polygon */}
         <path
-          d="M160 100 L 440 92 L 510 270 L 136 290 Z"
-          className="fill-accent-500/10 stroke-accent-400"
-          strokeWidth="1.5"
-          strokeDasharray="6 5"
+          d={[...Array.from({ length: 9 }, (_, i) => `M${i * 80 + 40} 0 V400`), ...Array.from({ length: 5 }, (_, i) => `M0 ${i * 80 + 40} H640`)].join(' ')}
+          className="fill-none stroke-(--fd-line)"
+          strokeWidth="1"
         />
-        {/* no-fly zone */}
-        <circle cx="560" cy="300" r="62" className="fill-rose-500/10 stroke-rose-400" strokeWidth="1.5" strokeDasharray="5 4" />
-        {/* survey route */}
-        <path d={`M92 330 L168 118 ${lanePath.replace(/^M168 118 /, '')}`} className="fill-none stroke-accent-300" strokeWidth="2.25" strokeLinejoin="round" />
-        <path d="M142 278 L 92 330" className="fill-none stroke-accent-300/60" strokeWidth="2" strokeDasharray="4 4" />
+        <g className="fill-none stroke-(--fd-ink-3)" opacity="0.3">
+          {CONTOURS.map((d, i) => (
+            <path key={i} d={d} strokeWidth="0.8" />
+          ))}
+        </g>
+        {/* road */}
+        <path d="M-10 340 C 160 318, 300 352, 650 326" className="fill-none stroke-(--fd-surface)" strokeWidth="9" strokeLinecap="round" />
+        <path d="M-10 340 C 160 318, 300 352, 650 326" className="fill-none stroke-(--fd-line-strong)" strokeWidth="1" opacity="0.6" />
+
+        {/* survey area: info stroke and 8% fill */}
+        <path d={FIELD} className="fill-(--fd-info) stroke-(--fd-info)" fillOpacity="0.08" strokeWidth="1.25" />
+        {/* keep-out zone: danger 12% fill, dashed stroke */}
+        <circle cx="566" cy="300" r="58" className="fill-(--fd-danger) stroke-(--fd-danger)" fillOpacity="0.12" strokeWidth="1.5" strokeDasharray="5 4" />
+
+        {/* route: casing + accent line, dashed return */}
+        <path d={polyline([LANES[4][1], HOME])} className="fill-none stroke-(--fd-ink-3)" strokeWidth="1.25" strokeDasharray="3 4" />
+        <path d={polyline(PATH)} className="fill-none stroke-(--fd-surface)" strokeWidth="5" strokeLinejoin="round" />
+        <path d={polyline(PATH)} className="fill-none stroke-(--fd-accent)" strokeWidth="2.5" strokeLinejoin="round" />
+
         {/* waypoints */}
-        {LANES.flatMap(([x1, y1, x2, y2], i) => [
-          <circle key={`a${i}`} cx={x1} cy={y1} r="4.5" className="fill-neutral-950 stroke-accent-300" strokeWidth="2" />,
-          <circle key={`b${i}`} cx={x2} cy={y2} r="4.5" className="fill-neutral-950 stroke-accent-300" strokeWidth="2" />,
-        ])}
-        {/* home */}
-        <circle cx="92" cy="330" r="9" className="fill-lime-400 stroke-neutral-950" strokeWidth="2" />
+        {PATH.slice(1).map(([x, y], i) => {
+          const n = i + 2;
+          const selected = n === SELECTED;
+          return (
+            <g key={n}>
+              <circle cx={x} cy={y} r="8.5" className={selected ? 'fill-(--fd-accent) stroke-(--fd-accent)' : 'fill-(--fd-surface) stroke-(--fd-ink)'} strokeWidth="1.25" />
+              <text
+                x={x}
+                y={y + 3.4}
+                textAnchor="middle"
+                fontSize="9.5"
+                fontWeight="500"
+                className={cx('font-mono', selected ? 'fill-(--fd-accent-ink)' : 'fill-(--fd-ink)')}
+              >
+                {n}
+              </text>
+            </g>
+          );
+        })}
+        {/* launch */}
+        <rect x={HOME[0] - 7} y={HOME[1] - 7} width="14" height="14" className="fill-(--fd-ink)" />
       </svg>
 
-      {/* overlays (HTML so text stays crisp and ≥12px) */}
-      <div className="absolute start-3 top-3 hidden items-center gap-2 rounded-lg border border-border-button-default bg-background-primary-default/90 px-2.5 py-1.5 text-caption-1-medium text-text-secondary shadow-xs backdrop-blur sm:flex">
-        Draw area · click to add corners · Esc to finish
+      {/* overlays in HTML so text stays crisp */}
+      <div className="absolute top-3 left-3 hidden items-center gap-2 rounded-[10px] border border-(--fd-line) bg-(--fd-surface) px-2.5 py-1.5 text-[12px]/[16px] text-(--fd-ink-2) shadow-[0_1px_2px_rgb(0_0_0/.06),0_8px_24px_rgb(0_0_0/.08)] sm:flex">
+        <span className="text-(--fd-ink)">Survey area</span>
+        <span className="tabular-nums">12.4 ha · 5 lanes · 70% side overlap</span>
       </div>
-      <div className="absolute end-[4%] bottom-[30%] flex items-center gap-1 rounded-md bg-status-rose-background px-1.5 py-0.5 text-caption-1-medium text-status-rose-text">
+      <div className="absolute right-[6%] bottom-[30%] hidden items-center gap-1 rounded-[4px] bg-(--fd-surface) px-1.5 py-0.5 text-[12px]/[16px] text-(--fd-danger) sm:flex">
         <RiForbid2Line className="size-3.5" aria-hidden />
-        No-fly · Airfield
+        Keep-out · Airfield
       </div>
-      <div className="absolute start-[26%] top-[36%] rounded-md bg-background-primary-default/90 px-1.5 py-0.5 text-caption-1-medium text-text-primary shadow-xs">
-        12 ha · 70% overlap
-      </div>
+      <p className={cx(type.data, 'absolute bottom-2 left-3 text-[11px]/[14px] text-(--fd-ink-2)')}>51.48231, −0.60114</p>
     </div>
   );
 }
 
 function Inspector() {
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-s border-separator-border bg-background-secondary-default md:flex lg:w-64">
-      <div className="flex items-center gap-3 border-b border-separator-border px-3 pt-2 text-caption-1-medium">
-        <span className="border-b-2 border-accent-500 pb-2 text-text-primary">Waypoints</span>
-        <span className="pb-2 text-text-secondary">Item</span>
-        <span className="flex items-center gap-1 pb-2 text-text-secondary">
-          Checks
-          <span className="rounded-sm bg-status-yellow-background px-1 text-status-yellow-text">1</span>
-        </span>
+    <div className="hidden w-[248px] shrink-0 flex-col border-l border-(--fd-line) bg-(--fd-surface) md:flex lg:w-[288px]">
+      <div className="p-2">
+        <div className="grid grid-cols-3 gap-0.5 rounded-[6px] bg-(--fd-surface-2) p-0.5 text-[12px]/[16px]">
+          <span className="rounded-[4px] bg-(--fd-surface) py-1 text-center font-medium text-(--fd-ink) shadow-[0_0_0_1px_var(--fd-line)]">Waypoints</span>
+          <span className="py-1 text-center text-(--fd-ink-2)">Item</span>
+          <span className="flex items-center justify-center gap-1 py-1 text-(--fd-ink-2)">
+            Checks
+            <span className="size-1.5 rounded-full bg-(--fd-warn)" />
+          </span>
+        </div>
       </div>
-      <ul className="flex flex-col gap-0.5 p-2">
-        {WAYPOINTS.map((wp) => (
-          <li
-            key={wp.n}
-            className={cx(
-              'flex items-center gap-2 rounded-lg px-2 py-1.5 text-caption-1-medium',
-              wp.n === 3 ? 'bg-background-primary-hover text-text-primary' : 'text-text-secondary',
-            )}
-          >
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-background-tertiary-default font-mono text-text-primary tabular-nums">
-              {wp.n}
-            </span>
-            <span className="min-w-0 flex-1 truncate">{wp.cmd}</span>
-            <span className="font-mono tabular-nums">{wp.alt}</span>
-          </li>
-        ))}
+      <div className={cx(type.label, 'flex h-7 items-center justify-between border-y border-(--fd-line) bg-(--fd-surface-2) px-3 text-(--fd-ink-3)')}>
+        <span>#&nbsp;&nbsp;Command</span>
+        <span>Alt</span>
+      </div>
+      <ul className="flex-1 overflow-hidden">
+        {ROWS.map((row) => {
+          const selected = row.n === SELECTED;
+          return (
+            <li
+              key={row.n}
+              className={cx(
+                'flex h-8 items-center gap-2 border-b border-(--fd-line) border-l-2 pr-3 pl-2.5 text-[13px]/[18px]',
+                selected ? 'border-l-(--fd-accent) bg-(--fd-accent-tint) text-(--fd-ink)' : 'border-l-transparent text-(--fd-ink-2)',
+              )}
+            >
+              <span className="w-5 font-mono text-[12px] text-(--fd-ink-3) tabular-nums">{row.n}</span>
+              <span className="min-w-0 flex-1 truncate">{row.cmd}</span>
+              <span className="tabular-nums">{row.alt === null ? '—' : `${row.alt} m`}</span>
+            </li>
+          );
+        })}
       </ul>
-      <div className="mt-auto flex flex-col gap-1.5 border-t border-separator-border p-3">
-        <p className="flex items-center gap-1.5 text-caption-1-medium text-status-yellow-text">
-          <RiErrorWarningFill className="size-4 shrink-0" aria-hidden />
-          Terrain clearance 34 m at WP 5
-        </p>
-        <p className="flex items-center gap-1.5 text-caption-1-medium text-status-lime-text">
-          <RiCheckboxCircleFill className="size-4 shrink-0" aria-hidden />
-          All legs clear of zones
-        </p>
-      </div>
-    </aside>
+    </div>
   );
 }
 
 export function ProductMock({ className }: { className?: string }) {
   return (
     <div
-      aria-hidden
-      className={cx(
-        'overflow-hidden rounded-2xl border border-border-button-default bg-background-secondary-default shadow-2xl ring-1 ring-black/40',
-        className,
-      )}
+      role="img"
+      aria-label="The Flight Deck mission editor: a survey area with five lanes on the map, the waypoint list beside it and the route totals underneath."
+      className={cx('overflow-hidden rounded-[6px] border border-(--fd-line) bg-(--fd-surface) text-(--fd-ink)', className)}
     >
       {/* header */}
-      <div className="flex h-12 items-center gap-2 border-b border-separator-border px-3 sm:h-14">
-        <RiArrowLeftSLine className="size-5 shrink-0 text-foreground-icon-secondary" />
-        <span className="min-w-0 truncate text-body-medium text-text-primary">North field survey</span>
-        <Chip variant="caption" color="lime" className="hidden sm:inline-flex">
-          Saved
-        </Chip>
-        <div className="ms-auto flex items-center gap-1.5">
-          <RiArrowGoBackLine className="hidden size-4 text-foreground-icon-secondary sm:block" />
-          <RiArrowGoForwardLine className="hidden size-4 text-foreground-icon-tertiary sm:block" />
-          <span className="hidden items-center gap-1 rounded-lg border border-border-button-default px-2 py-1 text-caption-1-medium text-text-primary sm:flex">
-            <RiSparkling2Line className="size-3.5 text-accent-400" />
-            Ask AI
+      <div aria-hidden className="flex h-12 items-center gap-2 border-b border-(--fd-line) px-2 sm:px-3">
+        <RiArrowLeftSLine className="size-5 shrink-0 text-(--fd-ink-3)" />
+        <span className="min-w-0 truncate text-[14px]/[20px] font-medium">North field survey</span>
+        <span className={cx(type.data, 'hidden text-[12px] text-(--fd-ink-3) sm:inline')}>Saved 12:04</span>
+        <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          <RiArrowGoBackLine className="hidden size-4 text-(--fd-ink-2) sm:block" />
+          <RiArrowGoForwardLine className="hidden size-4 text-(--fd-ink-3) sm:block" />
+          <span className="hidden items-center gap-1.5 rounded-[6px] border border-(--fd-line) px-2 py-1 text-[12px]/[16px] text-(--fd-ink-2) sm:flex">
+            <span className="size-1.5 rounded-full bg-(--fd-warn)" />
+            <span className="tabular-nums">1 warning</span>
           </span>
-          <span className="flex items-center gap-1 rounded-lg bg-linear-to-b from-accent-500 to-accent-600 px-2 py-1 text-caption-1-medium text-white">
+          <span className="flex items-center gap-1 rounded-[6px] bg-(--fd-accent) px-2 py-1 text-[12px]/[16px] font-medium text-(--fd-accent-ink)">
             <RiDownload2Line className="size-3.5" />
             Export
           </span>
+          <RiMore2Line className="size-4 text-(--fd-ink-2)" />
         </div>
       </div>
 
       {/* body */}
-      <div className="flex h-[260px] sm:h-[340px] lg:h-[400px]">
-        <div className="flex w-10 shrink-0 flex-col items-center gap-1 border-e border-separator-border py-2 sm:w-12">
+      <div aria-hidden className="flex h-[248px] sm:h-[360px] lg:h-[440px]">
+        <div className="flex w-10 shrink-0 flex-col items-center gap-1 border-r border-(--fd-line) py-2 sm:w-12">
           {RAIL.map(({ icon: Icon, label, active }) => (
             <span
               key={label}
               className={cx(
-                'flex size-8 items-center justify-center rounded-lg',
-                active ? 'bg-accent-500/15 text-accent-300' : 'text-foreground-icon-secondary',
+                'flex size-8 items-center justify-center rounded-[6px]',
+                active ? 'bg-(--fd-ink) text-(--fd-surface)' : 'text-(--fd-ink-2)',
               )}
             >
               <Icon className="size-[18px]" />
             </span>
           ))}
+          <span className="my-1 h-px w-6 bg-(--fd-line)" />
+          <span className="flex size-8 items-center justify-center text-(--fd-ink-2)">
+            <RiStackLine className="size-[18px]" />
+          </span>
+          <span className="flex size-8 items-center justify-center text-(--fd-ink-2)">
+            <RiFocus3Line className="size-[18px]" />
+          </span>
         </div>
         <MapCanvas />
         <Inspector />
       </div>
 
       {/* status bar */}
-      <div className="flex h-10 items-center gap-3 overflow-hidden border-t border-separator-border px-3 font-mono text-caption-1-medium whitespace-nowrap text-text-secondary tabular-nums">
-        <span className="text-text-primary">3.4 km</span>
-        <span>6m 20s</span>
-        <span>14 WPs</span>
-        <span className="hidden sm:inline">max 60 m</span>
-        <span className="hidden items-center gap-1 text-status-lime-text sm:flex">Risk low</span>
-        <span className="ms-auto hidden text-status-yellow-text md:inline">1 warning · 0 errors</span>
+      <div
+        aria-hidden
+        className="flex h-8 items-center overflow-hidden border-t border-(--fd-line) bg-(--fd-surface) text-[12px]/[16px] whitespace-nowrap text-(--fd-ink-2) tabular-nums [&>span]:border-r [&>span]:border-(--fd-line) [&>span]:px-3 [&>span:last-child]:border-r-0"
+      >
+        <span className="text-(--fd-ink)">3.42 km</span>
+        <span>6 min 20 s</span>
+        <span>12 items</span>
+        <span className="hidden sm:inline">Max 60 m</span>
       </div>
     </div>
   );

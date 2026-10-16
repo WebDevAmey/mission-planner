@@ -1,52 +1,59 @@
-import { RiDownload2Line, RiPencilRuler2Line, RiShieldCheckLine } from '@remixicon/react';
-import { ScrollReveal } from '@/components/motion/scroll-reveal';
-import { Section, SectionHeading } from './section';
+import type { ComponentType } from 'react';
+import { cx } from '@/utils/cx';
+import { CheckDiagram, DrawDiagram, ExportDiagram } from './figures/step-diagrams';
+import { SectionHeading } from './section';
+import { section, type, wrap } from './styles';
 
-const STEPS = [
+const STEPS: { title: string; body: string; figure: ComponentType }[] = [
   {
-    icon: RiPencilRuler2Line,
-    title: 'Outline the job',
-    body: 'Search a place, then draw the survey area or drop waypoints on the map. Set altitude, speed and overlap once as mission defaults.',
+    title: 'Draw',
+    body: 'Outline the survey area or drop waypoints on the map. Altitude, speed and overlap are set once as mission defaults.',
+    figure: DrawDiagram,
   },
   {
-    icon: RiShieldCheckLine,
-    title: 'Generate and check',
-    body: 'Flight Deck builds the survey grid, orders the route and runs its checks on every leg. Problems appear in the Checks tab and on the map, with the waypoint to fix.',
+    title: 'Check',
+    body: 'Every leg is tested against your zones, terrain and limits on each edit. Findings name the waypoint to fix.',
+    figure: CheckDiagram,
   },
   {
-    icon: RiDownload2Line,
-    title: 'Export and fly',
-    body: 'Download a .plan for QGroundControl or a .waypoints file for Mission Planner, or share the route as KML, GeoJSON or CSV.',
+    title: 'Export',
+    body: 'Download a .plan for QGroundControl or a .waypoints file for Mission Planner, then upload it as usual.',
+    figure: ExportDiagram,
   },
 ];
 
 export function HowItWorks() {
   return (
-    <Section id="how-it-works" labelledBy="how-title">
-      <SectionHeading
-        id="how-title"
-        eyebrow="How it works"
-        title="Three steps, one screen"
-        description="No desktop install and no plugin chain. Plan, check and export in the same map view."
-      />
-      <ol className="mt-12 grid gap-4 md:grid-cols-3">
-        {STEPS.map((step, i) => (
-          <li key={step.title}>
-            <ScrollReveal delay={i * 0.08} className="h-full">
-              <div className="flex h-full flex-col gap-4 rounded-2xl border border-separator-border bg-background-secondary-default p-6">
-                <div className="flex items-center justify-between">
-                  <span className="flex size-10 items-center justify-center rounded-2lg bg-accent-500/15 text-accent-300">
-                    <step.icon className="size-5" aria-hidden />
-                  </span>
-                  <span className="font-mono text-caption-1-medium text-text-tertiary tabular-nums">0{i + 1}</span>
-                </div>
-                <h3 className="text-title-3-semibold text-text-primary">{step.title}</h3>
-                <p className="text-body-regular text-text-secondary">{step.body}</p>
+    <section id="how-it-works" aria-labelledby="how-title" className={section}>
+      <div className={wrap}>
+        <SectionHeading id="how-title" title="How a mission comes together">
+          One map view, start to finish. No desktop install and no plugin chain.
+        </SectionHeading>
+        <ol className="mt-12 grid border-t border-(--fd-line) md:grid-cols-3 lg:mt-16">
+          {STEPS.map((step, i) => (
+            <li
+              key={step.title}
+              className={cx(
+                'flex flex-col gap-4 border-b border-(--fd-line) py-8 md:border-b-0 md:px-6 md:pt-8 md:pb-0',
+                i > 0 && 'md:border-l',
+                i === 0 && 'md:pl-0',
+                i === STEPS.length - 1 && 'border-b-0 md:pr-0',
+              )}
+            >
+              <div className="rounded-[2px] border border-(--fd-line) bg-(--fd-surface)">
+                <step.figure />
               </div>
-            </ScrollReveal>
-          </li>
-        ))}
-      </ol>
-    </Section>
+              <h3 className={cx(type.title2, 'mt-2 flex items-baseline gap-3 text-text-primary')}>
+                <span className="text-[15px] font-normal text-text-tertiary tabular-nums" aria-hidden>
+                  {i + 1}
+                </span>
+                {step.title}
+              </h3>
+              <p className={cx(type.body, 'max-w-[40ch] text-text-secondary')}>{step.body}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
   );
 }

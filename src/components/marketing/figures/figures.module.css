@@ -1,0 +1,32 @@
+/* One authored moment (DESIGN_SPEC §3.4): the route draws once, 1.2s.
+   Reduced motion: static, fully drawn. No JS needed, so it never hides content. */
+.route {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: fd-route-draw 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.25s forwards;
+}
+
+.marker {
+  opacity: 0;
+  animation: fd-marker-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.marker:nth-of-type(1) { animation-delay: 0.25s; }
+.marker:nth-of-type(2) { animation-delay: 0.42s; }
+.marker:nth-of-type(3) { animation-delay: 0.58s; }
+.marker:nth-of-type(4) { animation-delay: 0.74s; }
+.marker:nth-of-type(5) { animation-delay: 0.9s; }
+.marker:nth-of-type(6) { animation-delay: 1.06s; }
+.marker:nth-of-type(7) { animation-delay: 1.22s; }
+.marker:nth-of-type(8) { animation-delay: 1.38s; }
+
+@keyframes fd-route-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes fd-marker-in {
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route { animation: none; stroke-dashoffset: 0; }
+  .marker { animation: none; opacity: 1; }
+}

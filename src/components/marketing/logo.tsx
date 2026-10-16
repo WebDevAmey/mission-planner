@@ -1,27 +1,26 @@
 import type { SVGProps } from 'react';
 import { cx } from '@/utils/cx';
 
-/** Flight Deck mark: a waypoint route over a deck line. Uses currentColor. */
+/**
+ * Flight Deck mark (D-16): a two-leg route from a launch square to a waypoint.
+ * Monochrome, uses currentColor.
+ */
 export function FlightDeckMark({ className, ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden className={cx('size-6', className)} {...props}>
-      <path d="M4 17 L10 8 L15 13 L20 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="4" cy="17" r="2" fill="currentColor" />
-      <circle cx="10" cy="8" r="1.6" fill="currentColor" />
-      <circle cx="15" cy="13" r="1.6" fill="currentColor" />
-      <circle cx="20" cy="5" r="2" fill="currentColor" />
-      <path d="M3 21 H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+      <path d="M5.5 18.5 L11 7 L19 13" stroke="currentColor" strokeWidth="1.75" strokeLinecap="square" strokeLinejoin="miter" />
+      <rect x="3" y="16" width="5" height="5" fill="currentColor" />
+      <circle cx="19" cy="13" r="2.5" fill="currentColor" />
     </svg>
   );
 }
 
+/** Wordmark: the mark plus "Flight Deck" in Geist Mono 500. Used site-wide. */
 export function FlightDeckLogo({ className }: { className?: string }) {
   return (
     <span className={cx('inline-flex items-center gap-2 text-text-primary', className)}>
-      <span className="flex size-8 items-center justify-center rounded-2lg bg-linear-to-b from-accent-500 to-accent-600 text-white shadow-xs">
-        <FlightDeckMark className="size-5" />
-      </span>
-      <span className="text-headline-semibold tracking-tight">Flight Deck</span>
+      <FlightDeckMark className="size-5" />
+      <span className="font-mono text-[15px]/[20px] font-medium tracking-[-0.01em]">Flight Deck</span>
     </span>
   );
 }
