@@ -46,7 +46,7 @@ export function Dialog({ open, onClose, children, className, size = 'md' }: Dial
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -58,12 +58,12 @@ export function Dialog({ open, onClose, children, className, size = 'md' }: Dial
           <motion.div
             role="dialog"
             aria-modal="true"
-            initial={{ opacity: 0, scale: 0.97, y: 4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 4 }}
-            transition={{ duration: 0.15 }}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}
             className={cn(
-              'w-full overflow-hidden rounded-md border border-border-mid bg-bg-raised shadow-2xl',
+              'w-full overflow-hidden rounded-2lg border border-fd-line bg-fd-surface shadow-fd-float',
               SIZE_CLASSES[size],
               className
             )}
@@ -85,7 +85,7 @@ export function DialogHeader({
 }: React.HTMLAttributes<HTMLDivElement> & { onClose?: () => void }) {
   return (
     <div
-      className={cn('flex items-center justify-between gap-3 border-b border-border-mid px-4 py-3', className)}
+      className={cn('flex items-center justify-between gap-3 border-b border-fd-line px-4 py-3', className)}
       {...props}
     >
       <div className="min-w-0">{children}</div>
@@ -93,7 +93,7 @@ export function DialogHeader({
         <button
           onClick={onClose}
           aria-label="Close dialog"
-          className="shrink-0 rounded-sm p-1 text-text-muted transition-colors hover:bg-bg-hover hover:text-text"
+          className="shrink-0 rounded-md p-1 text-fd-ink-3 transition-colors hover:bg-fd-surface-2 hover:text-fd-ink"
         >
           <X size={14} />
         </button>
@@ -103,11 +103,11 @@ export function DialogHeader({
 }
 
 export function DialogTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn('font-mono text-[12px] font-bold text-text', className)} {...props} />;
+  return <h2 className={cn('text-title-3-medium text-fd-ink', className)} {...props} />;
 }
 
 export function DialogDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn('mt-0.5 font-sans text-[11px] text-text-muted', className)} {...props} />;
+  return <p className={cn('mt-0.5 text-body-2-regular text-fd-ink-2', className)} {...props} />;
 }
 
 export function DialogBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
@@ -117,7 +117,7 @@ export function DialogBody({ className, ...props }: React.HTMLAttributes<HTMLDiv
 export function DialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('flex items-center justify-end gap-2 border-t border-border-mid px-4 py-3', className)}
+      className={cn('flex items-center justify-end gap-2 border-t border-fd-line px-4 py-3', className)}
       {...props}
     />
   );

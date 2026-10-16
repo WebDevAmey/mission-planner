@@ -364,16 +364,138 @@
 
 }
 
-/* Flight Deck alignment: ARC speaks the app's type and surfaces. */
+/* Flight Deck alignment (DESIGN_SPEC §3, §7): ARC is re-pointed to the --fd-*
+ * tokens so it follows light/dark with the rest of the app. Glows, gradients
+ * and decorative shadows are neutralised; radius follows the app scale. */
 :where(.arc-scope),
-:where(arc-accordion, arc-marquee, arc-cta-banner, arc-feature-card, arc-animated-number, arc-gradient-text, arc-card, arc-stat, arc-badge, arc-value-card, arc-empty-state) {
+:where(arc-accordion, arc-accordion-item, arc-marquee, arc-cta-banner, arc-feature-card, arc-animated-number, arc-gradient-text, arc-card, arc-stat, arc-badge, arc-typewriter, arc-value-card, arc-empty-state, arc-hover-card, arc-status-bar, arc-connection-status) {
+  /* Type: Geist Sans / Geist Mono, weights 400/500. */
   --font-body-family: var(--font-geist-sans);
   --font-body-fallback: system-ui, sans-serif;
+  --font-body-weight: 400;
+  --font-label-family: var(--font-geist-mono);
+  --font-label-fallback: ui-monospace, monospace;
+  --font-label-weight: 500;
+  --font-mono-family: var(--font-geist-mono);
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  --bg-base: var(--color-bg-base);
-  --bg-card: var(--color-background-secondary-default);
-  --text-primary: var(--color-text-primary);
-  --text-secondary: var(--color-text-secondary);
+  --font-display-weight: 500;
+  --numeral-weight: 600;
+  --label-size: 11px;
+  --label-spacing: 0.06em;
+  --label-inline-spacing: 0.06em;
+  --body-lh: 1.6;
+
+  /* Surfaces, text, lines */
+  --bg-deep: var(--fd-bg);
+  --bg-surface: var(--fd-surface);
+  --bg-base: var(--fd-bg);
+  --bg-card: var(--fd-surface);
+  --bg-elevated: var(--fd-surface-2);
+  --bg-hover: var(--fd-surface-2);
+  --text-primary: var(--fd-ink);
+  --text-secondary: var(--fd-ink-2);
+  --text-muted: var(--fd-ink-3);
+  --text-ghost: var(--fd-ink-3);
+  --border-subtle: var(--fd-line);
+  --border-default: var(--fd-line);
+  --border-bright: var(--fd-line-strong);
+  --overlay-backdrop: rgb(0 0 0 / 0.4);
+
+  /* One accent: signal orange. The secondary accent collapses onto ink so no
+   * two-tone gradient can form. */
+  --accent-primary: var(--fd-accent);
+  --accent-secondary: var(--fd-ink-2);
+  --accent-primary-rgb: 224, 70, 28;
+  --accent-secondary-rgb: 74, 77, 82;
+  --text-primary-rgb: 14, 16, 19;
+  --text-muted-rgb: 107, 110, 115;
+  --border-default-rgb: 218, 216, 209;
+  --on-accent: var(--fd-accent-ink);
+  --accent-primary-subtle: var(--fd-accent-tint);
+  --accent-primary-border: var(--fd-line-strong);
+  --accent-primary-glow: transparent;
+  --accent-primary-ring: var(--fd-accent);
+  --accent-secondary-subtle: var(--fd-surface-2);
+  --accent-secondary-border: var(--fd-line);
+  --accent-secondary-glow: transparent;
+
+  /* Feedback */
+  --color-success: var(--fd-ok);
+  --color-error: var(--fd-danger);
+  --color-error-subtle: var(--fd-danger-tint);
+  --color-warning: var(--fd-warn);
+  --color-warning-subtle: var(--fd-warn-tint);
+  --color-info: var(--fd-info);
+  --color-info-subtle: var(--fd-info-tint);
+  --feedback-error-glow: none;
+  --feedback-success-glow: none;
+  --feedback-warning-glow: none;
+  --feedback-info-glow: none;
+
+  /* Radius: app 6px, overlays 10px. */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 10px;
+
+  /* Elevation: none, except overlays. */
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: var(--fd-shadow-float);
+  --shadow-xl: var(--fd-shadow-float);
+  --shadow-overlay: var(--fd-shadow-float);
+  --shadow-inset: none;
+
+  /* Motion */
+  --ease-standard: var(--fd-ease);
+  --ease-out: var(--fd-ease);
+  --ease-spring: var(--fd-ease);
+  --duration-fast: var(--fd-dur-press);
+  --duration-base: var(--fd-dur-pop);
+  --duration-slow: var(--fd-dur-dialog);
+  --duration-enter: var(--fd-dur-reveal);
+  --duration-exit: var(--fd-dur-pop);
+
+  /* No glows or decorative gradients. Text gradients resolve to solid ink. */
+  --glow-white: none;
+  --glow-primary: none;
+  --glow-secondary: none;
+  --glow-xs: none;
+  --glow-sm: none;
+  --glow-md: none;
+  --glow-status: none;
+  --glow-hover: none;
+  --glow-card-hover: none;
+  --gradient-display-text: linear-gradient(var(--fd-ink), var(--fd-ink));
+  --gradient-accent-text: linear-gradient(var(--fd-ink), var(--fd-ink));
+  --gradient-divider: linear-gradient(var(--fd-line), var(--fd-line));
+  --gradient-divider-glow: linear-gradient(var(--fd-line), var(--fd-line));
+  --gradient-border-glow: linear-gradient(var(--fd-line), var(--fd-line));
+  --gradient-page-ambient: none;
+  --gradient-ambient: none;
+  --glow-line-white: linear-gradient(var(--fd-line), var(--fd-line));
+  --glow-line-blue: linear-gradient(var(--fd-line), var(--fd-line));
+  --glow-line-gradient: linear-gradient(var(--fd-line), var(--fd-line));
+  --divider-glow: linear-gradient(var(--fd-line), var(--fd-line));
+  --interactive-hover: none;
+  --interactive-active: none;
+
+  /* Focus: 2px accent ring with a 2px gap. */
+  --focus-ring: 0 0 0 2px var(--fd-bg), 0 0 0 4px var(--fd-accent);
+  --focus-glow: 0 0 0 2px var(--fd-bg), 0 0 0 4px var(--fd-accent);
+  --focus-error: 0 0 0 2px var(--fd-bg), 0 0 0 4px var(--fd-danger);
+  --focus-thumb: 0 0 0 2px var(--fd-bg), 0 0 0 4px var(--fd-accent);
+}
+
+.dark :where(.arc-scope),
+.dark :where(arc-accordion, arc-accordion-item, arc-marquee, arc-cta-banner, arc-feature-card, arc-animated-number, arc-gradient-text, arc-card, arc-stat, arc-badge, arc-typewriter, arc-value-card, arc-empty-state, arc-hover-card, arc-status-bar, arc-connection-status) {
+  --accent-primary-rgb: 255, 90, 43;
+  --accent-secondary-rgb: 163, 167, 173;
+  --text-primary-rgb: 237, 237, 234;
+  --text-muted-rgb: 126, 131, 138;
+  --border-default-rgb: 36, 40, 46;
 }
 
 /* Hide ARC elements until they upgrade (they only register client-side). */

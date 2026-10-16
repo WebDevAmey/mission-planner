@@ -40,7 +40,6 @@ export const switchSizes = sortCx({
   sm: {
     track: "h-4 w-7",
     trackRadius: { pill: "rounded-full", rectangle: "rounded-[3px]" },
-    onShadow: "shadow-[inset_0_1px_0_0_rgb(255_255_255/0.25),inset_0_0_0_0.5px_var(--color-accent-500)]",
     thumb: "size-3",
     thumbRadius: { pill: "rounded-full", rectangle: "rounded-[1px]" },
     offset: "start-0.5 top-0.5",
@@ -51,7 +50,6 @@ export const switchSizes = sortCx({
   md: {
     track: "h-6 w-[42px]",
     trackRadius: { pill: "rounded-full", rectangle: "rounded-[4.5px]" },
-    onShadow: "shadow-[inset_0_1.5px_0_0_rgb(255_255_255/0.25),inset_0_0_0_0.75px_var(--color-accent-500)]",
     thumb: "size-[18px]",
     thumbRadius: { pill: "rounded-full", rectangle: "rounded-[1.5px]" },
     offset: "start-[3px] top-[3px]",
@@ -62,7 +60,6 @@ export const switchSizes = sortCx({
   lg: {
     track: "h-8 w-14",
     trackRadius: { pill: "rounded-full", rectangle: "rounded-md" },
-    onShadow: "shadow-checkbox-selected",
     thumb: "size-6",
     thumbRadius: { pill: "rounded-full", rectangle: "rounded-xs" },
     offset: "start-1 top-1",
@@ -101,7 +98,7 @@ export function SwitchTrack({
         s.track,
         s.trackRadius[shape],
         state.isSelected
-          ? cx("bg-linear-to-b from-accent-500 to-accent-600", s.onShadow)
+          ? "bg-fd-accent"
           : "bg-background-tertiary-default",
         state.isDisabled && "opacity-50",
         state.isFocusVisible && "ring-2 ring-border-focus-ring ring-offset-2",
@@ -111,8 +108,7 @@ export function SwitchTrack({
       <span
         className={cx(
           "absolute flex items-center justify-center",
-          "bg-linear-to-b from-control-indicator-background from-[43.837%] to-control-indicator-background-subtle",
-          "shadow-[0_3px_3px_0_rgb(0_0_0/0.03),0_0.75px_0_0_rgb(0_0_0/0.05)]",
+          "bg-control-indicator-background",
           "transition-transform duration-200 ease",
           s.thumb,
           s.thumbRadius[shape],
@@ -120,20 +116,6 @@ export function SwitchTrack({
           state.isSelected && s.travel,
         )}
       >
-        {/* Embossed inner chip. Gradient runs bottom→top (`to-t`) — equivalent
-            to the Figma layer's vertical flip — but WITHOUT a transform, so the
-            chip stays pixel-snapped/centred (no blurry 1px shift at sub-pixel
-            sizes) and its drop shadow points down instead of up. */}
-        <span
-          className={cx(
-            "border-solid bg-linear-to-t from-[43.837%]",
-            s.chip,
-            s.chipRadius[shape],
-            state.isSelected
-              ? "border-accent-600 from-switch-on-chip-start to-switch-on-chip-end"
-              : "border-border-button-default/50 from-switch-off-chip-start to-switch-off-chip-end",
-          )}
-        />
       </span>
     </span>
   );
