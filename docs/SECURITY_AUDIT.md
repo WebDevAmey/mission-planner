@@ -5,7 +5,7 @@ Date: 2026-10-16. Scope: the whole server side (Next.js 16 route handlers under 
 ## Summary
 
 - 26 findings. 21 are fixed, each with a regression test. 5 are accepted and the reason is given below. 3 are follow-ups owned by other areas.
-- `pnpm audit --prod` went from 120 advisories (5 critical, 46 high) to **0**. The full audit, including dev tools, went from 68 (after the prod fixes) to 7. All 7 are in dev-only tooling (see F26).
+- `pnpm audit --prod` went from 120 advisories (5 critical, 46 high) to **0**. The full audit, including dev tools, went from 68 (after the prod fixes) to 7, then to 1 after the vitest 4 upgrade: `braces` under the eslint config, which has no patched release (see F26).
 - Integration tests went from 35 to 87, in 13 files. One of them is an access-control sweep that imports every API handler and checks auth, CSRF and IDOR, so a new route is covered automatically.
 
 ## Findings
@@ -39,7 +39,7 @@ Severity is the impact on this app as deployed (Vercel, Postgres): Critical, Hig
 | F23 | A07 | Low | signup route | A 409 for an existing email reveals that the account exists. | Accepted: needed for the signup UX. Rate-limited per IP and per email. Login and forgot-password do not reveal it (timing measured, see below). | security.itest.ts |
 | F24 | A07 | Low | rate-limit.ts | The per-email lockout (10 failures per 15 min) can be triggered by a third party to lock someone out. | Accepted: lasts 15 minutes and is the standard trade-off; the per-IP ceiling limits the attacker. | auth-flows.itest.ts |
 | F25 | A05 | Low | next.config.ts | The CSP has `script-src 'unsafe-inline'` because Next injects inline bootstrap scripts. | Accepted for now: nonces would force every page to render dynamically. Follow-up: nonce-based CSP once a page budget allows it. | headers.itest.ts |
-| F26 | A06 | Info | devDependencies | 7 advisories remain in the full audit, all in dev tools: tinypool and @vitest/mocker (vitest 3; the fix needs vitest 4), braces (no patched release), @humanfs/node, valibot and fast-glob paths under eslint and the prisma CLI. | Accepted: never shipped or run on a server. Follow-up: vitest 4. | `pnpm audit` |
+| F26 | A06 | Info | devDependencies | The full audit listed 7 advisories, all in dev tools: tinypool, vitest and @vitest/mocker (vitest 3), braces, @humanfs/node, and valibot under the prisma CLI. | Fixed on `feature/hardening`: vitest 4.1.11, and overrides for valibot (^1.4.2) and @humanfs/node (^0.16.8). One remains: braces under `eslint-config-next` (fast-glob, micromatch), which has no patched release. Accepted: lint-time only, never shipped or run on a server. `pnpm audit --prod` is clean. | `pnpm audit` |
 
 ### Follow-ups for other owners (in signals/h/requests.md)
 
@@ -107,7 +107,7 @@ Severity is the impact on this app as deployed (Vercel, Postgres): Critical, Hig
 - Login timing: 30 samples each over HTTP gave a median of 43 ms for an existing email with a wrong password and 48 ms for an unknown email. The difference is within noise; a dummy argon2 verify runs for unknown emails.
 - ASVS L2 asks for 12 h sessions or a 30 min idle timeout. That is an accepted deviation: 30 days absolute plus 14 days idle suits a planning tool, and the account actions above all require re-authentication.
 
-**A08 Software and data integrity.** No `eval` or `new Function`. Every input is checked with zod. LLM output is treated as untrusted: it is parsed against `MissionDraftSchema`, audited by SENTINEL and only applied after a person approves it. The lockfile is committed. Supply chain: versions are pinned to releases at least two weeks old, and there are no install scripts beyond the ignored `sharp` and `unrs-resolver` builds.
+**A08 Software and data integrity.** No `eval` or `new Function`. Every input is checked with zod. LLM output is treated as untrusted: it is parsed against `MissionDraftSchema`, audited by SENTINEL and only applied after a person approves it. The lockfile is committed. Supply chain: versions are pinned to releases at least two weeks old, and no dependency install scripts run: `pnpm-workspace.yaml` lists the builds pnpm skips (esbuild, msw, sharp, unrs-resolver, workerd), none of which the app needs.
 
 **A09 Logging.** See F21. Email addresses in logs are redacted (`j***@e***.com`) or hashed. Tests assert that no email, password or reset token appears in any console output during login and reset flows.
 
