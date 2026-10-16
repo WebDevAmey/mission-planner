@@ -28,21 +28,31 @@ export async function POST(request: Request) {
   const { token, password } = parsed.data;
   const tokenHash = hashToken(token);
 
-  const record = await db.orm.public.PasswordResetToken.where((t) => t.tokenHash.eq(tokenHash)).first();
-
-  if (!record || record.usedAt !== null || new Date(record.expiresAt).getTime() <= Date.now()) {
-    return Response.json(
+  const invalid = () =>
+    Response.json(
       { ok: false, error: 'This reset link is invalid or has expired. Request a new one.' },
       { status: 400 }
     );
-  }
+
+  const record = await db.orm.public.PasswordResetToken.where((t) => t.tokenHash.eq(tokenHash)).first();
+  if (!record || record.usedAt !== null || new Date(record.expiresAt).getTime() <= Date.now()) return invalid();
 
   const passwordHash = await hashPassword(password);
 
-  await db.transaction(async (tx) => {
-    await tx.orm.public.User.where({ id: record.userId }).update({ passwordHash });
-    await tx.orm.public.PasswordResetToken.where({ id: record.id }).update({ usedAt: toIsoString(new Date()) });
+  // Single use under concurrency: lock the token row and re-check it inside the
+  // transaction, so two simultaneous requests can't both spend the same token.
+  const consumed = await db.transaction(async (tx) => {
+    const row = await tx.orm.public.PasswordResetToken.where({ id: record.id }).forNoKeyUpdate().first();
+    if (!row || row.usedAt !== null) return false;
+    const now = toIsoString(new Date());
+    await tx.orm.public.User.where({ id: record.userId }).update({ passwordHash, updatedAt: now });
+    await tx.orm.public.PasswordResetToken.where({ id: record.id }).update({ usedAt: now });
+    await tx.orm.public.PasswordResetToken.where({ userId: record.userId })
+      .where((t) => t.usedAt.isNull())
+      .deleteAll();
+    return true;
   });
+  if (!consumed) return invalid();
 
   // A compromised password shouldn't leave an attacker's existing session alive.
   await deleteAllSessionsForUser(record.userId);

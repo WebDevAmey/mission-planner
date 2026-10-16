@@ -4,7 +4,21 @@ vi.mock('next/headers', () => import('./next-headers-mock'));
 
 import { db } from '@/prisma/db';
 import { POST as forgotPOST } from '@/app/api/auth/forgot-password/route';
-import { deleteUser, hasDb, makeUser, req, signInAs, type TestUser } from './helpers';
+import { POST as resetPOST } from '@/app/api/auth/reset-password/route';
+import { POST as passwordPOST } from '@/app/api/account/password/route';
+import { generateToken, hashToken } from '@/lib/auth/tokens';
+import { toIsoString } from '@/lib/db/serialize';
+import { deleteUser, hasDb, makeUser, PASSWORD, req, signInAs, type TestUser } from './helpers';
+
+async function issueResetToken(userId: string): Promise<string> {
+  const token = generateToken();
+  await db.orm.public.PasswordResetToken.create({
+    tokenHash: hashToken(token),
+    userId,
+    expiresAt: toIsoString(new Date(Date.now() + 3600_000)),
+  });
+  return token;
+}
 
 describe.skipIf(!hasDb)('auth flows', () => {
   let user: TestUser;
@@ -51,5 +65,45 @@ describe.skipIf(!hasDb)('emailed links', () => {
     });
     const body = await (await forgotPOST(evil)).json();
     expect(body.devResetUrl).toMatch(/^https:\/\/flightdeck\.example\/reset-password\?token=/);
+  });
+});
+
+describe.skipIf(!hasDb)('password reset tokens', () => {
+  let user: TestUser;
+
+  beforeAll(async () => {
+    user = await makeUser();
+  });
+
+  afterAll(async () => {
+    await db.orm.public.AuthAttempt.where((a) => a.identifier.eq(`user:${user.id}`)).deleteAll();
+    await deleteUser(user);
+  });
+
+  it('a reset token works exactly once, even under concurrent use', async () => {
+    signInAs(null);
+    const token = await issueResetToken(user.id);
+    const attempt = (password: string) => resetPOST(req('POST', '/api/auth/reset-password', { token, password }));
+    const statuses = (await Promise.all([attempt('first-new-password'), attempt('second-new-password')])).map((r) => r.status);
+    expect(statuses.sort()).toEqual([200, 400]);
+    expect((await attempt('third-new-password')).status).toBe(400);
+  });
+
+  it('changing the password invalidates outstanding reset links', async () => {
+    const fresh = await makeUser();
+    try {
+      const token = await issueResetToken(fresh.id);
+      signInAs(fresh);
+      const changed = await passwordPOST(
+        req('POST', '/api/account/password', { currentPassword: PASSWORD, newPassword: 'brand-new-password-1' })
+      );
+      expect(changed.status).toBe(200);
+      signInAs(null);
+      const res = await resetPOST(req('POST', '/api/auth/reset-password', { token, password: 'attacker-password-1' }));
+      expect(res.status).toBe(400);
+    } finally {
+      await db.orm.public.AuthAttempt.where((a) => a.identifier.eq(`user:${fresh.id}`)).deleteAll();
+      await deleteUser(fresh);
+    }
   });
 });

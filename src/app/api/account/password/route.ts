@@ -38,6 +38,8 @@ export async function POST(request: Request) {
   const passwordHash = await hashPassword(parsed.data.newPassword);
   await db.orm.public.User.where({ id: user.id }).update({ passwordHash, updatedAt: toIsoString(new Date()) });
   await recordAttempt(rateKey, 'password_change', true);
+  // A reset link requested before the change must not be able to undo it.
+  await db.orm.public.PasswordResetToken.where({ userId: user.id }).deleteAll();
 
   await deleteAllSessionsForUser(user.id);
   const { token, expiresAt } = await createSession(user.id, {
