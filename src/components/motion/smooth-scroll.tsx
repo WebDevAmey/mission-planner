@@ -2,7 +2,7 @@
 
 import type Lenis from "lenis";
 import { ReactLenis, useLenis } from "lenis/react";
-import { type MotionValue, useMotionValue, useReducedMotion } from "motion/react";
+import { type MotionValue, useMotionValue } from "motion/react";
 import {
   createContext,
   type ReactNode,
@@ -157,7 +157,9 @@ export function SmoothScroll({
   touch = false,
   className,
 }: SmoothScrollProps) {
-  const reduce = useReducedMotion();
+  // Inert since the design overhaul (no scroll-jacking, DESIGN_SPEC §3.4):
+  // always use native scrolling. The Lenis path below is kept for reference.
+  const reduce = true as boolean;
   const scrollY = useMotionValue(0);
   const progress = useMotionValue(0);
   const velocity = useMotionValue(0);
