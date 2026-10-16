@@ -69,4 +69,10 @@ describe.skipIf(!hasDb)('proxy with a session', () => {
     expect(new URL((await proxy(withCookie(`${BASE}/login?next=/settings`))).headers.get('location')!).pathname).toBe('/settings');
     expect(new URL((await proxy(withCookie(`${BASE}/login?next=//evil.example`))).headers.get('location')!).href).toBe(`${BASE}/dashboard`);
   });
+
+  it('does not redirect RSC prefetches of /login for signed-in users', async () => {
+    const r = new NextRequest(`${BASE}/login?_rsc=abc`, { headers: { rsc: '1', 'next-router-prefetch': '1' } });
+    r.cookies.set(SESSION_COOKIE, user.token);
+    expect((await proxy(r)).headers.get('location')).toBeNull();
+  });
 });

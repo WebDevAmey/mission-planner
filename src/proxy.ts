@@ -35,6 +35,9 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (AUTH_PAGES.includes(pathname)) {
+    // Router prefetches (RSC) must not be redirected: the browser would follow the
+    // 307 without RSC headers and log a 404. The real navigation still redirects.
+    if (request.headers.get('next-router-prefetch') || request.headers.get('rsc')) return NextResponse.next();
     const next = request.nextUrl.searchParams.get('next');
     const safeNext = safeNextPath(next);
     if (authed) return NextResponse.redirect(new URL(safeNext ?? '/dashboard', request.url));
