@@ -8,10 +8,10 @@ import {
   segmentHitsLocalZone,
   toLocalZone,
   toNoFlyZone,
-  zoneInputSchema,
   zonesFromLegacy,
   type Zone,
 } from '@/lib/domain/zones';
+import { zoneInputSchema } from '@/lib/domain/zones/schema';
 
 describe('zones', () => {
   it('adapts legacy no-fly circles and geofences', () => {
