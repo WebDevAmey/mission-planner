@@ -34,7 +34,7 @@ export function StatusBar() {
     >
       <Stat label="Distance" value={formatDistance(metrics.distanceM)} />
       <Stat label="Est. time" value={`${metrics.unbounded ? '≥ ' : ''}${formatDurationShort(metrics.timeS)}`} />
-      <Stat label="Waypoints" value={String(metrics.spatialCount)} />
+      <Stat label="Waypoints" value={String(metrics.spatialCount)} className="max-[359px]:hidden" />
       <Stat label="Max alt" value={`${Math.round(metrics.maxAltM)} m`} className="hidden sm:flex" />
       <div className="flex-1" />
       <button
@@ -42,13 +42,14 @@ export function StatusBar() {
         onClick={() => setTerrainOpen(!terrainOpen)}
         aria-expanded={terrainOpen}
         aria-controls="terrain-profile"
+        aria-label="Terrain clearance profile"
         className={cx(
           'flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-[13px] text-text-secondary transition-colors duration-[120ms] hover:bg-background-primary-hover hover:text-text-primary',
           FOCUS_RING_INSET
         )}
       >
         {terrainOpen ? <RiArrowDownSLine className="size-4" aria-hidden /> : <RiArrowUpSLine className="size-4" aria-hidden />}
-        Terrain
+        <span className="max-sm:hidden">Terrain</span>
       </button>
     </footer>
   );

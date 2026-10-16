@@ -64,7 +64,7 @@ function Stat({ label, value, tone }: { label: string; value: ReactNode; tone?: 
 
 /** Result figures: a hairline grid, not cards. */
 function Stats({ children }: { children: ReactNode }) {
-  return <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-fd-control border border-separator-border bg-separator-border">{children}</dl>;
+  return <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-fd-control border border-separator-border bg-separator-border [&>*:last-child:nth-child(odd)]:col-span-2">{children}</dl>;
 }
 
 function PanelFrame({
