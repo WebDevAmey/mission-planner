@@ -17,7 +17,8 @@
     "test": "vitest run --passWithNoTests",
     "test:integration": "vitest run --config tests/integration/vitest.config.ts",
     "typecheck": "tsc --noEmit --incremental false",
-    "design:lint": "bash scripts/design-lint.sh"
+    "design:lint": "bash scripts/design-lint.sh",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@arclux/arc-ui": "4.9.1",
@@ -49,6 +50,8 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.56.1",
     "@prisma/cli-engine": "0.7.0",
     "@types/geojson": "7946.0.16",
     "@types/node": "^20",
@@ -73,5 +76,6 @@
       "@babel/core": "^7.29.6",
       "sharp": "^0.35.5"
     }
-  }
+  },
+  "packageManager": "pnpm@10.30.0"
 }
