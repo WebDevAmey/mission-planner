@@ -906,7 +906,7 @@ export function MissionMap() {
         </div>
       )}
       {tilesFailedFor === mapStyle && (
-        <div role="status" className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center px-4">
+        <div role="status" className="pointer-events-none absolute inset-x-0 top-16 flex justify-center px-3 md:bottom-16 md:top-auto md:px-4">
           <p className={cx(FLOAT_PANEL, 'flex items-center gap-2 px-3 py-1.5 text-[13px] text-text-secondary')}>
             <span aria-hidden className={cx('size-1.5 shrink-0 rounded-full', TONE_DOT.warn)} />
             Basemap tiles could not load. Editing still works; try {mapStyle === 'satellite' ? 'the map' : 'satellite'} on the tool rail.

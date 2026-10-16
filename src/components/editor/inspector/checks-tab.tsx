@@ -101,8 +101,10 @@ export function ChecksTab() {
           {errors.length > 0 && (
             <section aria-labelledby="checks-errors">
               <GroupHeading id="checks-errors" tone="danger">
-                <span className="tabular-nums">{errors.length}</span> error{errors.length === 1 ? '' : 's'}
-                <span className="font-normal text-text-tertiary">· fix before flight</span>
+                <span>
+                  <span className="tabular-nums">{errors.length}</span> error{errors.length === 1 ? '' : 's'}
+                  <span className="font-normal text-text-tertiary"> · fix before flight</span>
+                </span>
               </GroupHeading>
               <ul>
                 {errors.map((issue, i) => (
@@ -114,7 +116,9 @@ export function ChecksTab() {
           {warnings.length > 0 && (
             <section aria-labelledby="checks-warnings">
               <GroupHeading id="checks-warnings" tone="warn">
-                <span className="tabular-nums">{warnings.length}</span> warning{warnings.length === 1 ? '' : 's'}
+                <span>
+                  <span className="tabular-nums">{warnings.length}</span> warning{warnings.length === 1 ? '' : 's'}
+                </span>
               </GroupHeading>
               <ul>
                 {warnings.map((issue, i) => (
