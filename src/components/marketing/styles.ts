@@ -30,7 +30,7 @@ export const section = 'scroll-mt-16 border-t border-(--fd-line) py-16 lg:py-24'
 
 /** Focus ring per §6: 2px accent, 2px offset. */
 export const focusRing =
-  'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--fd-accent)';
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-(--fd-accent)';
 
 /** Plain text link in running copy. */
 export const textLink = `underline decoration-(--fd-line-strong) decoration-1 underline-offset-[0.2em] transition-colors duration-[120ms] hover:decoration-current ${focusRing}`;

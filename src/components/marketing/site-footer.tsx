@@ -52,7 +52,11 @@ export function SiteFooter() {
           ))}
           <div className="col-span-4 flex flex-col gap-3 sm:col-span-4 lg:col-span-3">
             <h2 className={cx(type.small, 'font-medium text-text-primary')}>Formats</h2>
-            <p className={cx(type.data, 'text-text-secondary')}>{FORMAT_EXTENSIONS.join('  ')}</p>
+            <ul className={cx(type.data, 'flex flex-wrap gap-x-3 gap-y-1 text-text-secondary')}>
+              {FORMAT_EXTENSIONS.map((ext) => (
+                <li key={ext}>{ext}</li>
+              ))}
+            </ul>
           </div>
         </div>
         <div className={cx(type.data, 'mt-12 flex flex-col gap-2 border-t border-(--fd-line) pt-6 text-[12px]/[16px] text-text-tertiary lg:flex-row lg:justify-between')}>

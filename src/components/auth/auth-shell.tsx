@@ -27,7 +27,7 @@ export function AuthShell({
         <Link
           href="/"
           aria-label="Flight Deck home"
-          className="self-start rounded-fd-frame outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fd-accent"
+          className="self-start rounded-fd-frame focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-fd-accent"
         >
           <FlightDeckLogo />
         </Link>
