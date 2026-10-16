@@ -7,6 +7,7 @@ import { startSession } from '@/lib/auth/guard';
 import { isSameOriginRequest } from '@/lib/http/same-origin';
 import { toIsoString } from '@/lib/db/serialize';
 import { AUTH_MAX_BODY_BYTES, readJsonBody } from '@/lib/http/api';
+import { securityEvent } from '@/lib/http/security-log';
 
 export async function POST(request: Request) {
   if (!isSameOriginRequest(request)) {
@@ -27,11 +28,13 @@ export async function POST(request: Request) {
   const { token, password } = parsed.data;
   const tokenHash = hashToken(token);
 
-  const invalid = () =>
-    Response.json(
+  const invalid = () => {
+    securityEvent('password_reset_rejected');
+    return Response.json(
       { ok: false, error: 'This reset link is invalid or has expired. Request a new one.' },
       { status: 400 }
     );
+  };
 
   const record = await db.orm.public.PasswordResetToken.where((t) => t.tokenHash.eq(tokenHash)).first();
   if (!record || record.usedAt !== null || new Date(record.expiresAt).getTime() <= Date.now()) return invalid();
@@ -57,6 +60,7 @@ export async function POST(request: Request) {
   await deleteAllSessionsForUser(record.userId);
 
   await startSession(record.userId, request);
+  securityEvent('password_reset_completed', { userId: record.userId });
 
   return Response.json({ ok: true });
 }

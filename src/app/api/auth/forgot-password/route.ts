@@ -7,6 +7,7 @@ import { sendPasswordResetEmail } from '@/lib/email/send';
 import { toIsoString } from '@/lib/db/serialize';
 import { AUTH_MAX_BODY_BYTES, readJsonBody } from '@/lib/http/api';
 import { appOrigin } from '@/lib/http/app-origin';
+import { securityEvent, subjectRef } from '@/lib/http/security-log';
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
   const identifier = normalizeIdentifier(email);
 
   if (!(await checkRateLimit(identifier, 'forgot_password'))) {
+    securityEvent('password_reset_throttled', { subject: subjectRef(identifier) });
     return Response.json(
       { ok: false, error: 'Too many requests. Try again later.' },
       { status: 429 }
@@ -42,6 +44,7 @@ export async function POST(request: Request) {
 
   const user = await db.orm.public.User.where((u) => u.email.eq(email)).first();
   await recordAttempt(identifier, 'forgot_password', true);
+  securityEvent('password_reset_requested', { subject: subjectRef(identifier), userId: user?.id ?? null });
 
   let devResetUrl: string | undefined;
 

@@ -10,6 +10,7 @@ import { sendVerificationEmail } from '@/lib/email/send';
 import { toIsoString } from '@/lib/db/serialize';
 import { AUTH_MAX_BODY_BYTES, readJsonBody } from '@/lib/http/api';
 import { appOrigin } from '@/lib/http/app-origin';
+import { securityEvent, subjectRef } from '@/lib/http/security-log';
 
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
   const keys = rateLimitKey === emailKey ? [emailKey] : [rateLimitKey, emailKey];
   const allowed = await Promise.all(keys.map((k) => checkRateLimit(k, 'signup')));
   if (allowed.includes(false)) {
+    securityEvent('signup_throttled', { subject: subjectRef(email), ip });
     return Response.json(
       { ok: false, error: 'Too many signup attempts. Try again later.' },
       { status: 429 }
@@ -74,6 +76,7 @@ export async function POST(request: Request) {
   const { delivered } = await sendVerificationEmail(user.email, verifyUrl);
 
   await startSession(user.id, request);
+  securityEvent('signup', { userId: user.id, ip });
 
   await Promise.all(keys.map((k) => recordAttempt(k, 'signup', true)));
 

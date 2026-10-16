@@ -7,6 +7,7 @@ import { isSameOriginRequest } from '@/lib/http/same-origin';
 import { getClientIp } from '@/lib/http/client-ip';
 import { maybeCleanupAuthTables } from '@/lib/auth/cleanup';
 import { AUTH_MAX_BODY_BYTES, readJsonBody } from '@/lib/http/api';
+import { securityEvent, subjectRef } from '@/lib/http/security-log';
 
 const GENERIC_ERROR = 'Incorrect email or password';
 
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
     ipKey ? checkRateLimit(ipKey, 'login_ip') : true,
   ]);
   if (!emailAllowed || !ipAllowed) {
+    securityEvent('login_throttled', { subject: subjectRef(identifier), ip, by: emailAllowed ? 'ip' : 'email' });
     return Response.json(
       { ok: false, error: 'Too many attempts. Try again later.' },
       { status: 429 }
@@ -56,10 +58,12 @@ export async function POST(request: Request) {
       recordAttempt(identifier, 'login', false),
       ipKey ? recordAttempt(ipKey, 'login_ip', false) : undefined,
     ]);
+    securityEvent('login_failed', { subject: subjectRef(identifier), userId: user?.id ?? null, ip });
     return Response.json({ ok: false, error: GENERIC_ERROR }, { status: 401 });
   }
 
   await startSession(user.id, request);
+  securityEvent('login_success', { userId: user.id, ip });
 
   await recordAttempt(identifier, 'login', true);
   maybeCleanupAuthTables();

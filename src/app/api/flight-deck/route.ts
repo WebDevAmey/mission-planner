@@ -2,6 +2,7 @@ import { buildFlightDeckGraph, type FlightDeckStateType } from '@/lib/agents/gra
 import { FlightDeckRequestSchema, type AgentEvent, type FlightDeckResult } from '@/lib/agents/schemas';
 import { apiError, authorize, readJsonBody, validationError } from '@/lib/http/api';
 import { consumeQuota } from '@/lib/auth/rate-limit';
+import { securityEvent } from '@/lib/http/security-log';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
 
   const quota = await consumeQuota(`user:${user.id}`, 'flight_deck', QUOTA);
   if (!quota.allowed) {
+    securityEvent('quota_exceeded', { userId: user.id, kind: 'flight_deck' });
     return apiError(
       429,
       'RATE_LIMITED',

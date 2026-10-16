@@ -6,6 +6,7 @@ import { checkRateLimit, recordAttempt } from '@/lib/auth/rate-limit';
 import { deleteAllSessionsForUser } from '@/lib/auth/session';
 import { startSession } from '@/lib/auth/guard';
 import { toIsoString } from '@/lib/db/serialize';
+import { securityEvent } from '@/lib/http/security-log';
 
 /**
  * POST /api/account/password `{ currentPassword, newPassword }` → `{ ok: true }`.
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
   const row = await db.orm.public.User.where({ id: user.id }).first();
   if (!row || !(await verifyPassword(parsed.data.currentPassword, row.passwordHash))) {
     await recordAttempt(rateKey, 'password_change', false);
+    securityEvent('password_change_failed', { userId: user.id });
     return apiError(403, 'INVALID_CREDENTIALS', 'Current password is incorrect', {
       issues: [{ path: 'currentPassword', message: 'Current password is incorrect' }],
     });
@@ -42,6 +44,7 @@ export async function POST(request: Request) {
 
   await deleteAllSessionsForUser(user.id);
   await startSession(user.id, request);
+  securityEvent('password_changed', { userId: user.id });
 
   return Response.json({ ok: true });
 }
