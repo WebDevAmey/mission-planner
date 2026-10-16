@@ -128,20 +128,20 @@ export interface InputBaseProps extends Omit<AriaInputProps, "size" | "className
 const inputStyles = sortCx({
   field: [
     "relative flex w-full items-center",
-    "rounded-2lg",
-    "bg-background-tertiary-default text-foreground-icon-tertiary",
-    "ring-2 ring-inset ring-transparent",
+    "rounded-md",
+    "bg-background-primary-default text-foreground-icon-tertiary",
+    "ring-1 ring-inset ring-fd-line-strong",
     "transition-[background-color,box-shadow,color] duration-[var(--input-transition-ms)] ease",
   ].join(" "),
 
   fieldSize: {
-    medium: "p-2",                // 8px all sides → h auto = 36
+    medium: "h-10 px-2.5 py-2",   // 40px field (DESIGN_SPEC §7)
     small:  "h-8 px-1.5 py-2",    // 32 / 6 / 8
   },
 
   // When a leadingAddon is present (Phone basic): tighten left padding.
   fieldWithAddonSize: {
-    medium: "h-9 ps-1 pe-2 py-2", // 36 / 4 / 8 / 8
+    medium: "h-10 ps-1 pe-2.5 py-2", // 40 / 4 / 10 / 8
     small:  "h-8 ps-1 pe-1.5 py-2",
   },
 
@@ -191,17 +191,17 @@ export function InputBase({
             !isFocusWithin &&
             !isDisabled &&
             !isInvalid &&
-            "ring-border-button-hover",
+            "ring-fd-ink-3",
           // Focus wins over hover
           isFocusWithin &&
             !isDisabled &&
             !isInvalid &&
-            "ring-border-button-active",
+            "ring-2 ring-fd-accent",
           // Disabled
           isDisabled &&
             "bg-input-disabled-background text-input-disabled-foreground",
           // Invalid
-          isInvalid && "bg-background-tertiary-error text-foreground-icon-error",
+          isInvalid && "ring-fd-danger text-foreground-icon-error",
           ctx.fieldClassName,
           fieldClassName,
         )

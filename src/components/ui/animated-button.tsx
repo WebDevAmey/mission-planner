@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { motion, MotionProps } from "framer-motion";
+import { MotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 type AnimatedButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
@@ -11,9 +11,9 @@ type AnimatedButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
   };
 
 /**
- * AnimatedButton
- * - theme-aware: uses Tailwind `dark:` classes so it works in both light and dark mode
- * - accepts all native button props (onClick, className, type, etc.)
+ * AnimatedButton (kept for API compatibility). The shine sweep and spring
+ * scale were removed in the design overhaul: it now renders a plain secondary
+ * button. Motion props are accepted and ignored.
  */
 const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   children = "Browse Components",
@@ -21,70 +21,33 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   as = "button",
   ...rest
 }) => {
-  const Component = (as === "a" ? motion.a : motion.button) as React.ElementType;
+  const {
+    whileHover: _whileHover,
+    whileTap: _whileTap,
+    whileFocus: _whileFocus,
+    whileInView: _whileInView,
+    whileDrag: _whileDrag,
+    initial: _initial,
+    animate: _animate,
+    exit: _exit,
+    transition: _transition,
+    variants: _variants,
+    ...domProps
+  } = rest as AnimatedButtonProps & Record<string, unknown>;
+  void [_whileHover, _whileTap, _whileFocus, _whileInView, _whileDrag, _initial, _animate, _exit, _transition, _variants];
+  const Component = (as === "a" ? "a" : "button") as React.ElementType;
 
   return (
     <Component
-      {...rest}
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.97 }}
-      transition={{
-        type: "spring",
-        stiffness: 500,
-        damping: 30,
-        mass: 0.5,
-      }}
-      // Set a CSS variable `--shine` that we override for dark mode via Tailwind.
+      {...domProps}
       className={cn(
-        "group inline-flex items-center justify-center px-6 py-2 rounded-md relative overflow-hidden bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-[#222]",
-        "text-neutral-900 dark:text-neutral-100 font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-950 disabled:pointer-events-none disabled:opacity-50",
-        "[--shine:rgba(0,0,0,.66)] dark:[--shine:rgba(255,255,255,.66)]",
+        "inline-flex items-center justify-center rounded-md border border-fd-line-strong bg-fd-surface px-4 py-2 text-body-medium text-fd-ink",
+        "transition-colors duration-120 ease-fd hover:bg-fd-surface-2",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fd-accent disabled:pointer-events-none disabled:opacity-50",
         className,
       )}
     >
-      {/* Text with shine mask */}
-      <motion.span
-        className="tracking-wide font-light flex items-center justify-center h-full w-full relative z-10"
-        style={{
-          WebkitMaskImage:
-            "linear-gradient(-75deg, white calc(var(--mask-x) + 20%), transparent calc(var(--mask-x) + 30%), white calc(var(--mask-x) + 100%))",
-          maskImage:
-            "linear-gradient(-75deg, white calc(var(--mask-x) + 20%), transparent calc(var(--mask-x) + 30%), white calc(var(--mask-x) + 100%))",
-        }}
-        initial={{ "--mask-x": "100%" } as unknown as MotionProps["initial"]}
-        animate={{ "--mask-x": "-100%" } as unknown as MotionProps["animate"]}
-        transition={{
-          repeat: Infinity,
-          duration: 1,
-          ease: "linear",
-          repeatDelay: 1,
-        }}
-      >
-        {children}
-      </motion.span>
-
-      {/* Border shine effect uses the --shine variable so it adapts to theme */}
-      <motion.span
-        className="block absolute inset-0 rounded-md p-px"
-        style={{
-          background:
-            "linear-gradient(-75deg, transparent 30%, var(--shine) 50%, transparent 70%)",
-          backgroundSize: "200% 100%",
-          mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-          maskComposite: "exclude",
-          WebkitMask:
-            "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-          WebkitMaskComposite: "xor",
-        }}
-        initial={{ backgroundPosition: "100% 0", opacity: 0 }}
-        animate={{ backgroundPosition: ["100% 0", "0% 0"], opacity: [0, 1, 0] }}
-        transition={{
-          duration: 1,
-          repeat: Infinity,
-          ease: "linear",
-          repeatDelay: 1,
-        }}
-      />
+      {children}
     </Component>
   );
 };

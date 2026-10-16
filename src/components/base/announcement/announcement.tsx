@@ -77,7 +77,7 @@ export interface AnnouncementProps
 const styles = sortCx({
   card: [
     "relative flex w-full flex-col items-start gap-3 p-3",
-    "rounded-xl border border-border-button-default bg-background-primary-default",
+    "rounded-md border border-border-button-default bg-background-primary-default",
   ].join(" "),
   content: "flex w-full flex-col items-start gap-1",
   icon: "size-5 shrink-0 text-foreground-icon-secondary",

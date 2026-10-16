@@ -147,8 +147,8 @@ function SliderBase<T extends SliderValue>({
                                 aria-hidden
                                 className={cx(
                                   "pointer-events-none absolute bottom-[calc(100%+9px)] left-1/2 -translate-x-1/2",
-                                  "flex h-7 min-w-8 items-center justify-center rounded-lg border border-border-button-default",
-                                  "bg-background-primary-default px-2 text-caption-1-medium whitespace-nowrap text-text-primary shadow-xs",
+                                  "flex h-7 min-w-8 items-center justify-center rounded-md border border-border-button-default",
+                                  "bg-background-primary-default px-2 text-caption-1-medium whitespace-nowrap text-text-primary",
                                   "transition-[translate,box-shadow] duration-150 ease",
                                   (isDragging || isFocused) && "-translate-y-0.5 shadow-dropdown",
                                 )}

@@ -9,11 +9,11 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
       <input
         ref={ref}
         className={cn(
-          'flex h-7 w-full rounded-sm border border-border-mid bg-bg-raised px-2 font-mono text-[11px] text-text outline-none transition-colors',
-          'placeholder:text-text-muted',
-          'focus-visible:border-green focus-visible:ring-2 focus-visible:ring-green-bg',
+          'flex h-8 w-full rounded-md border border-fd-line-strong bg-fd-surface px-2.5 text-body-2-regular tabular-nums text-fd-ink outline-none transition-colors',
+          'placeholder:text-fd-ink-3',
+          'focus-visible:border-fd-accent focus-visible:ring-1 focus-visible:ring-fd-accent',
           'disabled:cursor-not-allowed disabled:opacity-50',
-          'aria-[invalid=true]:border-red aria-[invalid=true]:focus-visible:ring-red-bg',
+          'aria-[invalid=true]:border-fd-danger aria-[invalid=true]:focus-visible:ring-fd-danger',
           className
         )}
         {...props}
@@ -28,9 +28,9 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
       <textarea
         ref={ref}
         className={cn(
-          'flex w-full rounded-sm border border-border-mid bg-bg-raised px-2 py-1.5 font-mono text-[11px] text-text outline-none transition-colors',
-          'placeholder:text-text-muted',
-          'focus-visible:border-green focus-visible:ring-2 focus-visible:ring-green-bg',
+          'flex w-full rounded-md border border-fd-line-strong bg-fd-surface px-2.5 py-2 text-body-2-regular text-fd-ink outline-none transition-colors',
+          'placeholder:text-fd-ink-3',
+          'focus-visible:border-fd-accent focus-visible:ring-1 focus-visible:ring-fd-accent',
           'disabled:cursor-not-allowed disabled:opacity-50',
           className
         )}
@@ -43,7 +43,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
 export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) {
   return (
     <label
-      className={cn('mb-1 block font-mono text-[9px] font-medium uppercase tracking-wide text-text-muted', className)}
+      className={cn('mb-1 block text-caption-1-medium text-fd-ink-2', className)}
       {...props}
     />
   );

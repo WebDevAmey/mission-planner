@@ -28,7 +28,7 @@ import { useDismissOnOutsidePress, useTriggerToggle } from "@/utils/use-dismiss-
  *
  * - Panel: white, 1px border/button/default, radius 16, p 10, shadow/dropdown.
  * - Appear animation: 150ms fade + scale-95 + 2px blur in and out.
- * - Rows: rounded-2lg, background/secondary/hover on hover and on the selected
+ * - Rows: rounded-md, background/secondary/hover on hover and on the selected
  *   row, body-medium labels, 4px apart (the panel's flex column carries a
  *   gap-1, the same rhythm as the Select listbox).
  *

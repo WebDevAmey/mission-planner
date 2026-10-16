@@ -92,7 +92,7 @@ export function SegmentedControl({ className, children, variant = "solid", ref, 
       {...props}
       className={(state) =>
         cx(
-          "relative inline-flex items-start gap-0.5 rounded-2lg",
+          "relative inline-flex items-start gap-0.5 rounded-md",
           variant === "solid" && "bg-segmented-control-background p-1",
           typeof className === "function" ? className(state) : className,
         )

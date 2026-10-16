@@ -37,7 +37,7 @@ export type PillTabVariant = "blue" | "gray";
 const styles = sortCx({
   radius: {
     blue: "rounded-full",
-    gray: "rounded-2lg",
+    gray: "rounded-md",
   },
   thumb: {
     blue: "bg-pill-tab-blue-selected-background",

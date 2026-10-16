@@ -85,15 +85,15 @@ export function Tooltip({ children, className, size = "sm", showArrow = true, of
       {...props}
       className={(state) =>
         cx(
-          "pointer-events-none z-50 max-w-[240px] select-none rounded-lg border border-border-button-default bg-background-primary-default text-text-primary shadow-dropdown",
+          "pointer-events-none z-50 max-w-[240px] select-none rounded-2lg border border-fd-line bg-background-primary-default text-text-primary shadow-fd-float",
           sizes[size],
           // Blur + scale in/out. react-aria stamps `data-entering` on mount then
           // removes it (transition to base), and holds the element mounted while
           // `data-exiting` is set so the same transition plays in reverse. The
           // `transition` utility covers scale, filter (blur) and opacity.
           "transition duration-200 ease-out",
-          "data-[entering]:scale-90 data-[entering]:opacity-0 data-[entering]:blur-[4px]",
-          "data-[exiting]:scale-90 data-[exiting]:opacity-0 data-[exiting]:blur-[4px]",
+          "data-[entering]:scale-[0.98] data-[entering]:opacity-0",
+          "data-[exiting]:scale-[0.98] data-[exiting]:opacity-0",
           typeof className === "function" ? className(state) : className,
         )
       }
