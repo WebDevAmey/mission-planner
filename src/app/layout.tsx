@@ -1,20 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 import { ErrorBoundary } from '@/components/common/error-boundary';
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-jetbrains-mono',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: {
@@ -31,14 +20,17 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  colorScheme: 'dark',
-  themeColor: '#0a0a0a',
+  colorScheme: 'light dark',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f5f4f0' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0b0d' },
+  ],
 };
 
-// Dark-first. Honour an explicit light choice made with BoardUI's ThemeToggle
-// before first paint so there is no flash.
+// Light-first (DESIGN_SPEC D-12), dark is a full peer. Apply an explicit dark
+// choice made with BoardUI's ThemeToggle before first paint so there is no flash.
 const themeScript =
-  '(function(){try{if(localStorage.getItem("boardui:theme")==="light")document.documentElement.classList.remove("dark")}catch(e){}})();';
+  '(function(){try{if(localStorage.getItem("boardui:theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}})();';
 
 export default function RootLayout({
   children,
@@ -46,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`dark ${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <body>
         <Script id="theme-init" strategy="beforeInteractive">
           {themeScript}

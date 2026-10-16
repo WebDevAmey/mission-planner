@@ -23,40 +23,40 @@
   --color-blue-400:    #3392ff;
 
   /* ----- Accent ramp ---------------------------------------------------------
-   * The CTA hue. Interactive/selection surfaces (primary button gradient,
+   * The CTA hue. Interactive/selection surfaces (primary button fill,
    * ghost + link buttons, checkbox, radio, switch, slider, tabs, sidebar
    * selected, focus ring, date-range selection) reference accent-* instead of
    * a raw hue, so the whole system re-tints by overriding these eleven
    * variables at runtime (see components/application/theme/accent.ts) or in
-   * a customer project after importing this file. Defaults to the blue
-   * primitives above. Content/data blues (charts, status chips, calendar
+   * a customer project after importing this file. Flight Deck: re-pointed to
+   * the signal-orange ramp built around #E0461C (DESIGN_SPEC §3.1); dark lifts
+   * 400/500 to #FF5A2B in the .dark block below. Content/data blues (charts, status chips, calendar
    * events, info notifications) deliberately keep referencing blue-*.
    * --------------------------------------------------------------------------*/
-  --color-accent-50:  var(--color-blue-50);
-  --color-accent-100: var(--color-blue-100);
-  --color-accent-200: var(--color-blue-200);
-  --color-accent-300: var(--color-blue-300);
-  --color-accent-400: var(--color-blue-400);
-  --color-accent-500: var(--color-blue-500);
-  --color-accent-600: var(--color-blue-600);
-  --color-accent-700: var(--color-blue-700);
-  --color-accent-800: var(--color-blue-800);
-  --color-accent-900: var(--color-blue-900);
-  --color-accent-950: var(--color-blue-950);
+  --color-accent-50:  #fef3ee;
+  --color-accent-100: #fbe6de;
+  --color-accent-200: #f6c8b5;
+  --color-accent-300: #f0a385;
+  --color-accent-400: #e8734f;
+  --color-accent-500: #e0461c;
+  --color-accent-600: #c63b15;
+  --color-accent-700: #a33011;
+  --color-accent-800: #822810;
+  --color-accent-900: #6a2310;
+  --color-accent-950: #2a1610;
 
   /* ----- Typography ----------------------------------------------------------
    * Font sizes, weights, line-heights, and tracking all match Tailwind v4
-   * defaults. The only override is the family: Inter, loaded via next/font
-   * in app/layout.tsx, which exposes --font-inter to the document.
+   * defaults. The only override is the family: Geist Sans, self-hosted via
+   * the `geist` package (next/font) in app/layout.tsx (--font-geist-sans).
    * --------------------------------------------------------------------------*/
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif,
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
                "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
                "Noto Color Emoji";
 
-  /* Monospace ramp for code blocks. Loaded via next/font in app/layout.tsx
-   * (--font-mono-source → JetBrains Mono). Figma's spec uses IBM Plex Mono;
-   * JetBrains Mono is the closest already-bundled face. */
-  --font-mono: var(--font-mono-source), ui-monospace, "SFMono-Regular", Menlo,
+  /* Monospace: Geist Mono via next/font in app/layout.tsx (--font-geist-mono).
+   * Used only for coordinates, IDs, file extensions and label-mono. */
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo,
                Consolas, "Liberation Mono", monospace;
 
   /* ----- Radii ---------------------------------------------------------------
@@ -92,26 +92,21 @@
    *   DROP_SHADOW  color/blue/500 offset(0,0) radius 0 spread 1 → 0 0 0 1px blue-500
    *   INNER_SHADOW #FFFFFF40       offset(0,1) radius 0 spread 0 → inset 0 1px 0 0 / 0.251
    * (#FFFFFF40 alpha = 0x40/255 = 0.251). */
-  --shadow-nav-selected:
-    0 0 0 1px var(--color-accent-500),
-    inset 0 1px 0 0 rgb(255 255 255 / 0.251);
+  --shadow-nav-selected: 0 0 0 1px var(--fd-line-strong);
 
   /* Checkbox checked/indeterminate surface (from the Figma Checkbox component):
    * inner top highlight + 1px inner blue edge over the primary gradient. */
-  --shadow-checkbox-selected:
-    inset 0 2px 0 0 rgb(255 255 255 / 0.25),
-    inset 0 0 0 1px var(--color-accent-500);
+  --shadow-checkbox-selected: 0 0 #0000;
 
   /* 1px contact shadow used on white cards/dropdown triggers sitting on the
    * secondary background (Figma drop shadow 0 1 1 5%). */
-  --shadow-card: 0 1px 1px 0 rgb(0 0 0 / 0.05);
+  /* Flight Deck: hairlines over shadows. Cards carry no elevation. */
+  --shadow-card: 0 0 #0000;
 
   /* Floating menu/dropdown panel (Figma → sidebar profile menu node 3823:3699):
    *   DROP_SHADOW #0000000A offset(0,1) radius 1 → 0 1px 1px 0 / 0.04
    *   DROP_SHADOW #00000005 offset(0,4) radius 4 → 0 4px 4px 0 / 0.02 */
-  --shadow-dropdown:
-    0 1px 1px 0 rgb(0 0 0 / 0.04),
-    0 4px 4px 0 rgb(0 0 0 / 0.02);
+  --shadow-dropdown: var(--fd-shadow-float);
 
   /* Floating template waitlist (Figma node 4117:32737). This extends the
    * sidebar elevation recipe with the two broad ambient layers used by the
@@ -409,15 +404,15 @@
   --color-chart-agents-bar-active: var(--color-purple-400);
 
   /* Button gradients */
-  --gradient-button-primary-default:  linear-gradient(180deg, var(--color-accent-500)    0%, var(--color-accent-600)    100%);
-  --gradient-button-primary-hover:    linear-gradient(180deg, var(--color-accent-400)    0%, var(--color-accent-500)    100%);
-  --gradient-button-primary-active:   linear-gradient(180deg, var(--color-accent-600)    0%, var(--color-accent-700)    100%);
-  --gradient-button-primary-disabled: linear-gradient(180deg, var(--color-neutral-200) 0%, var(--color-neutral-300) 100%);
-
-  --gradient-button-danger-default:   linear-gradient(180deg, var(--color-red-500) 0%, var(--color-red-600) 100%);
-  --gradient-button-danger-hover:     linear-gradient(180deg, var(--color-red-400) 0%, var(--color-red-500) 100%);
-  --gradient-button-danger-active:    linear-gradient(180deg, var(--color-red-600) 0%, var(--color-red-700) 100%);
-  --gradient-button-danger-disabled:  linear-gradient(180deg, var(--color-red-100) 0%, var(--color-red-200) 100%);
+  /* Flight Deck: no button gradients (DESIGN_SPEC §3.1). Solid fills. */
+  --button-primary-default:  var(--fd-accent);
+  --button-primary-hover:    var(--fd-accent-hover);
+  --button-primary-active:   var(--fd-accent-press);
+  --button-primary-disabled: var(--fd-surface-3);
+  --button-danger-default:   var(--fd-danger);
+  --button-danger-hover:     color-mix(in srgb, var(--fd-danger) 88%, var(--fd-ink));
+  --button-danger-active:    color-mix(in srgb, var(--fd-danger) 78%, var(--fd-ink));
+  --button-danger-disabled:  var(--fd-danger-tint);
 }
 
 .dark {
@@ -612,16 +607,6 @@
   --color-calendar-event-emerald-time:       var(--color-emerald-300);
 
   /* Disabled primary CTA: dark, low-emphasis fill with readable muted text. */
-  --gradient-button-primary-disabled: linear-gradient(
-    180deg,
-    var(--color-neutral-700) 0%,
-    var(--color-neutral-800) 100%
-  );
-  --gradient-button-danger-disabled: linear-gradient(
-    180deg,
-    var(--color-red-900) 0%,
-    var(--color-red-950) 100%
-  );
 
   /* Neutral graph structure; categorical and status colors stay unchanged. */
   --color-chart-track:   var(--color-neutral-800);
@@ -629,6 +614,302 @@
   --color-chart-neutral: var(--color-neutral-800);
   --color-chart-agents-bar:        var(--color-purple-500);
   --color-chart-agents-bar-active: var(--color-purple-600);
+}
+
+/* ===========================================================================
+ * Flight Deck semantic layer (DESIGN_SPEC §3). Canonical names are --fd-*.
+ * Light is the default (:root), dark is a full peer (.dark on <html>).
+ * The BoardUI semantic tokens declared above are re-pointed to these values
+ * below, so BoardUI components and `bg-background-*` / `text-text-*` /
+ * `border-*` utilities pick up the palette without call-site changes.
+ * Utilities for the fd names: bg-fd-surface, text-fd-ink-2, border-fd-line,
+ * bg-fd-accent, text-fd-accent, text-fd-ok, bg-fd-danger-tint, ...
+ * =========================================================================== */
+:root {
+  --fd-bg:           #f5f4f0;
+  --fd-surface:      #ffffff;
+  --fd-surface-2:    #edece7;
+  --fd-surface-3:    #e4e2dc;
+  --fd-line:         #dad8d1;
+  --fd-line-strong:  #b9b6ad;
+  --fd-ink:          #0e1013;
+  --fd-ink-2:        #4a4d52;
+  --fd-ink-3:        #6b6e73;
+  --fd-accent:       #e0461c;
+  --fd-accent-hover: #c63b15;
+  --fd-accent-press: #a33011;
+  --fd-accent-ink:   #ffffff;
+  --fd-accent-tint:  #fbe6de;
+  --fd-info:         #1f5fd6;
+  --fd-ok:           #1e7f4f;
+  --fd-warn:         #b7791f;
+  --fd-danger:       #b42318;
+  --fd-info-tint:    color-mix(in srgb, var(--fd-info) 10%, var(--fd-surface));
+  --fd-ok-tint:      color-mix(in srgb, var(--fd-ok) 10%, var(--fd-surface));
+  --fd-warn-tint:    color-mix(in srgb, var(--fd-warn) 12%, var(--fd-surface));
+  --fd-danger-tint:  color-mix(in srgb, var(--fd-danger) 10%, var(--fd-surface));
+  --fd-focus:        var(--fd-accent);
+
+  /* Elevation: none by default; float only for menus, popovers, dialogs and
+   * floating map panels. */
+  --fd-shadow-float: 0 1px 2px rgb(0 0 0 / 0.06), 0 8px 24px rgb(0 0 0 / 0.08);
+
+  /* Radius (§3.3) */
+  --fd-radius-frame:   2px;  /* marketing buttons, inputs, frames */
+  --fd-radius-control: 6px;  /* app controls and cards */
+  --fd-radius-overlay: 10px; /* dialogs, menus, floating map panels */
+
+  /* Motion (§3.4) */
+  --fd-dur-press:  120ms;
+  --fd-dur-pop:    200ms;
+  --fd-dur-dialog: 280ms;
+  --fd-dur-reveal: 480ms;
+  --fd-ease:       cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* ---- BoardUI semantic tokens re-pointed (light) ---- */
+  --color-background-full:              var(--fd-bg);
+  --color-background-primary-default:   var(--fd-surface);
+  --color-background-inner-default:     var(--fd-surface);
+  --color-background-primary-hover:     var(--fd-surface-2);
+  --color-background-primary-active:    var(--fd-surface-3);
+  --color-background-primary-disabled:  var(--fd-surface-2);
+  --color-input-disabled-background:    var(--fd-surface-2);
+  --color-background-secondary-default: var(--fd-surface-2);
+  --color-background-secondary-hover:   var(--fd-surface-3);
+  --color-background-tertiary-default:  var(--fd-surface-3);
+  --color-background-tertiary-hover:    var(--fd-line);
+  --color-background-tertiary-error:    var(--fd-danger-tint);
+  --color-background-quaternary-default: var(--fd-line);
+  --color-background-quaternary-hover:   var(--fd-line-strong);
+  --color-avatar-neutral-background:    var(--fd-surface-3);
+  --color-stat-card-icon-background:    var(--fd-surface);
+  --color-notification-center-background: var(--fd-surface);
+  --color-ticket-detail-surface:        var(--fd-surface);
+
+  --color-text-primary:     var(--fd-ink);
+  --color-text-secondary:   var(--fd-ink-2);
+  --color-text-tertiary:    var(--fd-ink-3);
+  --color-text-placeholder: var(--fd-ink-3);
+  --color-text-disabled:    color-mix(in srgb, var(--fd-ink-3) 55%, transparent);
+  --color-text-error-primary: var(--fd-danger);
+  --color-text-destructive:   var(--fd-danger);
+  --color-text-white:         var(--fd-accent-ink);
+
+  --color-foreground-icon-primary:   var(--fd-ink);
+  --color-foreground-icon-hover:     var(--fd-ink);
+  --color-foreground-icon-secondary: var(--fd-ink-2);
+  --color-foreground-icon-tertiary:  var(--fd-ink-3);
+  --color-foreground-icon-error:     var(--fd-danger);
+
+  --color-border-button-default:   var(--fd-line);
+  --color-border-button-hover:     var(--fd-line-strong);
+  --color-border-button-active:    var(--fd-line-strong);
+  --color-border-error-default:    var(--fd-danger);
+  --color-border-checkbox-default: var(--fd-line-strong);
+  --color-border-checkbox-hover:   var(--fd-ink-3);
+  --color-border-checkbox-active:  var(--fd-ink-3);
+  --color-border-component-detail-container: var(--fd-line);
+  --color-border-ai-profile-card:  var(--fd-line);
+  --color-border-table:            var(--fd-line);
+  --color-border-button-group:     var(--fd-line);
+  --color-separator-border:        var(--fd-line);
+  --color-separator-border-strong: var(--fd-line-strong);
+  --color-border-focus-ring:       var(--fd-focus);
+
+  --color-segmented-control-background:          var(--fd-surface-2);
+  --color-segmented-control-selected-background: var(--fd-surface);
+  --color-theme-toggle-sidebar-background:       var(--fd-surface-2);
+  --color-theme-toggle-sidebar-selected-background: var(--fd-surface);
+  --color-dropdown-item-hover-background:        var(--fd-surface-2);
+  --color-kbd-background:                        var(--fd-surface-2);
+  --color-kbd-foreground:                        var(--fd-ink-2);
+  --color-control-indicator-background:          var(--fd-surface);
+  --color-switch-off-chip-start:                 var(--fd-surface);
+  --color-switch-off-chip-end:                   var(--fd-surface);
+  --color-switch-on-chip-start:                  var(--fd-accent-ink);
+  --color-switch-on-chip-end:                    var(--fd-accent-ink);
+
+  /* Ghost buttons are quiet (no accent tint): one accent per view. */
+  --color-button-ghost-background:          transparent;
+  --color-button-ghost-hover:               var(--fd-surface-2);
+  --color-button-ghost-active:              var(--fd-surface-3);
+  --color-button-ghost-disabled:            transparent;
+  --color-button-ghost-foreground:          var(--fd-ink);
+  --color-button-ghost-disabled-foreground: var(--fd-ink-3);
+  --color-button-primary-disabled-foreground: var(--fd-ink-3);
+
+  --color-badge-neutral-background:      var(--fd-surface-2);
+  --color-badge-new-background:          var(--fd-accent-tint);
+  --color-badge-new-text:                var(--fd-accent-press);
+  --color-tab-count-selected-background: var(--fd-accent-tint);
+  --color-pill-tab-blue-selected-background: var(--fd-accent-tint);
+  --color-pill-tab-blue-hover-background:    var(--fd-surface-2);
+  --color-date-range-background:      var(--fd-accent-tint);
+
+  --color-notification-information-background: var(--fd-info-tint);
+  --color-notification-information-foreground: var(--fd-info);
+  --color-notification-success-background:     var(--fd-ok-tint);
+  --color-notification-success-foreground:     var(--fd-ok);
+  --color-notification-error-background:       var(--fd-danger-tint);
+  --color-notification-error-foreground:       var(--fd-danger);
+  --color-state-success-text: var(--fd-ok);
+  --color-state-success-base: var(--fd-ok-tint);
+
+  --color-chart-track:   var(--fd-surface-2);
+  --color-chart-cursor:  var(--fd-line);
+  --color-chart-neutral: var(--fd-line);
+}
+
+.dark {
+  --fd-bg:           #0a0b0d;
+  --fd-surface:      #111316;
+  --fd-surface-2:    #171a1e;
+  --fd-surface-3:    #1e2227;
+  --fd-line:         #24282e;
+  --fd-line-strong:  #353a42;
+  --fd-ink:          #ededea;
+  --fd-ink-2:        #a3a7ad;
+  --fd-ink-3:        #7e838a;
+  --fd-accent:       #ff5a2b;
+  --fd-accent-hover: #ff7a52;
+  --fd-accent-press: #e0461c;
+  --fd-accent-ink:   #0a0b0d;
+  --fd-accent-tint:  #2a1610;
+  --fd-info:         #5b8cff;
+  --fd-ok:           #3fbf7f;
+  --fd-warn:         #e3a63b;
+  --fd-danger:       #f0574a;
+  --fd-info-tint:    color-mix(in srgb, var(--fd-info) 14%, var(--fd-surface));
+  --fd-ok-tint:      color-mix(in srgb, var(--fd-ok) 14%, var(--fd-surface));
+  --fd-warn-tint:    color-mix(in srgb, var(--fd-warn) 14%, var(--fd-surface));
+  --fd-danger-tint:  color-mix(in srgb, var(--fd-danger) 14%, var(--fd-surface));
+  --fd-shadow-float: 0 0 0 1px var(--fd-line), 0 8px 24px rgb(0 0 0 / 0.5);
+
+  /* Lift the accent ramp's mid steps to the dark signal orange. */
+  --color-accent-400: #ff7a52;
+  --color-accent-500: #ff5a2b;
+  --color-accent-600: #e0461c;
+
+  /* Dark needs its own copies: the .dark block above sets these to BoardUI's
+   * neutral ramp and would otherwise win over the :root mapping. */
+  --color-background-full:              var(--fd-bg);
+  --color-background-primary-default:   var(--fd-surface);
+  --color-background-inner-default:     var(--fd-surface);
+  --color-background-primary-hover:     var(--fd-surface-2);
+  --color-background-primary-active:    var(--fd-surface-3);
+  --color-background-primary-disabled:  var(--fd-surface-2);
+  --color-input-disabled-background:    var(--fd-surface-2);
+  --color-background-secondary-default: var(--fd-surface-2);
+  --color-background-secondary-hover:   var(--fd-surface-3);
+  --color-background-tertiary-default:  var(--fd-surface-3);
+  --color-background-tertiary-hover:    var(--fd-line);
+  --color-background-tertiary-error:    var(--fd-danger-tint);
+  --color-background-quaternary-default: var(--fd-line);
+  --color-background-quaternary-hover:   var(--fd-line-strong);
+  --color-avatar-neutral-background:    var(--fd-surface-3);
+  --color-stat-card-icon-background:    var(--fd-surface-2);
+  --color-notification-center-background: var(--fd-surface);
+  --color-ticket-detail-surface:        var(--fd-surface);
+
+  --color-text-primary:     var(--fd-ink);
+  --color-text-secondary:   var(--fd-ink-2);
+  --color-text-tertiary:    var(--fd-ink-3);
+  --color-text-placeholder: var(--fd-ink-3);
+  --color-text-disabled:    color-mix(in srgb, var(--fd-ink-3) 55%, transparent);
+  --color-text-error-primary: var(--fd-danger);
+  --color-text-destructive:   var(--fd-danger);
+
+  --color-foreground-icon-primary:   var(--fd-ink);
+  --color-foreground-icon-hover:     var(--fd-ink);
+  --color-foreground-icon-secondary: var(--fd-ink-2);
+  --color-foreground-icon-tertiary:  var(--fd-ink-3);
+  --color-foreground-icon-error:     var(--fd-danger);
+
+  --color-border-button-default:   var(--fd-line);
+  --color-border-button-hover:     var(--fd-line-strong);
+  --color-border-button-active:    var(--fd-line-strong);
+  --color-border-button-white:     var(--fd-line);
+  --color-border-error-default:    var(--fd-danger);
+  --color-border-checkbox-default: var(--fd-line-strong);
+  --color-border-checkbox-hover:   var(--fd-ink-3);
+  --color-border-checkbox-active:  var(--fd-ink-3);
+  --color-border-component-detail-container: var(--fd-line);
+  --color-border-ai-profile-card:  var(--fd-line);
+  --color-border-table:            var(--fd-line);
+  --color-border-button-group:     var(--fd-line);
+  --color-separator-border:        var(--fd-line);
+  --color-separator-border-strong: var(--fd-line-strong);
+
+  --color-segmented-control-background:          var(--fd-surface-2);
+  --color-segmented-control-selected-background: var(--fd-surface-3);
+  --color-theme-toggle-sidebar-background:       var(--fd-surface-2);
+  --color-theme-toggle-sidebar-selected-background: var(--fd-surface-3);
+  --color-dropdown-item-hover-background:        var(--fd-surface-3);
+  --color-kbd-background:                        var(--fd-surface-3);
+  --color-kbd-foreground:                        var(--fd-ink-2);
+  --color-switch-off-chip-start:                 var(--fd-ink-2);
+  --color-switch-off-chip-end:                   var(--fd-ink-2);
+
+  --color-button-ghost-background:          transparent;
+  --color-button-ghost-hover:               var(--fd-surface-3);
+  --color-button-ghost-active:              var(--fd-line);
+  --color-button-ghost-disabled:            transparent;
+  --color-button-ghost-foreground:          var(--fd-ink);
+  --color-button-ghost-disabled-foreground: var(--fd-ink-3);
+  --color-button-primary-disabled-foreground: var(--fd-ink-3);
+
+  --color-badge-neutral-background:      var(--fd-surface-3);
+  --color-badge-new-background:          var(--fd-accent-tint);
+  --color-badge-new-text:                var(--fd-accent);
+  --color-tab-count-selected-background: var(--fd-accent-tint);
+  --color-pill-tab-blue-selected-background: var(--fd-accent-tint);
+  --color-pill-tab-blue-hover-background:    var(--fd-surface-3);
+  --color-date-range-background:      var(--fd-accent-tint);
+
+  --color-notification-information-background: var(--fd-info-tint);
+  --color-notification-information-foreground: var(--fd-info);
+  --color-notification-success-background:     var(--fd-ok-tint);
+  --color-notification-success-foreground:     var(--fd-ok);
+  --color-notification-error-background:       var(--fd-danger-tint);
+  --color-notification-error-foreground:       var(--fd-danger);
+
+  --color-chart-track:   var(--fd-surface-2);
+  --color-chart-cursor:  var(--fd-line);
+  --color-chart-neutral: var(--fd-line);
+}
+
+/* Tailwind utilities for the fd names (inline: values flip with .dark). */
+@theme inline {
+  --color-fd-bg:           var(--fd-bg);
+  --color-fd-surface:      var(--fd-surface);
+  --color-fd-surface-2:    var(--fd-surface-2);
+  --color-fd-surface-3:    var(--fd-surface-3);
+  --color-fd-line:         var(--fd-line);
+  --color-fd-line-strong:  var(--fd-line-strong);
+  --color-fd-ink:          var(--fd-ink);
+  --color-fd-ink-2:        var(--fd-ink-2);
+  --color-fd-ink-3:        var(--fd-ink-3);
+  --color-fd-accent:       var(--fd-accent);
+  --color-fd-accent-hover: var(--fd-accent-hover);
+  --color-fd-accent-press: var(--fd-accent-press);
+  --color-fd-accent-ink:   var(--fd-accent-ink);
+  --color-fd-accent-tint:  var(--fd-accent-tint);
+  --color-fd-info:         var(--fd-info);
+  --color-fd-ok:           var(--fd-ok);
+  --color-fd-warn:         var(--fd-warn);
+  --color-fd-danger:       var(--fd-danger);
+  --color-fd-info-tint:    var(--fd-info-tint);
+  --color-fd-ok-tint:      var(--fd-ok-tint);
+  --color-fd-warn-tint:    var(--fd-warn-tint);
+  --color-fd-danger-tint:  var(--fd-danger-tint);
+
+  --radius-fd-frame:   var(--fd-radius-frame);
+  --radius-fd-control: var(--fd-radius-control);
+  --radius-fd-overlay: var(--fd-radius-overlay);
+
+  --shadow-fd-float: var(--fd-shadow-float);
+
+  --ease-fd: var(--fd-ease);
 }
 
 /* Non-default accents (data-accent set by the accent engine) can land on a
@@ -840,21 +1121,11 @@
  *   <button class="bg-button-primary">…</button>
  *   <button class="bg-button-danger">…</button>
  *
- * Smooth default→hover transition trick:
- *   CSS can't interpolate `background-image`, so swapping gradients on :hover
- *   would snap. Instead we keep the *default* gradient on the element and
- *   layer the *hover* gradient on a `::before` pseudo-element whose opacity
- *   fades 0→1 over `--button-transition-ms`. Active/disabled gradients still
- *   swap instantly (we hide the pseudo to reveal them).
- *
- * Stacking: `isolation: isolate` keeps the pseudo behind the button's text
- * and icons (z-index -1) while staying above the element's own background.
- * `border-radius: inherit` + `overflow: hidden` keeps it within the rounded
- * corners.
+ * Flight Deck: solid fills only, no gradient layers (DESIGN_SPEC §3.1).
  * --------------------------------------------------------------------------- */
 @theme {
-  --button-transition-ms: 150ms;
-  --input-transition-ms:  150ms;
+  --button-transition-ms: 120ms;
+  --input-transition-ms:  120ms;
 }
 
 /* Keep color feedback quick while the physical press motion remains soft.
@@ -866,11 +1137,10 @@
     border-color var(--button-transition-ms) ease,
     box-shadow var(--button-transition-ms) ease,
     color var(--button-transition-ms) ease,
-    transform 420ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1);
 
   &:active:not(:disabled):not([aria-disabled="true"]) {
-    transform: scale(0.98);
-    transition-duration: 150ms, 150ms, 150ms, 150ms, 220ms;
+    transform: translateY(0.5px);
   }
 
   &:disabled,
@@ -885,71 +1155,31 @@
 }
 
 @utility bg-button-primary {
-  position: relative;
-  isolation: isolate;
-  background-image: var(--gradient-button-primary-default);
+  background-color: var(--button-primary-default);
 
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    border-radius: inherit;
-    background-image: var(--gradient-button-primary-hover);
-    opacity: 0;
-    transition: opacity var(--button-transition-ms) ease;
-  }
-  &:hover:not(:disabled):not([aria-disabled="true"])::before {
-    opacity: 1;
+  &:hover:not(:disabled):not([aria-disabled="true"]) {
+    background-color: var(--button-primary-hover);
   }
   &:active:not(:disabled):not([aria-disabled="true"]) {
-    background-image: var(--gradient-button-primary-active);
-  }
-  &:active:not(:disabled):not([aria-disabled="true"])::before {
-    opacity: 0;
+    background-color: var(--button-primary-active);
   }
   &:disabled,
   &[aria-disabled="true"] {
-    background-image: var(--gradient-button-primary-disabled);
-  }
-  &:disabled::before,
-  &[aria-disabled="true"]::before {
-    display: none;
+    background-color: var(--button-primary-disabled);
   }
 }
 
 @utility bg-button-danger {
-  position: relative;
-  isolation: isolate;
-  background-image: var(--gradient-button-danger-default);
+  background-color: var(--button-danger-default);
 
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    border-radius: inherit;
-    background-image: var(--gradient-button-danger-hover);
-    opacity: 0;
-    transition: opacity var(--button-transition-ms) ease;
-  }
-  &:hover:not(:disabled):not([aria-disabled="true"])::before {
-    opacity: 1;
+  &:hover:not(:disabled):not([aria-disabled="true"]) {
+    background-color: var(--button-danger-hover);
   }
   &:active:not(:disabled):not([aria-disabled="true"]) {
-    background-image: var(--gradient-button-danger-active);
-  }
-  &:active:not(:disabled):not([aria-disabled="true"])::before {
-    opacity: 0;
+    background-color: var(--button-danger-active);
   }
   &:disabled,
   &[aria-disabled="true"] {
-    background-image: var(--gradient-button-danger-disabled);
-  }
-  &:disabled::before,
-  &[aria-disabled="true"]::before {
-    display: none;
+    background-color: var(--button-danger-disabled);
   }
 }
