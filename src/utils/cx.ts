@@ -33,10 +33,13 @@ const TEXT_STYLE_SUFFIXES = TEXT_FAMILIES.flatMap((family) =>
   TEXT_WEIGHTS.map((weight) => `${family}-${weight}`),
 );
 
+/** Standalone text styles (no weight suffix): `text-body-lg`, `text-label-mono`, `text-data-mono`. */
+const TEXT_STANDALONE = ["body-lg", "label-mono", "data-mono"] as const;
+
 const twMerge = extendTailwindMerge({
   extend: {
     classGroups: {
-      "font-size": [{ text: TEXT_STYLE_SUFFIXES }],
+      "font-size": [{ text: [...TEXT_STYLE_SUFFIXES, ...TEXT_STANDALONE] }],
     },
   },
 });
