@@ -21,6 +21,7 @@ The order differs from the brief's suggested sequence because the audit found th
 | 10 | Account settings | 4 | Done |
 | 11 | Landing page revamp | none (parallel) | Done (Lighthouse AC not measured) |
 | 12 | Hardening, staging, rollout | all | Not started |
+| 13 | Design overhaul ([DESIGN_SPEC](DESIGN_SPEC.md)) | 5, 9, 11 | In progress |
 
 Phases 2, 5 and 11 can run in parallel once Phase 0 lands. Phases 7 and 8 can run in parallel.
 
@@ -111,5 +112,18 @@ Phases 2, 5 and 11 can run in parallel once Phase 0 lands. Phases 7 and 8 can ru
 - **Steps:** staging deploy with a Neon branch; restore drill; full E2E; production migration; deploy; watch save failures and errors for 48 h. **Rollback:** Vercel instant rollback (schema changes are additive).
 - **Done when** production has run 48 h with no P1 issues and the README and these docs are updated.
 
+### Phase 13: Design overhaul
+- **Goal:** one clean, non-"AI-looking" visual system across every page (DESIGN_SPEC). No behaviour, URL, API or schema change.
+- **Branch:** `feature/design-overhaul` off `feature/revamp`; PR into `feature/revamp` (retargets to `main` once PR #1 merges).
+- **Tasks** (one agent and one worktree each; 13.1 lands first, the rest run in parallel and merge `task/ds-foundation` as soon as it is ready):
+  - **13.1 Foundation** (`task/ds-foundation`): tokens (§3.1) in `src/styles/theme.css` and `src/app/globals.css`, orange accent ramp, solid primary button, Geist fonts, type scale re-valued (§3.2), radius/elevation/motion tokens (§3.3–3.4), `.fd-ticks`, `arc-tokens.css` re-pointed, legacy editor tokens re-pointed, light default theme, `scripts/design-lint.sh`.
+  - **13.2 Marketing and auth** (`task/ds-marketing`): landing (§5.1) with new SVG figures, auth pages (§5.2), root `not-found` and `error` (§5.6).
+  - **13.3 Dashboard and settings** (`task/ds-app`): §5.3 and §5.5, grid/table toggle, empty and loading states, command palette shell.
+  - **13.4 Editor and map** (`task/ds-editor`): §5.4, map colours, assistant demotion (D-11), mobile bottom sheet.
+  - **13.5 Integrator** (continuous): merges each task into `feature/design-overhaul`, resolves conflicts, runs all checks after each merge, pushes per task.
+- **Tests:** existing unit and integration suites stay green; `scripts/design-lint.sh` passes; screenshots at 390/1024/1440 in both themes.
+- **AC:** DESIGN_SPEC §8.
+- **Rollback:** revert the merge; purely presentational.
+
 ## Checklist
-- [~] Phase 0 · [x] 1 · [x] 2 · [x] 3 · [x] 4 · [x] 5 · [x] 6 · [x] 7 · [x] 8 · [x] 9 · [x] 10 · [x] 11 · [ ] 12
+- [~] Phase 0 · [x] 1 · [x] 2 · [x] 3 · [x] 4 · [x] 5 · [x] 6 · [x] 7 · [x] 8 · [x] 9 · [x] 10 · [x] 11 · [ ] 12 · [ ] 13
