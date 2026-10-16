@@ -7,6 +7,7 @@ import {
   Marker,
   ScaleControl,
   type FilterSpecification,
+  type StyleSpecification,
   type GeoJSONSource,
   type MapGeoJSONFeature,
   type MapMouseEvent,
@@ -22,7 +23,6 @@ import { round7 } from '@/lib/utils';
 import { ZONE_KIND_LABEL } from '@/lib/store/editor-types';
 import { readMapColors, watchTheme, type MapColors } from './map-colors';
 import {
-  LABEL_FONT,
   VECTOR_STYLE_URL,
   circleRing,
   emptyFC,
@@ -295,19 +295,57 @@ function installOverlays(map: MapLibreMap, c: MapColors) {
       'icon-halo-width': 2,
     },
   });
+  // Numbers are drawn as SDF images in Geist Mono (no glyph server needed), tinted by state.
   layer({
     id: 'mp-wp-label',
     type: 'symbol',
     source: SRC.wps,
     layout: {
-      'text-field': ['get', 'label'],
-      'text-font': LABEL_FONT,
-      'text-size': 11,
-      'text-allow-overlap': true,
-      'text-ignore-placement': true,
+      'icon-image': ['concat', 'mp-num-', ['get', 'label']],
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
     },
-    paint: { 'text-color': expr<string>(['case', selected, c.accentInk, shaped, c.surface, c.ink]) },
+    paint: { 'icon-color': expr<string>(['case', selected, c.accentInk, shaped, c.surface, c.ink]) },
   });
+}
+
+/** Mono font stack from the design tokens (Geist Mono), for canvas-drawn labels. */
+function monoFont(): string {
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim();
+  return v || 'ui-monospace, monospace';
+}
+
+/**
+ * Waypoint number as an SDF-ish image: text alpha drawn at 2x, boosted so the
+ * 0.75 SDF edge sits near the glyph outline. Lets `icon-color` follow selection.
+ */
+function numberImage(label: string): { width: number; height: number; data: Uint8ClampedArray } | null {
+  const ratio = 2;
+  const w = Math.max(16, label.length * 8 + 4) * ratio;
+  const h = 16 * ratio;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return null;
+  ctx.font = `500 ${11 * ratio}px ${monoFont()}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'white';
+  ctx.fillText(label, w / 2, h / 2 + ratio * 0.5);
+  const img = ctx.getImageData(0, 0, w, h);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const a = Math.min(255, Math.round(d[i + 3] * 1.35));
+    d[i] = d[i + 1] = d[i + 2] = 255;
+    d[i + 3] = a;
+  }
+  return { width: w, height: h, data: d };
+}
+
+/** Offline basemap: a plain background so overlays still draw when the tile host is unreachable. */
+function fallbackStyle(): StyleSpecification {
+  return { version: 8, sources: {}, layers: [{ id: 'fallback-bg', type: 'background', paint: { 'background-color': readMapColors().surface2 } }] };
 }
 
 function setData(map: MapLibreMap, id: string, data: FeatureCollection) {
@@ -321,6 +359,7 @@ export function MissionMap() {
   const mapRef = useRef<MapLibreMap | null>(null);
   const homeMarkerRef = useRef<Marker | null>(null);
   const coordRef = useRef<HTMLSpanElement>(null);
+  const styleLoadedRef = useRef(false);
   const colorsRef = useRef<MapColors | null>(null);
   const draftRef = useRef<Draft>(emptyDraft());
   const dragRef = useRef<{ id: string; moved: boolean; pos: LngLat } | null>(null);
@@ -423,13 +462,28 @@ export function MissionMap() {
     mapRef.current = map;
 
     map.on('style.load', () => {
+      styleLoadedRef.current = true;
       colorsRef.current = colorsRef.current ?? readMapColors();
       installOverlays(map, colorsRef.current);
       setStyleNonce((n) => n + 1);
     });
     map.on('error', (e) => {
       const err = (e as { error?: { status?: number; message?: string } }).error;
-      if (err && (err.status === undefined || err.status >= 400)) setTilesFailedFor(appliedStyleRef.current);
+      if (err && (!err.status || err.status >= 400)) {
+        setTilesFailedFor(appliedStyleRef.current);
+        // The vector style itself could not load: switch to a blank style so the
+        // route, waypoints and zones still render.
+        if (!styleLoadedRef.current) {
+          styleLoadedRef.current = true;
+          map.setStyle(fallbackStyle());
+        }
+      }
+    });
+    map.on('styleimagemissing', (e: { id: string }) => {
+      const m = /^mp-num-(\d+)$/.exec(e.id);
+      if (!m || map.hasImage(e.id)) return;
+      const img = numberImage(m[1]);
+      if (img) map.addImage(e.id, img, { sdf: true, pixelRatio: 2 });
     });
     map.on('moveend', () => {
       const c = map.getCenter();
@@ -463,6 +517,7 @@ export function MissionMap() {
       const map = mapRef.current;
       colorsRef.current = readMapColors();
       if (!map || !map.isStyleLoaded()) return;
+      if (map.getLayer('fallback-bg')) map.setPaintProperty('fallback-bg', 'background-color', colorsRef.current.surface2);
       removeOverlayLayers(map);
       installOverlays(map, colorsRef.current);
       renderDraft();
@@ -836,12 +891,12 @@ export function MissionMap() {
       className={cx(
         'relative h-full min-h-0 w-full overflow-hidden bg-background-secondary-default',
         // MapLibre's own controls: scale above the coordinate readout, quiet attribution.
-        '[&_.maplibregl-ctrl-bottom-left]:bottom-7',
-        '[&_.maplibregl-ctrl-scale]:border-text-tertiary [&_.maplibregl-ctrl-scale]:bg-background-primary-default/80 [&_.maplibregl-ctrl-scale]:font-mono [&_.maplibregl-ctrl-scale]:text-[10px] [&_.maplibregl-ctrl-scale]:text-text-secondary',
-        '[&_.maplibregl-ctrl-attrib]:bg-background-primary-default/85 [&_.maplibregl-ctrl-attrib]:text-[10px] [&_.maplibregl-ctrl-attrib]:text-text-tertiary [&_.maplibregl-ctrl-attrib_a]:text-text-secondary'
+        '[&_.maplibregl-ctrl-bottom-left]:bottom-7!',
+        '[&_.maplibregl-ctrl-scale]:border-text-tertiary! [&_.maplibregl-ctrl-scale]:bg-background-primary-default/80! [&_.maplibregl-ctrl-scale]:font-mono! [&_.maplibregl-ctrl-scale]:text-[10px]! [&_.maplibregl-ctrl-scale]:text-text-secondary!',
+        '[&_.maplibregl-ctrl-attrib]:bg-background-primary-default/85! [&_.maplibregl-ctrl-attrib]:text-[10px]! [&_.maplibregl-ctrl-attrib]:text-text-tertiary! [&_.maplibregl-ctrl-attrib_a]:text-text-secondary!'
       )}
     >
-      <div ref={containerRef} className="absolute inset-0" aria-label="Mission map" role="application" />
+      <div ref={containerRef} className="absolute inset-0 size-full" aria-label="Mission map" role="application" />
       <ToolHint info={draftInfo} onFinish={finishDraft} onCancel={cancelDraft} />
       {empty && activeTool === 'select' && (
         <div className="pointer-events-none absolute inset-x-0 top-16 flex justify-center px-4">

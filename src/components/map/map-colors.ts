@@ -19,6 +19,8 @@ export interface MapColors {
   accentInk: string;
   /** Waypoint fill, route casing, halos. */
   surface: string;
+  /** Offline basemap background. */
+  surface2: string;
   /** Waypoint stroke and number, takeoff/land shapes. */
   ink: string;
   /** Secondary ink (measure tool). */
@@ -33,6 +35,7 @@ const TOKENS: Record<keyof MapColors, [string, string, string]> = {
   accent: ['--fd-accent', '--color-accent-500', 'orangered'],
   accentInk: ['--fd-accent-ink', '--color-text-white', 'white'],
   surface: ['--fd-surface', '--color-background-primary-default', 'white'],
+  surface2: ['--fd-surface-2', '--color-background-secondary-default', 'gainsboro'],
   ink: ['--fd-ink', '--color-text-primary', 'black'],
   ink2: ['--fd-ink-2', '--color-text-secondary', 'dimgray'],
   danger: ['--fd-danger', '--color-red', 'firebrick'],
