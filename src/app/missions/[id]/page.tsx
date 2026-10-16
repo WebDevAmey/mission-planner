@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { EditorShell } from '@/components/editor/editor-shell';
+import { EditorShell, loadMissionMap } from '@/components/editor/editor-shell';
 import { useMissionStore } from '@/lib/store/mission-store';
 import { useAutosaveMission } from '@/hooks/useAutosaveMission';
 import { ButtonLink } from '@/components/ui/button';
@@ -21,6 +21,8 @@ export default function MissionEditorPage() {
   useEffect(() => {
     if (!missionId) return;
     let cancelled = false;
+    // Fetch the map chunk while the mission loads, so it is ready when the skeleton goes.
+    void loadMissionMap().catch(() => {});
     (async () => {
       try {
         const res = await fetch(`/api/missions/${missionId}`);

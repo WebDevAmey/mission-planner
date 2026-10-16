@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import dynamic from 'next/dynamic';
 import { RiCloseLine } from '@remixicon/react';
 import { useUIStore } from '@/lib/store/ui-store';
+import { useAgentStore } from '@/lib/store/agent-store';
 import { useMissionPlannerShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useTerrainProfile } from '@/hooks/useTerrainProfile';
-import { MissionMap } from '@/components/map/mission-map';
 import { TerrainPanel } from '@/components/mission/terrain-panel';
-import { TemplatePicker } from '@/components/mission/template-picker';
-import { AgentConsole } from '@/components/agent-console/agent-console';
 import { ToastContainer } from '@/components/common/toast';
 import { cx } from '@/utils/cx';
 import { EditorHeader } from './editor-header';
@@ -16,9 +15,35 @@ import { ToolRail } from './tool-rail';
 import { StatusBar } from './status-bar';
 import { Inspector } from './inspector/inspector';
 import { InspectorSheet, SHEET_PEEK_INSET } from './inspector/inspector-sheet';
-import { ParamTable } from './param-table';
-import { ShortcutsDialog } from './shortcuts-dialog';
 import { ICON_BUTTON } from './editor-styles';
+
+/** Same surface as the loading skeleton's map area, so the swap is invisible. */
+function MapPlaceholder() {
+  return <div aria-hidden className="size-full bg-background-secondary-default" />;
+}
+
+// MapLibre (~270 KB gzip) is only needed in the editor and only in the browser.
+export const loadMissionMap = () => import('@/components/map/mission-map');
+const MissionMap = dynamic(() => loadMissionMap().then((m) => m.MissionMap), {
+  ssr: false,
+  loading: MapPlaceholder,
+});
+// Opened on demand; kept out of the editor's first-load JS.
+const AgentConsole = dynamic(() => import('@/components/agent-console/agent-console').then((m) => m.AgentConsole), {
+  ssr: false,
+});
+const ShortcutsDialog = dynamic(() => import('./shortcuts-dialog').then((m) => m.ShortcutsDialog), { ssr: false });
+const TemplatePicker = dynamic(() => import('@/components/mission/template-picker').then((m) => m.TemplatePicker), {
+  ssr: false,
+});
+const ParamTable = dynamic(() => import('./param-table').then((m) => m.ParamTable), { ssr: false });
+
+/** True once `flag` has been true; lets a dialog keep its exit animation after the first open. */
+function useHasBeenTrue(flag: boolean) {
+  const [seen, setSeen] = useState(flag);
+  if (flag && !seen) setSeen(true);
+  return seen || flag;
+}
 
 function PhoneBanner() {
   const [dismissed, setDismissed] = useState(false);
@@ -58,6 +83,8 @@ export function EditorShell() {
   const paramTableOpen = useUIStore((s) => s.paramTableOpen);
   const templatePickerOpen = useUIStore((s) => s.templatePickerOpen);
   const setInspectorOpen = useUIStore((s) => s.setInspectorOpen);
+  const consoleOpen = useAgentStore((s) => s.consoleOpen);
+  const shortcutsMounted = useHasBeenTrue(useUIStore((s) => s.shortcutsOpen));
   const phone = useNarrow('(max-width: 767px)');
 
   useMissionPlannerShortcuts();
@@ -99,8 +126,8 @@ export function EditorShell() {
       </div>
       <StatusBar />
       <ToolRail orientation="horizontal" className="md:hidden" />
-      <AgentConsole />
-      <ShortcutsDialog />
+      {consoleOpen && <AgentConsole />}
+      {shortcutsMounted && <ShortcutsDialog />}
       {templatePickerOpen && <TemplatePicker />}
       <ToastContainer />
     </div>
