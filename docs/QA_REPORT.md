@@ -65,7 +65,7 @@ The suite has 19 specs in `tests/e2e`. Configuration is in `playwright.config.ts
 - **settings:** change the display name; sign out other sessions (the other device gets a 401, this one stays signed in)
 - **a11y:** keyboard-only tab order of the landing nav with visible focus rings; skip link and nav anchors; axe with no serious or critical violations on landing, login, dashboard and editor
 
-**Result:** 19 of 19 passed on the final build. The first 18 specs also passed This was checked twice: once against :3203, and once from a fresh database in CI mode (`CI=1`, Playwright starting its own server).
+**Result:** 19 of 19 passed on the final build. The first 18 specs also passed twice: once against :3203, and once from a fresh database in CI mode (`CI=1`, Playwright starting its own server).
 
 ### CI: `.github/workflows/ci.yml`
 
