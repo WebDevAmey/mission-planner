@@ -341,6 +341,30 @@ function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
+/** Exactly what `toMissionSummary` reads. */
+const SUMMARY_COLUMNS = [
+  'id',
+  'name',
+  'description',
+  'createdAt',
+  'updatedAt',
+  'version',
+  'status',
+  'vehicleType',
+  'homeLatitude',
+  'homeLongitude',
+  'homeAltitude',
+  'distanceM',
+  'durationS',
+  'waypointCount',
+  'errorCount',
+  'warningCount',
+  'bboxMinLat',
+  'bboxMinLng',
+  'bboxMaxLat',
+  'bboxMaxLng',
+] as const;
+
 /** Dashboard list: summary columns only, never waypoints. */
 export async function listMissions(userId: string, opts: ListOptions) {
   let q = db.orm.public.Mission.where({ userId });
@@ -358,7 +382,7 @@ export async function listMissions(userId: string, opts: ListOptions) {
       : opts.sort === 'created'
         ? q.orderBy((m) => m.createdAt.desc())
         : q.orderBy((m) => m.updatedAt.desc());
-  return ordered.limit(500).all();
+  return ordered.select(...SUMMARY_COLUMNS).limit(500).all();
 }
 
 /** Narrowed type helper so routes can hand repo rows to the mapper. */
