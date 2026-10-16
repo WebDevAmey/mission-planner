@@ -1,8 +1,11 @@
 import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cx } from '@/utils/cx';
 
+/** clsx + the project's tailwind-merge (cx), which knows the custom text-style
+ * utilities (`text-body-medium`, …). Plain twMerge reads those as text colours
+ * and drops the real colour next to them (e.g. `text-fd-surface` on ui/Button). */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return cx(clsx(inputs));
 }
 
 export function formatDuration(seconds: number): string {
