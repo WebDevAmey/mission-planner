@@ -85,7 +85,6 @@ export function AppShell({ user, missions, onNewMission, onImport, children }: A
           <button
             type="button"
             onClick={() => setPaletteOpen(true)}
-            aria-label="Search missions and commands"
             aria-keyshortcuts="Meta+K Control+K"
             className={cx(
               'flex size-11 items-center justify-center rounded-fd-control text-foreground-icon-secondary outline-none transition-colors duration-150',
@@ -94,7 +93,8 @@ export function AppShell({ user, missions, onNewMission, onImport, children }: A
             )}
           >
             <RiSearchLine className="size-4 shrink-0" aria-hidden />
-            <span className="hidden flex-1 text-start text-body-2-regular text-text-tertiary md:inline">Search…</span>
+            {/* The visible text is the accessible name (WCAG 2.5.3), screen-reader-only on phones. */}
+            <span className="sr-only text-body-2-regular text-text-tertiary md:not-sr-only md:flex-1 md:text-start">Search missions</span>
             <kbd className="hidden rounded-sm border border-separator-border px-1.5 font-sans text-caption-2-medium text-text-tertiary md:inline">⌘K</kbd>
           </button>
 
