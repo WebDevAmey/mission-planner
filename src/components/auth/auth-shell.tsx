@@ -23,7 +23,7 @@ export function AuthShell({
 }) {
   return (
     <div className="grid min-h-dvh bg-background-full lg:grid-cols-12">
-      <div className="flex flex-col px-4 py-6 sm:px-8 lg:col-span-5 lg:px-12 lg:py-8">
+      <div className="flex flex-col px-4 py-6 sm:px-8 lg:col-span-6 lg:px-12 lg:py-8 xl:col-span-5">
         <Link
           href="/"
           aria-label="Flight Deck home"
@@ -31,7 +31,7 @@ export function AuthShell({
         >
           <FlightDeckLogo />
         </Link>
-        <div className="flex flex-1 flex-col items-center justify-center py-10">
+        <div className="flex flex-1 flex-col items-center pt-8 pb-10 sm:justify-center sm:py-10">
           <div className="flex w-full max-w-[400px] flex-col gap-5">
             <main className="flex w-full flex-col rounded-fd-control border border-fd-line bg-background-primary-default p-6 sm:p-8">
               <div className="mb-6 flex flex-col gap-1.5">
@@ -45,9 +45,9 @@ export function AuthShell({
         </div>
       </div>
 
-      <figure aria-hidden className="relative hidden border-l border-fd-line bg-fd-surface-2 lg:col-span-7 lg:block">
+      <figure aria-hidden className="relative hidden border-l border-fd-line bg-fd-surface-2 lg:col-span-6 lg:block xl:col-span-7">
         <div className="absolute inset-0 overflow-hidden">
-          <ContourMap viewBox="380 60 760 820" preserveAspectRatio="xMidYMid slice" />
+          <ContourMap viewBox="470 60 760 820" preserveAspectRatio="xMidYMid slice" />
         </div>
         <figcaption className="text-label-mono absolute bottom-6 left-8 text-text-tertiary">
           Survey route over terrain · 6 waypoints · range rings from launch

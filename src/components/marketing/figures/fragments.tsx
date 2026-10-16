@@ -51,18 +51,33 @@ const LANES: [Pt, Pt][] = Array.from({ length: 9 }, (_, i) => {
 export function SurveyFragment() {
   return (
     <div className="overflow-hidden rounded-[6px] border border-(--fd-line) bg-(--fd-surface)">
-      <svg viewBox="0 0 560 224" className="block h-auto w-full bg-(--fd-surface-2)" aria-hidden>
-        <MapGrid w={560} h={224} />
-        <path d={`${polyline(FIELD)} Z`} className="fill-(--fd-info) stroke-(--fd-info)" fillOpacity="0.08" strokeWidth="1.25" />
-        {LANES.map(([a, b], i) => (
-          <path key={i} d={polyline([a, b])} className="fill-none stroke-(--fd-info)" strokeWidth="1" />
-        ))}
-        {FIELD.map(([x, y], i) => (
-          <rect key={i} x={x - 4} y={y - 4} width="8" height="8" className="fill-(--fd-surface) stroke-(--fd-info)" strokeWidth="1.25" />
-        ))}
-        <text x="508" y="210" textAnchor="end" className="fill-(--fd-ink-3) font-mono" fontSize="11" letterSpacing="0.06em">
-          LANE ANGLE 62°
-        </text>
+      <svg viewBox="0 0 560 320" className="block h-auto w-full bg-(--fd-surface-2)" aria-hidden>
+        <MapGrid w={560} h={320} />
+        <g transform="translate(0 44)">
+          <path
+            d={`${polyline(FIELD)} Z`}
+            className="fill-(--fd-info) stroke-(--fd-info)"
+            fillOpacity="0.08"
+            strokeWidth="1.25"
+          />
+          {LANES.map(([a, b], i) => (
+            <path key={i} d={polyline([a, b])} className="fill-none stroke-(--fd-info)" strokeWidth="1" />
+          ))}
+          {FIELD.map(([x, y], i) => (
+            <rect
+              key={i}
+              x={x - 4}
+              y={y - 4}
+              width="8"
+              height="8"
+              className="fill-(--fd-surface) stroke-(--fd-info)"
+              strokeWidth="1.25"
+            />
+          ))}
+          <text x="508" y="244" textAnchor="end" className="fill-(--fd-ink-3) font-mono" fontSize="11" letterSpacing="0.06em">
+            LANE ANGLE 62°
+          </text>
+        </g>
       </svg>
       <Readout
         items={[
@@ -93,15 +108,33 @@ const AFTER = [0, 1, 5, 4, 2, 6, 3].map((i) => STOPS[i]);
 function MiniRoute({ points, label, distance, strong }: { points: Pt[]; label: string; distance: string; strong?: boolean }) {
   return (
     <figure className="flex min-w-0 flex-1 flex-col gap-2">
-      <svg viewBox="0 0 216 128" className="block h-auto w-full rounded-[4px] border border-(--fd-line) bg-(--fd-surface-2)" aria-hidden>
-        <path d={polyline(points)} className={strong ? 'fill-none stroke-(--fd-accent)' : 'fill-none stroke-(--fd-ink-3)'} strokeWidth="2" strokeLinejoin="round" />
+      <svg
+        viewBox="0 0 216 128"
+        className="block h-auto w-full rounded-[4px] border border-(--fd-line) bg-(--fd-surface-2)"
+        aria-hidden
+      >
+        <path
+          d={polyline(points)}
+          className={strong ? 'fill-none stroke-(--fd-accent)' : 'fill-none stroke-(--fd-ink-3)'}
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
         {points.map(([x, y], i) => (
-          <circle key={i} cx={x} cy={y} r="4.5" className={i === 0 ? 'fill-(--fd-ink)' : 'fill-(--fd-surface) stroke-(--fd-ink)'} strokeWidth="1.25" />
+          <circle
+            key={i}
+            cx={x}
+            cy={y}
+            r="4.5"
+            className={i === 0 ? 'fill-(--fd-ink)' : 'fill-(--fd-surface) stroke-(--fd-ink)'}
+            strokeWidth="1.25"
+          />
         ))}
       </svg>
       <figcaption className="flex items-baseline justify-between gap-2">
         <span className={cx(type.label, 'text-text-tertiary')}>{label}</span>
-        <span className={cx('text-[15px]/[20px] tabular-nums', strong ? 'font-medium text-text-primary' : 'text-text-secondary')}>{distance}</span>
+        <span className={cx('text-[15px]/[20px] tabular-nums', strong ? 'font-medium text-text-primary' : 'text-text-secondary')}>
+          {distance}
+        </span>
       </figcaption>
     </figure>
   );
@@ -110,7 +143,7 @@ function MiniRoute({ points, label, distance, strong }: { points: Pt[]; label: s
 export function OptimiseFragment() {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex gap-3">
+      <div className="flex gap-3 lg:flex-col">
         <MiniRoute points={BEFORE} label="Before" distance="4.82 km" />
         <MiniRoute points={AFTER} label="After" distance="3.61 km" strong />
       </div>
@@ -128,9 +161,17 @@ export function ZoneFragment() {
   // Leg 7 → 8 passes through the zone between x≈118 and x≈202.
   return (
     <div className="overflow-hidden rounded-[6px] border border-(--fd-line) bg-(--fd-surface)">
-      <svg viewBox="0 0 320 168" className="block h-auto w-full bg-(--fd-surface-2)" aria-hidden>
-        <MapGrid w={320} h={168} />
-        <circle cx="160" cy="92" r="52" className="fill-(--fd-danger) stroke-(--fd-danger)" fillOpacity="0.12" strokeWidth="1.5" strokeDasharray="5 4" />
+      <svg viewBox="0 0 320 200" className="block h-auto w-full bg-(--fd-surface-2)" aria-hidden>
+        <MapGrid w={320} h={200} />
+        <circle
+          cx="160"
+          cy="104"
+          r="56"
+          className="fill-(--fd-danger) stroke-(--fd-danger)"
+          fillOpacity="0.12"
+          strokeWidth="1.5"
+          strokeDasharray="5 4"
+        />
         <path d="M40 76 L118 81" className="fill-none stroke-(--fd-accent)" strokeWidth="2.5" />
         <path d="M118 81 L202 86" className="fill-none stroke-(--fd-danger)" strokeWidth="2.5" strokeDasharray="6 3" />
         <path d="M202 86 L280 91" className="fill-none stroke-(--fd-accent)" strokeWidth="2.5" />
@@ -189,13 +230,29 @@ export function TerrainFragment() {
         <path d={`${terrain} L${W} ${H} L0 ${H} Z`} className="fill-(--fd-surface-2)" />
         <path d={terrain} className="fill-none stroke-(--fd-ink-3)" strokeWidth="1.25" />
         {/* where terrain rises above the clearance line */}
-        <path d={`M232 ${FLIGHT_Y + 30} L 232 ${H}`} className="fill-none stroke-(--fd-warn)" strokeWidth="1" strokeDasharray="2 3" />
-        <path d={`M304 ${FLIGHT_Y + 30} L 304 ${H}`} className="fill-none stroke-(--fd-warn)" strokeWidth="1" strokeDasharray="2 3" />
+        <path
+          d={`M232 ${FLIGHT_Y + 30} L 232 ${H}`}
+          className="fill-none stroke-(--fd-warn)"
+          strokeWidth="1"
+          strokeDasharray="2 3"
+        />
+        <path
+          d={`M304 ${FLIGHT_Y + 30} L 304 ${H}`}
+          className="fill-none stroke-(--fd-warn)"
+          strokeWidth="1"
+          strokeDasharray="2 3"
+        />
         <path d={smoothOpen(TERRAIN.slice(4, 7))} className="fill-none stroke-(--fd-warn)" strokeWidth="2.5" />
         {TICKS.map((x, i) => (
           <g key={x}>
             <path d={`M${x} ${FLIGHT_Y - 6} V${FLIGHT_Y + 6}`} className="stroke-(--fd-ink)" strokeWidth="1.5" />
-            <text x={Math.min(Math.max(x, 8), W - 8)} y={H + 18} textAnchor="middle" className="fill-(--fd-ink-3) font-mono" fontSize="11">
+            <text
+              x={Math.min(Math.max(x, 8), W - 8)}
+              y={H + 18}
+              textAnchor="middle"
+              className="fill-(--fd-ink-3) font-mono"
+              fontSize="11"
+            >
               {i + 2}
             </text>
           </g>
@@ -260,7 +317,10 @@ export function ChecksFragment() {
       {CHECKS.map((c) => {
         const t = TONE[c.tone];
         return (
-          <li key={c.text} className="flex items-center gap-2.5 border-b border-(--fd-line) px-3 py-2 text-[14px]/[20px] last:border-b-0">
+          <li
+            key={c.text}
+            className="flex items-center gap-2.5 border-b border-(--fd-line) px-3 py-2 text-[14px]/[20px] last:border-b-0"
+          >
             <t.icon className={cx('size-4 shrink-0', t.cls)} aria-hidden />
             <span className="sr-only">{t.label}: </span>
             <span className="min-w-0 flex-1 text-text-primary">{c.text}</span>

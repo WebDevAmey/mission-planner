@@ -7,17 +7,17 @@ import { button, grid, type, wrap } from './styles';
 export function Hero() {
   return (
     <section aria-labelledby="hero-title" className="relative overflow-hidden">
-      {/* The chart sheet sits behind the copy; the route is shown where it does not sit under text. */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[640px] sm:h-[720px] lg:h-[760px]">
-        <ContourMap preserveAspectRatio="xMaxYMin slice" routeClassName="max-lg:hidden" />
+      {/* chart sheet behind the whole hero, terrain only */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[720px] lg:h-[900px]">
+        <ContourMap route={false} preserveAspectRatio="xMaxYMin slice" />
       </div>
 
-      <div className={cx(wrap, 'relative pt-16 pb-16 sm:pt-24 lg:pt-28 lg:pb-24')}>
-        <div className={grid}>
+      <div className={cx(wrap, 'relative pt-14 pb-16 sm:pt-20 lg:pt-24 lg:pb-24')}>
+        <div className={cx(grid, 'items-start')}>
           <h1 id="hero-title" className={cx(type.display, 'col-span-4 max-w-[18ch] text-text-primary sm:col-span-12 lg:max-w-[20ch]')}>
             From an area on the map to a mission file you can&nbsp;fly.
           </h1>
-          <div className="col-span-4 mt-6 flex flex-col gap-8 sm:col-span-8 lg:col-span-5 lg:mt-8">
+          <div className="col-span-4 mt-6 flex flex-col gap-8 sm:col-span-8 lg:col-span-5 lg:mt-10">
             <p className={cx(type.lead, 'max-w-[44ch] text-text-secondary')}>
               Plan survey and waypoint missions, check every leg against zones and terrain, and export files Mission Planner
               and QGroundControl open as they are.
@@ -30,13 +30,15 @@ export function Hero() {
                 See how it works
               </a>
             </div>
-            <p className={cx(type.small, 'text-text-tertiary')}>
-              Free during beta. Runs in the browser. Built for ArduPilot vehicles.
-            </p>
+            <p className={cx(type.small, 'text-text-tertiary')}>Free during beta. Runs in the browser. Built for ArduPilot vehicles.</p>
+          </div>
+          {/* signature: the route draws once through numbered waypoints */}
+          <div aria-hidden className="hidden lg:col-span-6 lg:col-start-7 lg:-mt-6 lg:block">
+            <ContourMap terrain={false} viewBox="540 200 600 420" preserveAspectRatio="xMidYMid meet" className="h-auto" />
           </div>
         </div>
 
-        <div className="fd-ticks relative mt-14 p-2 sm:mt-20 sm:p-3 lg:mt-24">
+        <div className="fd-ticks relative mt-14 p-2 sm:mt-20 sm:p-3 lg:mt-16">
           <ProductMock />
         </div>
       </div>

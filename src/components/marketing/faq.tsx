@@ -31,14 +31,17 @@ export const FAQS = [
   },
 ];
 
-/** ARC accordion, re-skinned through its custom properties: hairlines, square, Geist. */
+/**
+ * ARC accordion, re-skinned through its custom properties: hairlines, square, Geist.
+ * Important because arc-tokens.css is unlayered and would beat utilities otherwise.
+ */
 const accordionSkin = [
-  '[--border-subtle:var(--fd-line)] [--radius-lg:2px]',
-  '[--surface-raised:var(--fd-surface)] [--surface-overlay:var(--fd-surface-2)] [--divider-glow:var(--fd-ink-3)]',
-  '[--text-primary:var(--fd-ink)] [--text-secondary:var(--fd-ink-2)] [--text-muted:var(--fd-ink-3)]',
-  '[--font-body:var(--font-sans)] [--font-label-weight:500] [--text-md:17px] [--text-sm:16px] [--body-lh:1.5]',
-  '[--space-lg:20px] [--space-md:20px] [--interactive-hover:none]',
-  '[--interactive-focus-inset:inset_0_0_0_2px_var(--fd-accent)]',
+  '[--border-subtle:var(--fd-line)]! [--radius-lg:2px]!',
+  '[--surface-raised:var(--fd-surface)]! [--surface-overlay:var(--fd-surface-2)]! [--divider-glow:var(--fd-ink-3)]!',
+  '[--text-primary:var(--fd-ink)]! [--text-secondary:var(--fd-ink-2)]! [--text-muted:var(--fd-ink-3)]!',
+  '[--font-body:var(--font-sans)]! [--font-label-weight:500]! [--text-md:17px]! [--text-sm:16px]! [--body-lh:1.5]!',
+  '[--space-lg:20px]! [--space-md:20px]! [--interactive-hover:none]!',
+  '[--interactive-focus-inset:inset_0_0_0_2px_var(--fd-accent)]!',
 ].join(' ');
 
 export function Faq() {

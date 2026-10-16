@@ -23,6 +23,14 @@ const ICON = {
   error: { icon: RiCloseCircleLine, cls: 'text-(--fd-danger)', label: 'Error' },
 } as const;
 
+function rowSummary(cells: (typeof ROWS)[number]['cells']): { tone: Cell; text: string } {
+  if (!Array.isArray(cells)) return { tone: cells.tone, text: cells.summary };
+  const bad = cells.map((c, i) => ({ c, leg: LEGS[i] })).filter((x) => x.c !== 'ok');
+  if (bad.length === 0) return { tone: 'ok', text: `All ${cells.length} legs pass` };
+  const worst: Cell = bad.some((x) => x.c === 'error') ? 'error' : 'warn';
+  return { tone: worst, text: bad.map((x) => `Leg ${x.leg}: ${ICON[x.c].label.toLowerCase()}`).join(', ') };
+}
+
 function Mark({ tone }: { tone: Cell }) {
   const { icon: Icon, cls, label } = ICON[tone];
   return (
@@ -42,7 +50,7 @@ export function Preflight() {
         </SectionHeading>
 
         <figure className="mt-12 lg:mt-16">
-          <div className="overflow-x-auto rounded-[2px] border border-(--fd-line) bg-(--fd-surface)" tabIndex={0} aria-label="Checks by leg, example mission">
+          <div className="relative hidden overflow-x-auto rounded-[2px] border border-(--fd-line) bg-(--fd-surface) md:block">
             <table className="w-full min-w-[720px] border-collapse text-left">
               <thead>
                 <tr className={cx(type.label, 'border-b border-(--fd-line) bg-(--fd-surface-2) text-text-tertiary')}>
@@ -83,6 +91,23 @@ export function Preflight() {
               </tbody>
             </table>
           </div>
+          <ul className="divide-y divide-(--fd-line) rounded-[2px] border border-(--fd-line) bg-(--fd-surface) md:hidden">
+            {ROWS.map((row) => {
+              const summary = rowSummary(row.cells);
+              return (
+                <li key={row.check} className="flex items-start gap-3 px-4 py-3.5">
+                  <span className="mt-0.5 inline-flex">
+                    <Mark tone={summary.tone} />
+                  </span>
+                  <span className="flex min-w-0 flex-col">
+                    <span className={cx(type.body, 'text-text-primary')}>{row.check}</span>
+                    <span className={cx(type.small, 'text-text-secondary')}>{row.detail}</span>
+                    <span className="mt-1 text-[14px]/[20px] text-text-primary tabular-nums">{summary.text}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
           <figcaption className={cx(type.small, 'mt-4 flex flex-wrap gap-x-6 gap-y-2 text-text-secondary')}>
             <span>Example mission, eight waypoints.</span>
             <span className="inline-flex items-center gap-1.5">
