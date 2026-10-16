@@ -19,6 +19,7 @@ import {
   routeLengthM,
   surveyToItems,
   type CameraSpec,
+  type OptimiseResult,
 } from '@/lib/domain/plan';
 import type { MissionItem } from '@/types/mission';
 import { formatDistance } from '@/components/map/map-geo';
@@ -239,6 +240,9 @@ function SurveyPanel({ mission }: { mission: EditorMission }) {
 
 /* ------------------------------------------------------------------ optimise */
 
+/** Above this many items the optimiser runs after a paint, behind a "Computing…" line. */
+const LARGE_ROUTE_ITEMS = 500;
+
 function OptimisePanel({ mission }: { mission: EditorMission }) {
   const replaceItems = useMissionStore((s) => s.replaceItems);
   const selectedId = useUIStore((s) => s.selectedMissionItemId);
@@ -249,15 +253,28 @@ function OptimisePanel({ mission }: { mission: EditorMission }) {
     }))
   );
   const [lockSelected, setLockSelected] = useState(false);
+  const lockedIds = useMemo(() => (lockSelected && selectedId ? [selectedId] : []), [lockSelected, selectedId]);
 
-  const result = useMemo(
-    () => optimiseRoute(mission, { lockedIds: lockSelected && selectedId ? [selectedId] : [] }),
-    [mission, lockSelected, selectedId]
+  // Small routes optimise inline. Large ones (up to ~0.5 s at 2,000 points) run after a
+  // paint, so the panel can say "Computing…" instead of freezing on open.
+  const large = mission.items.length > LARGE_ROUTE_ITEMS;
+  const inline = useMemo(() => (large ? null : optimiseRoute(mission, { lockedIds })), [large, mission, lockedIds]);
+  const [deferred, setDeferred] = useState<{ mission: EditorMission; lockedIds: string[]; result: OptimiseResult } | null>(null);
+  useEffect(() => {
+    if (!large) return;
+    const timer = setTimeout(() => setDeferred({ mission, lockedIds, result: optimiseRoute(mission, { lockedIds }) }), 30);
+    return () => clearTimeout(timer);
+  }, [large, mission, lockedIds]);
+  const result = large ? (deferred && deferred.mission === mission && deferred.lockedIds === lockedIds ? deferred.result : null) : inline;
+
+  const path = useMemo(
+    () => (result ? routePath({ homePosition: mission.homePosition, items: result.items }) : null),
+    [mission.homePosition, result]
   );
-  const path = useMemo(() => routePath({ homePosition: mission.homePosition, items: result.items }), [mission.homePosition, result.items]);
-  usePreview(result.changed ? path : null);
+  usePreview(result?.changed ? path : null);
 
   const apply = () => {
+    if (!result) return;
     replaceItems(result.items, 'Optimise order');
     addToast(`Route shortened by ${formatDistance(result.savedM)}`, 'success', { label: 'Undo', onClick: () => useMissionStore.getState().undo() });
     openPlanPanel(null);
@@ -268,14 +285,20 @@ function OptimisePanel({ mission }: { mission: EditorMission }) {
       title="Optimise order"
       description="Reorders waypoints between takeoff and the final return or landing for the shortest route. Commands stay with the waypoint they precede."
       applyLabel="Apply new order"
-      canApply={result.changed && result.savedM > 0.5}
+      canApply={!!result && result.changed && result.savedM > 0.5}
       onApply={apply}
     >
-      <Stats>
-        <Stat label="Current" value={formatDistance(result.originalM)} />
-        <Stat label="Optimised" value={formatDistance(result.optimisedM)} tone={result.savedM > 0.5 ? 'good' : undefined} />
-        <Stat label="Saved" value={result.savedM > 0.5 ? `${formatDistance(result.savedM)} (${Math.round(result.savedFraction * 100)}%)` : 'Already optimal'} />
-      </Stats>
+      {result ? (
+        <Stats>
+          <Stat label="Current" value={formatDistance(result.originalM)} />
+          <Stat label="Optimised" value={formatDistance(result.optimisedM)} tone={result.savedM > 0.5 ? 'good' : undefined} />
+          <Stat label="Saved" value={result.savedM > 0.5 ? `${formatDistance(result.savedM)} (${Math.round(result.savedFraction * 100)}%)` : 'Already optimal'} />
+        </Stats>
+      ) : (
+        <p role="status" className="text-[13px] text-text-secondary">
+          Computing the shortest order for {mission.items.length.toLocaleString()} items…
+        </p>
+      )}
       {selectedId && (
         <div className="flex items-center justify-between gap-2">
           <span className="text-[13px] font-medium text-text-primary">Keep the selected item in place</span>
