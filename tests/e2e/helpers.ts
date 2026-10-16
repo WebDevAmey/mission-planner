@@ -15,7 +15,14 @@ export function originHeaders(baseURL: string): Record<string, string> {
 
 /** Signs in through the API and returns a request context holding the session cookie. */
 export async function apiLogin(baseURL: string, creds: { email: string; password: string } = DEMO): Promise<APIRequestContext> {
-  const ctx = await request.newContext({ baseURL, extraHTTPHeaders: originHeaders(baseURL) });
+  // A fresh device: inside a test, request.newContext() inherits the test's `use` options,
+  // including storageState. Sending that cookie would make the login revoke the page's
+  // own session (sign-in replaces the browser's previous session).
+  const ctx = await request.newContext({
+    baseURL,
+    extraHTTPHeaders: originHeaders(baseURL),
+    storageState: { cookies: [], origins: [] },
+  });
   const res = await ctx.post('/api/auth/login', { data: creds });
   expect(res.status(), `login ${creds.email}: ${await res.text()}`).toBe(200);
   return ctx;
