@@ -13,17 +13,16 @@ const MAP_HOSTS = [
   "https://server.arcgisonline.com",
   "https://*.arcgisonline.com",
 ];
-const FONT_CSS = "https://fonts.googleapis.com";
-const FONT_FILES = "https://fonts.gstatic.com";
 
 const csp = [
   "default-src 'self'",
   // Next.js injects inline bootstrap scripts; without nonces 'unsafe-inline' is required.
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
-  `style-src 'self' 'unsafe-inline' ${FONT_CSS}`,
+  // Fonts are self-hosted (geist, next/font), so no third-party font hosts.
+  "style-src 'self' 'unsafe-inline'",
   // MapLibre decodes raster tiles and sprites into blob:/data: images.
   `img-src 'self' data: blob: ${MAP_HOSTS.join(" ")}`,
-  `font-src 'self' data: ${FONT_FILES}`,
+  "font-src 'self' data:",
   // MapLibre fetches styles, vector tiles, glyphs and sprites with fetch().
   `connect-src 'self' ${MAP_HOSTS.join(" ")}${isDev ? " ws: wss:" : ""}`,
   // MapLibre spins up its tile workers from a blob: URL.
@@ -42,6 +41,7 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
   {
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), payment=(), usb=(), geolocation=(self)",
@@ -55,7 +55,12 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   poweredByHeader: false,
   async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
+    return [
+      { source: "/(.*)", headers: securityHeaders },
+      // Authenticated JSON must never be stored by a browser or shared cache;
+      // no-transform keeps proxies from buffering the assistant's event stream.
+      { source: "/api/:path*", headers: [{ key: "Cache-Control", value: "no-store, no-transform" }] },
+    ];
   },
 };
 
