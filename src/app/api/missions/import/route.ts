@@ -1,6 +1,13 @@
 import { MissionImportError, parseMissionFile } from '@/lib/domain/export';
 import { toWaypointInput } from '@/lib/missions/payload';
-import { MAX_MISSION_ITEMS, MAX_MISSION_ZONES, waypointInputSchema, zoneInputSchema } from '@/lib/validation/mission';
+import {
+  MAX_MISSION_ITEMS,
+  MAX_MISSION_ZONES,
+  homeSchema,
+  missionSettingsInputSchema,
+  waypointInputSchema,
+  zoneInputSchema,
+} from '@/lib/validation/mission';
 import { apiError, authorize, readBodyBytes, readJsonBody, validationError } from '@/lib/http/api';
 import { toMissionPlan, DEFAULT_SETTINGS } from '@/lib/missions/map';
 import { asDbMission, createMissionDocument, loadFullMission, type SettingsInput } from '@/lib/missions/repo';
@@ -95,22 +102,35 @@ export async function POST(request: Request) {
   }
   if (imported.zones.length > MAX_MISSION_ZONES) warnings.push(`Only the first ${MAX_MISSION_ZONES} zones were imported`);
 
+  // Home and settings come straight from the file: validate them like any other input.
+  let home = null;
+  if (imported.homePosition) {
+    const parsedHome = homeSchema.safeParse(imported.homePosition);
+    if (parsedHome.success) home = parsedHome.data;
+    else warnings.push('The home position in the file is invalid and was ignored');
+  }
+
   const s = imported.settings;
-  const settings: SettingsInput | undefined = s
-    ? {
-        defaultAltitude: s.defaultAltitude && s.defaultAltitude > 0 ? s.defaultAltitude : DEFAULT_SETTINGS.defaultAltitude,
-        defaultSpeed: s.defaultSpeed && s.defaultSpeed > 0 ? s.defaultSpeed : DEFAULT_SETTINGS.defaultSpeed,
-        defaultLoiterTime: s.defaultLoiterTime ?? DEFAULT_SETTINGS.defaultLoiterTime,
-        defaultWaitTime: s.defaultWaitTime ?? DEFAULT_SETTINGS.defaultWaitTime,
-        altitudeReference: 'relative',
-      }
-    : undefined;
+  let settings: SettingsInput | undefined;
+  if (s) {
+    const pick = (key: keyof typeof DEFAULT_SETTINGS & keyof SettingsInput) => {
+      const field = missionSettingsInputSchema.shape[key].safeParse(s[key as keyof typeof s]);
+      return field.success ? field.data : DEFAULT_SETTINGS[key];
+    };
+    settings = missionSettingsInputSchema.parse({
+      defaultAltitude: pick('defaultAltitude'),
+      defaultSpeed: pick('defaultSpeed'),
+      defaultLoiterTime: pick('defaultLoiterTime'),
+      defaultWaitTime: pick('defaultWaitTime'),
+      altitudeReference: 'relative',
+    });
+  }
 
   const fallbackName = upload.filename.replace(/\.[^.]+$/, '').trim() || 'Imported mission';
   const id = await createMissionDocument(user.id, {
-    name: (upload.name ?? imported.name ?? fallbackName).slice(0, 200),
+    name: (upload.name ?? imported.name?.trim() ?? fallbackName).slice(0, 200) || fallbackName,
     description: imported.description?.slice(0, 2000) ?? null,
-    home: imported.homePosition,
+    home,
     settings,
     items,
     zones,

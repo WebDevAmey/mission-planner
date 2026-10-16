@@ -6,8 +6,11 @@ import { POST as loginPOST } from '@/app/api/auth/login/route';
 import { POST as signupPOST } from '@/app/api/auth/signup/route';
 import { POST as resetPOST } from '@/app/api/auth/reset-password/route';
 import { POST as importPOST } from '@/app/api/missions/import/route';
+import { PATCH as missionPATCH } from '@/app/api/missions/[id]/route';
+import { POST as createPOST } from '@/app/api/missions/route';
 import { readJsonBody } from '@/lib/http/api';
-import { deleteUser, hasDb, makeUser, ORIGIN, req, signInAs, type TestUser } from './helpers';
+import { DEFAULT_SETTINGS } from '@/lib/missions/map';
+import { ctx, deleteUser, hasDb, makeUser, ORIGIN, req, signInAs, waypoint, type TestUser } from './helpers';
 
 /** A request whose body is streamed in chunks with no Content-Length (chunked transfer). */
 function chunkedReq(path: string, totalBytes: number, contentType = 'application/json'): Request {
@@ -70,5 +73,34 @@ describe.skipIf(!hasDb)('route body limits', () => {
     signInAs(user);
     const res = await importPOST(chunkedReq('/api/missions/import', 3 * 1024 * 1024, 'multipart/form-data; boundary=x'));
     expect(res.status).toBe(413);
+  });
+
+  it('out-of-range MAVLink command/frame is a 400, not a database error', async () => {
+    signInAs(user);
+    const created = await (await createPOST(req('POST', '/api/missions', { name: 'Ranges' }))).json();
+    const id = created.mission.id as string;
+    const bad = { ...waypoint(0, 47.1, 8.1), command: 1e12 };
+    expect((await missionPATCH(req('PATCH', `/api/missions/${id}`, { items: [bad] }), ctx(id))).status).toBe(400);
+    const badFrame = { ...waypoint(0, 47.1, 8.1), frame: 70000 };
+    expect((await missionPATCH(req('PATCH', `/api/missions/${id}`, { items: [badFrame] }), ctx(id))).status).toBe(400);
+  });
+
+  it('import validates home and settings from the file instead of storing them raw', async () => {
+    signInAs(user);
+    const content = JSON.stringify({
+      fileType: 'MissionPlannerMission',
+      missionName: 'Bad home',
+      home: { lat: 'north', lng: 8.1, alt: 10 },
+      settings: { defaultAltitude: '50', defaultSpeed: -3, defaultLoiterTime: 'x', defaultWaitTime: 1e9, altitudeReference: 'relative' },
+      items: [],
+    });
+    const res = await importPOST(req('POST', '/api/missions/import', { filename: 'bad.json', content }));
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.mission.homePosition).toBeNull();
+    expect(body.warnings.join(' ')).toMatch(/home/i);
+    expect(body.mission.settings.defaultAltitude).toBe(DEFAULT_SETTINGS.defaultAltitude);
+    expect(body.mission.settings.defaultSpeed).toBe(DEFAULT_SETTINGS.defaultSpeed);
+    expect(typeof body.mission.settings.defaultLoiterTime).toBe('number');
   });
 });
