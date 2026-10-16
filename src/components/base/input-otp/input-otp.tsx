@@ -170,7 +170,7 @@ export function InputOtp({
               className={cx(
                 "size-12 rounded-md text-center font-mono text-title-3-medium tabular-nums",
                 "bg-background-primary-default text-text-primary",
-                "border border-border-button-default",
+                "border border-fd-line-strong",
                 "transition-[background-color,border-color,box-shadow] duration-150 ease outline-none",
                 "hover:border-border-button-hover",
                 "focus-visible:border-border-focus-ring focus-visible:ring-2 focus-visible:ring-border-focus-ring",

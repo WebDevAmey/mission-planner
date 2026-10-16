@@ -11,7 +11,7 @@ export interface ScrollRevealProps {
   children: ReactNode;
   /** Slide distance in px before reveal. */
   y?: number;
-  /** Enter blur in px (kept ≤ 10 per motion conventions). */
+  /** Enter blur in px. Flight Deck default 0 (no blur-in, DESIGN_SPEC §3.4). */
   blur?: number;
   /** Reveal duration in seconds. */
   duration?: number;
@@ -27,9 +27,9 @@ export interface ScrollRevealProps {
 
 export function ScrollReveal({
   children,
-  y = 16,
-  blur = 8,
-  duration = 0.6,
+  y = 8,
+  blur = 0,
+  duration = 0.48,
   delay = 0,
   once = true,
   amount = 0.3,
@@ -42,10 +42,14 @@ export function ScrollReveal({
 
   const hidden = reduce
     ? { opacity: 0 }
-    : { opacity: 0, y, filter: `blur(${blur}px)` };
+    : blur > 0
+      ? { opacity: 0, y, filter: `blur(${blur}px)` }
+      : { opacity: 0, y };
   const shown = reduce
     ? { opacity: 1 }
-    : { opacity: 1, y: 0, filter: "blur(0px)" };
+    : blur > 0
+      ? { opacity: 1, y: 0, filter: "blur(0px)" }
+      : { opacity: 1, y: 0 };
 
   return (
     <motion.div

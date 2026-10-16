@@ -22,7 +22,6 @@ export { Accordion } from '@arclux/arc-ui-react/Accordion';
 export { AnimatedNumber } from '@arclux/arc-ui-react/AnimatedNumber';
 export { CtaBanner } from '@arclux/arc-ui-react/CtaBanner';
 export { FeatureCard } from '@arclux/arc-ui-react/FeatureCard';
-export { GradientText } from '@arclux/arc-ui-react/GradientText';
 export { Marquee } from '@arclux/arc-ui-react/Marquee';
 
 /**

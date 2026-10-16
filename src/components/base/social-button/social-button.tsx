@@ -220,7 +220,8 @@ export function SocialButton({ href, ...props }: SocialButtonProps | SocialButto
   const inlineStyle =
     appearance === "colorful" && !systemFill
       ? {
-          backgroundImage: `linear-gradient(180deg, ${fill} 0%, oklch(from ${fill} calc(l - 0.04) calc(c + 0.01) h) 100%)`,
+          // Flat brand fill (no gradients, DESIGN_SPEC §3.1).
+          backgroundColor: fill,
         }
       : undefined;
 

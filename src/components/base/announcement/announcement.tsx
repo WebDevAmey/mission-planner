@@ -33,8 +33,8 @@ import { cx, sortCx } from "@/utils/cx";
  * Dismissal is self-managed: clicking the close button plays a soft blur +
  * scale-down (0.85) exit via `motion/react`, then unmounts and fires the
  * optional `onClose` callback. The leading `icon` defaults to the shield used
- * in the frame; pass any Remix Icon component reference (`RiSparklingFill`,
- * not `<RiSparklingFill />`).
+ * in the frame; pass any Remix Icon component reference (`RiMegaphoneLine`,
+ * not `<RiMegaphoneLine />`).
  *
  * `introDelay` opts into a matching entrance: blur + fade + scale up from
  * 0.85, rising 15px up from below into place, after the given delay (seconds).

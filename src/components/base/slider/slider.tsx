@@ -91,7 +91,7 @@ function SliderBase<T extends SliderValue>({
                     aria-hidden
                     className={cx(
                       "absolute top-1/2 end-0 start-0 h-1.5 -translate-y-1/2 rounded-full",
-                      "bg-background-tertiary-default shadow-[inset_0_1px_1px_rgb(0_0_0/0.06)]",
+                      "bg-background-tertiary-default",
                       "transition-colors duration-150 ease",
                       isHovered && "bg-background-tertiary-hover",
                     )}
@@ -100,8 +100,7 @@ function SliderBase<T extends SliderValue>({
                     aria-hidden
                     className={cx(
                       "absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full",
-                      "bg-linear-to-r from-accent-500 to-accent-600",
-                      "shadow-[inset_0_1px_0_rgb(255_255_255/0.24),0_1px_2px_rgb(4_80_226/0.16)]",
+                      "bg-fd-accent",
                     )}
                     style={{
                       insetInlineStart: `${startPercent * 100}%`,
@@ -129,12 +128,12 @@ function SliderBase<T extends SliderValue>({
                           isDisabled,
                         }) =>
                           cx(
-                            "top-1/2 size-5 rounded-full border border-border-button-default outline-none",
+                            "top-1/2 size-5 rounded-full outline-none",
                             "flex items-center justify-center bg-control-indicator-background",
-                            "shadow-[0_2px_4px_rgb(0_0_0/0.10),inset_0_1px_0_rgb(255_255_255/0.8)]",
+                            "border border-fd-line-strong",
                             "transition-[scale,box-shadow,border-color] duration-150 ease",
                             isThumbHovered && !isDragging && "scale-105 border-border-button-hover",
-                            isDragging && "z-20 scale-110 border-accent-500 shadow-[0_3px_8px_color-mix(in_srgb,var(--color-accent-600)_22%,transparent)]",
+                            isDragging && "z-20 border-fd-accent",
                             isFocusVisible && "ring-2 ring-border-focus-ring ring-offset-2",
                             isDisabled ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing",
                           )
@@ -163,8 +162,7 @@ function SliderBase<T extends SliderValue>({
                             <span
                               aria-hidden
                               className={cx(
-                                "size-2 rounded-full bg-linear-to-b from-accent-500 to-accent-600",
-                                "shadow-[inset_0_1px_0_rgb(255_255_255/0.24)] transition-[filter] duration-150 ease",
+                                "size-2 rounded-full bg-fd-accent transition-[filter] duration-150 ease",
                                 (isDragging || isFocused) && "brightness-110",
                               )}
                             />

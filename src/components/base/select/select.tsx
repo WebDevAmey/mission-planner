@@ -104,15 +104,15 @@ export function Select<T extends object>({
             ref={triggerRef}
             className={cx(
               "flex w-full cursor-pointer items-center justify-between rounded-md",
-              "border border-border-button-default bg-background-primary-default",
+              "border border-fd-line-strong bg-background-primary-default",
               "text-text-primary",
               "transition-[background-color,border-color,box-shadow,padding,font-size] duration-200 ease",
-              "hover:bg-background-primary-hover hover:border-border-button-hover",
+              "hover:border-fd-ink-3",
               "outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-border-focus-ring",
               "disabled:cursor-not-allowed disabled:bg-background-primary-disabled disabled:text-text-tertiary disabled:shadow-none",
               size === "sm"
-                ? "gap-1 px-[7px] py-1 text-body-2-medium"
-                : "gap-1.5 px-2.5 py-2 text-body-medium",
+                ? "h-8 gap-1 px-2 text-body-2-regular"
+                : "h-10 gap-1.5 px-2.5 text-body-regular",
               triggerClassName,
             )}
           >
