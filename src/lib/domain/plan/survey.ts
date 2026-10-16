@@ -112,7 +112,7 @@ export function generateSurvey(params: SurveyParams): SurveyResult {
   const n = Math.max(1, Math.ceil(height / spacingM - 1e-9));
   if (n > MAX_SURVEY_LINES) {
     throw new Error(
-      `This area needs ${n.toLocaleString('en-US')} passes at ${Math.round(spacingM * 10) / 10} m spacing; a mission holds at most ${MAX_SURVEY_LINES * 2} waypoints. Increase the spacing or split the area.`
+      `This area needs ${n.toLocaleString('en-US')} passes at ${Math.round(spacingM * 10) / 10} m spacing; a mission holds at most ${(MAX_SURVEY_LINES * 2).toLocaleString('en-US')} waypoints. Increase the spacing or split the area.`
     );
   }
   const y0 = ymin + (height - (n - 1) * spacingM) / 2;
