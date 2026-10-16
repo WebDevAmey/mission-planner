@@ -86,13 +86,14 @@ function installThemeTransitionStyle(
   return style;
 }
 
-// Vendored change: Flight Deck is dark-first, so an unset preference means dark.
+// Vendored change: Flight Deck is light-first (DESIGN_SPEC D-12), so an unset
+// preference means light.
 function storedTheme(): ThemeMode {
-  if (typeof window === "undefined") return "dark";
+  if (typeof window === "undefined") return "light";
   try {
-    return window.localStorage.getItem(THEME_STORAGE_KEY) === "light" ? "light" : "dark";
+    return window.localStorage.getItem(THEME_STORAGE_KEY) === "dark" ? "dark" : "light";
   } catch {
-    return "dark";
+    return "light";
   }
 }
 
@@ -184,7 +185,7 @@ export async function applyThemeWithTransition(
 }
 
 function currentTheme(): ThemeMode {
-  if (typeof document === "undefined") return "dark";
+  if (typeof document === "undefined") return "light";
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
@@ -203,7 +204,7 @@ function subscribe(onStoreChange: () => void) {
 }
 
 export function useThemeMode(): ThemeMode {
-  return useSyncExternalStore(subscribe, currentTheme, () => "dark");
+  return useSyncExternalStore(subscribe, currentTheme, () => "light");
 }
 
 export interface ThemeToggleProps {
