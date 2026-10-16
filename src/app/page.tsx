@@ -1,26 +1,27 @@
 import type { Metadata } from 'next';
+import { Capabilities } from '@/components/marketing/capabilities';
 import { FinalCta } from '@/components/marketing/cta';
 import { Faq } from '@/components/marketing/faq';
-import { Features } from '@/components/marketing/features';
 import { FormatsStrip } from '@/components/marketing/formats-strip';
 import { Hero } from '@/components/marketing/hero';
 import { HowItWorks } from '@/components/marketing/how-it-works';
-import { Safety } from '@/components/marketing/safety';
+import { Preflight } from '@/components/marketing/preflight';
 import { SiteFooter } from '@/components/marketing/site-footer';
 import { SiteNav } from '@/components/marketing/site-nav';
+import { Specs } from '@/components/marketing/specs';
 
 export const metadata: Metadata = {
-  title: { absolute: 'Flight Deck — from an area on the map to a flight-ready mission file' },
+  title: { absolute: 'Flight Deck: from an area on the map to a mission file you can fly' },
   description:
-    'Survey grids, route optimisation, no-fly zones, terrain clearance and exports for Mission Planner and QGroundControl. Free during beta.',
+    'Plan survey and waypoint missions, check every leg against zones and terrain, and export files Mission Planner and QGroundControl open. Free during beta.',
 };
 
 export default function LandingPage() {
   return (
-    <div className="min-h-dvh overflow-x-clip bg-background-full text-text-primary">
+    <div className="min-h-dvh overflow-x-clip bg-(--fd-bg) text-text-primary">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-background-primary-default focus:px-3 focus:py-2 focus:text-body-medium"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-[2px] focus:bg-(--fd-surface) focus:px-3 focus:py-2 focus:text-[14px] focus:outline-2 focus:outline-(--fd-accent)"
       >
         Skip to content
       </a>
@@ -29,8 +30,9 @@ export default function LandingPage() {
         <Hero />
         <FormatsStrip />
         <HowItWorks />
-        <Features />
-        <Safety />
+        <Capabilities />
+        <Specs />
+        <Preflight />
         <Faq />
         <FinalCta />
       </main>

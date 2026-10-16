@@ -107,8 +107,8 @@ export default function SignupPage() {
         </SubmitButton>
 
         <p className="text-caption-1-regular text-text-tertiary">
-          By signing up you agree this is a planning tool for ArduPilot-compatible missions — always verify a
-          mission before flight.
+          By signing up you agree this is a planning tool for ArduPilot-compatible missions. Always verify a mission
+          before flight.
         </p>
       </form>
     </AuthShell>

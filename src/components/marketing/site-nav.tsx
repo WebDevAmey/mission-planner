@@ -1,104 +1,122 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { RiArrowRightLine, RiCloseLine, RiMenuLine } from '@remixicon/react';
-import { IconButton } from '@/components/base/buttons/icon-button';
+import { useEffect, useRef, useState } from 'react';
+import { RiCloseLine } from '@remixicon/react';
 import { cx } from '@/utils/cx';
-import { CtaLink } from './cta-link';
 import { FlightDeckLogo } from './logo';
+import { button, focusRing, wrap } from './styles';
 
-const NAV_LINKS = [
+export const NAV_LINKS = [
+  { label: 'Product', href: '#capabilities' },
   { label: 'How it works', href: '#how-it-works' },
-  { label: 'Features', href: '#features' },
-  { label: 'Safety', href: '#safety' },
+  { label: 'Formats', href: '#formats' },
   { label: 'FAQ', href: '#faq' },
 ];
 
+const navLink = `rounded-[2px] px-2 py-1 text-[15px]/[20px] text-(--fd-ink-2) transition-colors duration-[120ms] hover:text-(--fd-ink) ${focusRing}`;
+
 export function SiteNav() {
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Keep the page behind the sheet from scrolling while it is open.
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    document.documentElement.classList.toggle('overflow-hidden', open);
+    return () => document.documentElement.classList.remove('overflow-hidden');
   }, [open]);
 
+  const openMenu = () => {
+    dialogRef.current?.showModal(); // native modal: focus is trapped, Escape closes
+    setOpen(true);
+  };
+  const closeMenu = () => dialogRef.current?.close();
+
   return (
-    <header
-      className={cx(
-        'sticky top-0 z-40 border-b transition-[background-color,border-color] duration-200',
-        scrolled || open
-          ? 'border-separator-border bg-background-full/85 backdrop-blur-md'
-          : 'border-transparent bg-transparent',
-      )}
-    >
-      <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <Link href="/" aria-label="Flight Deck home" className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring">
+    <header className="sticky top-0 z-40 border-b border-(--fd-line) bg-(--fd-bg)">
+      <div className={cx(wrap, 'flex h-16 items-center gap-6')}>
+        <Link href="/" aria-label="Flight Deck home" className={cx('rounded-[2px]', focusRing)}>
           <FlightDeckLogo />
         </Link>
 
-        <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
+        <nav aria-label="Primary" className="ml-4 hidden items-center gap-4 md:flex">
           {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="rounded-lg px-3 py-2 text-body-medium text-text-secondary transition-colors hover:bg-background-primary-hover hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus-ring focus-visible:outline-none"
-            >
+            <a key={link.href} href={link.href} className={navLink}>
               {link.label}
             </a>
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
-          <CtaLink href="/login" variant="ghost" size="small" className="hidden sm:inline-flex">
+        <div className="ml-auto flex items-center gap-2 sm:gap-4">
+          <Link href="/login" className={cx(navLink, 'hidden sm:inline-flex')}>
             Sign in
-          </CtaLink>
-          <CtaLink href="/signup" size="small" trailingIcon={RiArrowRightLine}>
-            Get started
-          </CtaLink>
-          <IconButton
-            icon={open ? RiCloseLine : RiMenuLine}
-            size="small"
-            aria-label={open ? 'Close menu' : 'Open menu'}
+          </Link>
+          <Link href="/signup" className={cx(button.primary, button.small)}>
+            Start planning
+          </Link>
+          <button
+            ref={menuButtonRef}
+            type="button"
+            aria-haspopup="dialog"
             aria-expanded={open}
-            aria-controls="mobile-nav"
-            onClick={() => setOpen((v) => !v)}
-            className="md:hidden"
-          />
+            aria-controls="site-menu"
+            onClick={openMenu}
+            className={cx(
+              'inline-flex h-9 items-center rounded-[2px] border border-(--fd-line-strong) px-3 text-[14px]/[20px] text-(--fd-ink) md:hidden',
+              focusRing,
+            )}
+          >
+            Menu
+          </button>
         </div>
       </div>
 
-      {open ? (
-        <nav id="mobile-nav" aria-label="Mobile" className="border-t border-separator-border px-4 pb-4 md:hidden">
-          <ul className="flex flex-col py-2">
+      <dialog
+        id="site-menu"
+        ref={dialogRef}
+        aria-label="Menu"
+        onClose={() => {
+          setOpen(false);
+          menuButtonRef.current?.focus();
+        }}
+        className="m-0 h-dvh max-h-none w-full max-w-none bg-(--fd-bg) p-0 text-(--fd-ink) backdrop:bg-transparent md:hidden"
+      >
+        <div className={cx(wrap, 'flex h-16 items-center justify-between border-b border-(--fd-line)')}>
+          <FlightDeckLogo />
+          <button
+            type="button"
+            onClick={closeMenu}
+            className={cx('inline-flex h-9 items-center gap-1 rounded-[2px] border border-(--fd-line-strong) px-3 text-[14px]/[20px]', focusRing)}
+          >
+            <RiCloseLine className="size-4" aria-hidden />
+            Close
+          </button>
+        </div>
+        <nav aria-label="Menu" className={cx(wrap, 'flex flex-col pt-4 pb-8')}>
+          <ul className="flex flex-col">
             {NAV_LINKS.map((link) => (
-              <li key={link.href}>
+              <li key={link.href} className="border-b border-(--fd-line)">
                 <a
                   href={link.href}
-                  onClick={() => setOpen(false)}
-                  className="flex min-h-11 items-center rounded-lg px-2 text-headline-medium text-text-primary hover:bg-background-primary-hover"
+                  onClick={closeMenu}
+                  className={cx('flex min-h-14 items-center text-[24px]/[30px] tracking-[-0.015em]', focusRing)}
                 >
                   {link.label}
                 </a>
               </li>
             ))}
           </ul>
-          <CtaLink href="/login" variant="secondary" className="w-full">
-            Sign in
-          </CtaLink>
+          <div className="mt-8 flex flex-col gap-3">
+            <Link href="/signup" className={cx(button.primary, 'w-full')}>
+              Start planning
+            </Link>
+            <Link href="/login" className={cx(button.secondary, 'w-full')}>
+              Sign in
+            </Link>
+          </div>
         </nav>
-      ) : null}
+      </dialog>
     </header>
   );
 }
