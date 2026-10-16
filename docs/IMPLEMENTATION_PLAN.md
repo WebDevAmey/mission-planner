@@ -21,7 +21,7 @@ The order differs from the brief's suggested sequence because the audit found th
 | 10 | Account settings | 4 | Done |
 | 11 | Landing page revamp | none (parallel) | Done (Lighthouse AC not measured) |
 | 12 | Hardening, staging, rollout | all | Not started |
-| 13 | Design overhaul ([DESIGN_SPEC](DESIGN_SPEC.md)) | 5, 9, 11 | In progress |
+| 13 | Design overhaul ([DESIGN_SPEC](DESIGN_SPEC.md)) | 5, 9, 11 | Done on `feature/design-overhaul` (light accent fill darkened to #C63B15 for AA; basemap tiles and terrain chart not verified, hosts blocked in the test container; screenshots in [screenshots/overhaul](screenshots/overhaul/)) |
 
 Phases 2, 5 and 11 can run in parallel once Phase 0 lands. Phases 7 and 8 can run in parallel.
 
@@ -126,4 +126,4 @@ Phases 2, 5 and 11 can run in parallel once Phase 0 lands. Phases 7 and 8 can ru
 - **Rollback:** revert the merge; purely presentational.
 
 ## Checklist
-- [~] Phase 0 · [x] 1 · [x] 2 · [x] 3 · [x] 4 · [x] 5 · [x] 6 · [x] 7 · [x] 8 · [x] 9 · [x] 10 · [x] 11 · [ ] 12 · [ ] 13
+- [~] Phase 0 · [x] 1 · [x] 2 · [x] 3 · [x] 4 · [x] 5 · [x] 6 · [x] 7 · [x] 8 · [x] 9 · [x] 10 · [x] 11 · [ ] 12 · [x] 13
