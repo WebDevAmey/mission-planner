@@ -123,6 +123,23 @@ Heaviest client chunks after the change:
 | `9733…` | 25 KB | editor | react-aria (editor dialogs) | Lazy-load the dialogs (template picker, shortcuts, param table) (qa) |
 | `app/missions/[id]/page-…` | 53 KB (158 KB raw) | editor | editor UI, including `AgentConsole`, which `editor-shell.tsx` imports statically | Lazy-load the assistant console when it is opened (qa) |
 
+### After the integration on feature/hardening
+
+The follow-ups below were applied on `feature/hardening`: MapLibre loads through `next/dynamic`
+(`ssr: false`) behind a placeholder that matches the skeleton's map area, and the editor page starts
+that chunk while it fetches the mission. The assistant drawer, shortcuts dialog, template picker
+and parameter table load on first open. Same measuring script, same build flags:
+
+| Route | After task/h-perf | After feature/hardening |
+|---|---|---|
+| /missions/[id] (editor) | 600 KB (2,036 KB raw) | **328 KB** (1,026 KB raw) |
+| /dashboard | 377 KB | 381 KB |
+| /settings | 273 KB | 275 KB |
+| /login, /signup, /reset-password | 209 KB | 210 KB |
+
+The map (about 270 KB gzip) is now a separate chunk fetched in parallel with the mission. The
+dashboard and settings moved by a few KB because shared chunks were re-split; nothing new ships there.
+
 ## What changed (commits on task/h-perf)
 
 1. `perf(plan)`: candidate-list 2-opt/Or-opt above 120 points (neighbour lists, flat arrays,
@@ -144,6 +161,11 @@ Heaviest client chunks after the change:
 13. `perf(bundle)`: zod kept out of the client.
 
 ## Follow-ups
+
+The sec and qa items below are done on `feature/hardening` (PATCH reuses the saved row and
+answers `Prefer: return=minimal` with `{ id, version, updatedAt, summary }`; create, import and
+duplicate skip the second read; the session lookup and `cache()` changes; lazy loading; field
+selectors with `useShallow`; a "Computing…" state when optimising more than 500 items).
 
 - **sec** (requested in `signals/h/requests.md`): the PATCH route should use the row returned by
   `saveMissionDocument()` and honour `Prefer: return=minimal`. Create, import and duplicate should
