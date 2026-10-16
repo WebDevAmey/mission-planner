@@ -13,13 +13,16 @@ import { missionLegs, type Leg } from '@/lib/domain/mission';
 import {
   type LocalZone,
   type Zone,
+  type Box,
   altitudeOverlaps,
+  boxOf,
   circleToPolygon,
   hasGeometry,
   isExclusion,
   pointInLocalZone,
   segmentHitsLocalZone,
   segmentLeavesLocalZone,
+  segmentOutsideBox,
   toLocalZone,
   zonePoints,
 } from '@/lib/domain/zones';
@@ -72,6 +75,7 @@ export function offsetPolygon(poly: Vec[], d: number): Vec[] {
 interface Obstacle {
   zone: LocalZone;
   buffered: Vec[];
+  bufferedBox: Box;
 }
 
 /** A* over a lazily evaluated visibility graph. Returns the via-points (excluding a and b). */
@@ -131,16 +135,27 @@ export function avoidZones(mission: MissionPlan, zones: Zone[], opts: AvoidOptio
   let addedM = 0;
   const ids = (leg: Leg) => [leg.from?.item.id, leg.to?.item.id].filter((x): x is string => Boolean(x));
 
+  // Buffered outlines depend only on the zone, so build each once, on first use.
+  const obstacleCache = new Map<LocalZone, Obstacle>();
+  const obstacleFor = (lz: LocalZone): Obstacle => {
+    let o = obstacleCache.get(lz);
+    if (!o) {
+      const buffered = buffer(lz, margin);
+      obstacleCache.set(lz, (o = { zone: lz, buffered, bufferedBox: boxOf(buffered) }));
+    }
+    return o;
+  };
+
   for (const leg of legs) {
     const a = proj.toLocal(leg.a);
     const b = proj.toLocal(leg.b);
-    const obstacles: Obstacle[] = exclusionsAll
-      .filter((lz) => altitudeOverlaps(lz.zone, leg.altA, leg.altB))
-      .map((lz) => ({ zone: lz, buffered: buffer(lz, margin) }));
+    const relevant = exclusionsAll.filter((lz) => altitudeOverlaps(lz.zone, leg.altA, leg.altB));
     const container = keepIns.find((lz) => pointInLocalZone(a, lz) && pointInLocalZone(b, lz));
-    const hits = obstacles.some((o) => segmentHitsLocalZone(a, b, o.zone));
-    const leaves = container ? segmentLeavesLocalZone(a, b, container) : false;
-    if (!hits && !leaves) continue;
+    // Most legs touch nothing: answer that from the zones alone, without building buffers.
+    if (!relevant.some((lz) => segmentHitsLocalZone(a, b, lz)) && !(container && segmentLeavesLocalZone(a, b, container))) {
+      continue;
+    }
+    const obstacles: Obstacle[] = relevant.map(obstacleFor);
     if (obstacles.some((o) => pointInLocalZone(a, o.zone) || pointInLocalZone(b, o.zone))) {
       unresolved.push({ itemIds: ids(leg), reason: 'endpoint_in_zone' });
       continue;
@@ -151,7 +166,11 @@ export function avoidZones(mission: MissionPlan, zones: Zone[], opts: AvoidOptio
       (p) => !obstacles.some((o) => pointInLocalZone(p, o.zone)) && (!container || pointInLocalZone(p, container))
     );
     const visible = (p: Vec, q: Vec) =>
-      !obstacles.some((o) => segmentHitsLocalZone(p, q, o.zone) || segmentEntersPolygonInterior(p, q, o.buffered)) &&
+      !obstacles.some(
+        (o) =>
+          segmentHitsLocalZone(p, q, o.zone) ||
+          (!segmentOutsideBox(p, q, o.bufferedBox) && segmentEntersPolygonInterior(p, q, o.buffered))
+      ) &&
       (!container || !segmentLeavesLocalZone(p, q, container));
     const via = shortestPath(a, b, nodes, visible);
     if (!via) {
