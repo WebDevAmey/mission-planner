@@ -470,6 +470,7 @@ cp .env.local.example .env.local
 | `DATABASE_URL` | Yes | Postgres connection string. Read by both the Next.js app and the Prisma CLI (the CLI loads it via `dotenv/config` from a plain `.env` file — put it there, not only in `.env.local`, or the CLI commands above won't see it). |
 | `ANTHROPIC_API_KEY` | Only for Flight Deck | Unrelated to auth — the ATLAS/SENTINEL agentic planner. |
 | `RESEND_API_KEY` | Recommended for production | Without it, verification/reset emails aren't sent (see above). |
+| `APP_URL` | Recommended for production | Public origin for emailed verification/reset links, e.g. `https://flightdeck.example.com`. When unset it falls back to the Vercel production URL, then the deployment URL; links are never built from request headers. Set it for a custom domain or when self-hosting. |
 | `EMAIL_FROM` | No | Defaults to `Flight Deck <onboarding@resend.dev>` (Resend's own sandbox sender — fine for testing, won't reliably land in Gmail/Outlook inboxes for real users; verify your own domain in Resend for production). |
 
 ### Local development
@@ -527,7 +528,10 @@ emails to go out.
 1. Provision a Postgres database (see above) and copy its connection string.
 2. In Vercel → Project → Settings → Environment Variables, set `DATABASE_URL`
    (and `RESEND_API_KEY` / `EMAIL_FROM` if you want real email) for the
-   Production environment.
+   Production environment. Set `APP_URL` to your public origin (for example
+   `https://flightdeck.example.com`) so emailed links point at it; when unset,
+   links fall back to the Vercel production URL. Self-hosting outside Vercel also
+   needs `APP_URL` and `FORCE_HTTPS=1` (see `docs/SECURITY_AUDIT.md`).
 3. From your own machine, with `DATABASE_URL` pointed at that same production
    database: `pnpm contract:emit && pnpm db:migrate && pnpm db:sign`. Do this
    before traffic hits a deploy that depends on the new schema.

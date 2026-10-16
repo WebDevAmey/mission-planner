@@ -43,9 +43,9 @@ Severity is the impact on this app as deployed (Vercel, Postgres): Critical, Hig
 
 ### Follow-ups for other owners (in signals/h/requests.md)
 
-- perf: `src/lib/services/terrain-service.ts` should use `fetchUpstreamJson` (redirects off, size cap). It calls a fixed host, so the risk is low.
-- qa: use `safeNextPath()` in `src/app/login/page.tsx`. Delete the unused `social-button` component, which holds the only `dangerouslySetInnerHTML` in `src` (static SVG).
-- Docs: add `APP_URL` to `.env.local.example` and the deploy guide.
+- perf: `src/lib/services/terrain-service.ts` should use `fetchUpstreamJson` (redirects off, size cap). It calls a fixed host, so the risk is low. Done.
+- qa: use `safeNextPath()` in `src/app/login/page.tsx`. Delete the unused `social-button` component, which holds the only `dangerouslySetInnerHTML` in `src` (static SVG). Both done; `src` now has no `dangerouslySetInnerHTML`.
+- Docs: add `APP_URL` to `.env.local.example` and the deploy guide. Done.
 
 ## Checklist by category
 
@@ -134,6 +134,6 @@ Session lookup is one indexed query on `tokenHash` with the user joined, plus at
 
 ## Configuration required in production
 
-- `APP_URL`: the public origin used in emailed links. On Vercel it falls back to the production or deployment URL.
+- `APP_URL`: the public origin used in emailed links, e.g. `https://flightdeck.example.com` (documented in `.env.local.example` and the README deploy steps). When unset it falls back to the Vercel production URL (`VERCEL_PROJECT_PRODUCTION_URL`), then the deployment URL (`VERCEL_URL`), and otherwise to the request URL, which is meant for local development only. Set it for a custom domain and always when self-hosting.
 - If self-hosting: run behind a proxy that overwrites `X-Forwarded-For`, so per-IP limits cannot be dodged, and set `FORCE_HTTPS=1` to get HSTS and `upgrade-insecure-requests`.
 - `GEOCODER_URL` and `ELEVATION_URL` are optional and must be https.
