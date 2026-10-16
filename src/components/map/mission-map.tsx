@@ -480,7 +480,9 @@ export function MissionMap() {
         // route, waypoints and zones still render.
         if (!styleLoadedRef.current) {
           styleLoadedRef.current = true;
-          map.setStyle(fallbackStyle());
+          // diff: false — there is no loaded style to diff against, and MapLibre
+          // warns "Unable to perform style diff" before rebuilding anyway.
+          map.setStyle(fallbackStyle(), { diff: false });
         }
       }
     });
