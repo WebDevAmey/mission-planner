@@ -286,7 +286,7 @@ export function ThemeToggle({
             glass && "top-0.5 start-0.5 size-7 sm:top-1 sm:start-1 sm:size-8",
             small && "top-0.5 start-0.5 size-6",
             glass
-              ? "bg-white dark:bg-[#2e2e33]"
+              ? "bg-fd-surface dark:bg-fd-surface-3"
               : sidebarSurface
                 ? "bg-theme-toggle-sidebar-selected-background"
                 : "bg-background-primary-default",
