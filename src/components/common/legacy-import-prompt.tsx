@@ -2,9 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { HardDriveUpload } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { RiHardDrive2Line } from '@remixicon/react';
+import { Button } from '@/components/base/buttons/button';
 import { buildMissionPatch } from '@/hooks/mission-payload';
 import { toEditorMission } from '@/lib/store/editor-types';
 import { discardLegacyLocalData, readLegacyLocalData, type LegacyLocalData } from '@/lib/store/local-data';
@@ -131,25 +130,27 @@ export function LegacyImportPrompt({
     <div
       role="region"
       aria-label="Import local data"
-      className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-blue/40 bg-blue-bg p-4"
+      className="flex flex-col gap-3 rounded-md border border-separator-border bg-background-primary-default p-4 sm:flex-row sm:items-center"
     >
-      <HardDriveUpload size={18} className="shrink-0 text-blue" aria-hidden />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-text">Import {parts.join(' and ')} into your account?</p>
-        <p className="mt-1 text-[13px] text-text-dim">
-          Found on this browser from an earlier version. Importing saves them to your account
-          {plan.zoneCount > 0 && plan.missions.length > 0 ? ' (zones are added to each imported mission)' : ''}; then the local copy is removed.
-        </p>
-        {error && (
-          <p role="alert" className="mt-2 text-[13px] text-red">
-            {error}
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        <RiHardDrive2Line className="mt-0.5 size-[18px] shrink-0 text-foreground-icon-secondary" aria-hidden />
+        <div className="min-w-0 flex-1">
+          <p className="text-body-2-medium text-text-primary">Import {parts.join(' and ')} into your account?</p>
+          <p className="mt-1 max-w-[64ch] text-body-2-regular text-text-secondary text-pretty">
+            Found on this browser from an earlier version. Importing saves them to your account
+            {plan.zoneCount > 0 && plan.missions.length > 0 ? ' (zones are added to each imported mission)' : ''}; then the local copy is removed.
           </p>
-        )}
+          {error && (
+            <p role="alert" className="mt-2 text-body-2-regular text-(color:--fd-danger)">
+              {error}
+            </p>
+          )}
+        </div>
       </div>
-      <div className="flex shrink-0 gap-2">
+      <div className="flex shrink-0 gap-2 ps-[30px] sm:ps-0">
         <Button
           variant="ghost"
-          size="sm"
+          size="small"
           onClick={() => {
             discardLegacyLocalData();
             setHidden(true);
@@ -158,12 +159,11 @@ export function LegacyImportPrompt({
         >
           Discard
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setHidden(true)} disabled={busy}>
+        <Button variant="secondary" size="small" onClick={() => setHidden(true)} disabled={busy}>
           Not now
         </Button>
-        <Button variant="primary" size="sm" onClick={doImport} disabled={busy}>
-          {busy ? <Spinner size={12} /> : null}
-          Import
+        <Button variant="secondary" size="small" onClick={doImport} disabled={busy}>
+          {busy ? 'Importing…' : 'Import'}
         </Button>
       </div>
     </div>

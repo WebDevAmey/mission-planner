@@ -1,22 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import {
-  RiArrowLeftLine,
-  RiComputerLine,
-  RiDeleteBinLine,
-  RiLockPasswordLine,
-  RiLogoutBoxRLine,
-  RiMailCheckLine,
-  RiSmartphoneLine,
-  RiUserLine,
-} from '@remixicon/react';
-import { Button, ButtonLink } from '@/components/base/buttons/button';
+import { RiComputerLine, RiErrorWarningLine, RiLogoutBoxRLine, RiMailCheckLine, RiSmartphoneLine } from '@remixicon/react';
+import { Button } from '@/components/base/buttons/button';
 import { Input } from '@/components/base/input/input';
-import { Chip } from '@/components/base/badges/chip';
-import { Notification, NotificationViewport } from '@/components/base/notification/notification';
-import { Dialog, DialogBody, DialogFooter } from '@/components/ui/dialog';
-import { clearLocalMissionData, signOut } from '@/lib/store/local-data';
+import { AppShell } from '@/components/app-shell/app-shell';
+import { AppDialog } from '@/components/app-shell/app-dialog';
+import { SkeletonBlock } from '@/components/common/skeleton-loader';
+import { ToastItem, ToastStack } from '@/components/common/toast';
+import { clearLocalMissionData } from '@/lib/store/local-data';
+import { cx } from '@/utils/cx';
 
 interface Profile {
   id: string;
@@ -90,48 +83,34 @@ function formatDate(iso: string | null): string {
   return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+/** One settings section: title-3 heading and a one-line description above its content.
+ * Sections are separated by hairlines, not cards. */
 function Section({
-  icon: Icon,
+  id,
   title,
   description,
   children,
-  tone = 'default',
 }: {
-  icon: typeof RiUserLine;
+  id: string;
   title: string;
-  description: string;
+  description: ReactNode;
   children: ReactNode;
-  tone?: 'default' | 'danger';
 }) {
   return (
-    <section
-      aria-labelledby={`section-${title}`}
-      className={
-        tone === 'danger'
-          ? 'rounded-xl border border-border-error-default bg-background-secondary-default p-5 sm:p-6'
-          : 'rounded-xl border border-separator-border bg-background-secondary-default p-5 sm:p-6'
-      }
-    >
-      <header className="mb-5 flex items-start gap-3">
-        <span
-          className={
-            tone === 'danger'
-              ? 'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-background-tertiary-error text-foreground-icon-error'
-              : 'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-background-tertiary-default text-foreground-icon-secondary'
-          }
-        >
-          <Icon className="size-4" aria-hidden />
-        </span>
-        <div className="min-w-0">
-          <h2 id={`section-${title}`} className="text-headline-semibold text-text-primary">
-            {title}
-          </h2>
-          <p className="mt-1 text-body-2-regular text-text-secondary">{description}</p>
-        </div>
+    <section aria-labelledby={`section-${id}`} className="flex flex-col gap-5 border-t border-separator-border py-8 first:border-t-0 first:pt-0">
+      <header className="flex flex-col gap-1">
+        <h2 id={`section-${id}`} className="text-title-3-medium text-text-primary">
+          {title}
+        </h2>
+        <p className="max-w-[64ch] text-body-2-regular text-text-secondary text-pretty">{description}</p>
       </header>
       {children}
     </section>
   );
+}
+
+function Dot({ tone }: { tone: 'ok' | 'warn' }) {
+  return <span aria-hidden className={cx('size-1.5 shrink-0 rounded-full', tone === 'ok' ? 'bg-(color:--fd-ok)' : 'bg-(color:--fd-warn)')} />;
 }
 
 export default function SettingsPage() {
@@ -159,7 +138,9 @@ export default function SettingsPage() {
   const [deleting, setDeleting] = useState(false);
 
   const toast = useCallback((t: Omit<Toast, 'id'>) => {
-    setToasts((list) => [...list, { ...t, id: Date.now() + Math.random() }]);
+    const id = Date.now() + Math.random();
+    setToasts((list) => [...list, { ...t, id }]);
+    window.setTimeout(() => setToasts((list) => list.filter((x) => x.id !== id)), 5000);
   }, []);
 
   const loadSessions = useCallback(async () => {
@@ -264,8 +245,7 @@ export default function SettingsPage() {
     await loadSessions();
   }
 
-  async function deleteAccount(e: FormEvent) {
-    e.preventDefault();
+  async function deleteAccount() {
     setDeleteError(null);
     setDeleting(true);
     const res = await api('/api/account', { method: 'DELETE', body: JSON.stringify({ password: deletePassword }) });
@@ -277,82 +257,85 @@ export default function SettingsPage() {
 
   const otherSessions = sessions?.filter((s) => !s.current).length ?? 0;
 
+  const closeDelete = () => {
+    if (deleting) return;
+    setDeleteOpen(false);
+    setDeletePassword('');
+    setDeleteConfirm('');
+    setDeleteError(null);
+  };
+
   return (
-    <div className="min-h-dvh bg-background-full text-text-primary">
-      <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div className="min-w-0">
-            <ButtonLink href="/dashboard" variant="ghost" size="small" leadingIcon={RiArrowLeftLine} className="-ml-2 mb-3">
-              Missions
-            </ButtonLink>
-            <h1 className="text-title-1-semibold text-text-primary">Settings</h1>
-            <p className="mt-1 text-body-regular text-text-secondary">Your profile, security and account.</p>
-          </div>
-          <Button variant="secondary" size="small" leadingIcon={RiLogoutBoxRLine} onClick={() => signOut('/')}>
-            Sign out
-          </Button>
-        </div>
+    <AppShell user={profile ? { name: profile.name, email: profile.email } : null}>
+      <main id="main" className="mx-auto w-full max-w-[720px] px-4 pt-8 pb-20 sm:px-6 sm:pt-10">
+        <h1 className="mb-8 text-title-1-medium text-text-primary">Settings</h1>
 
         {loadError && (
-          <p role="alert" className="mb-6 rounded-lg bg-background-tertiary-error px-4 py-3 text-body-2-medium text-text-error-primary">
-            {loadError}
-          </p>
+          <div role="alert" className="mb-8 flex items-center gap-3 rounded-md border border-(color:--fd-danger)/40 bg-background-primary-default px-4 py-3">
+            <RiErrorWarningLine className="size-[18px] shrink-0 text-(color:--fd-danger)" aria-hidden />
+            <p className="min-w-0 flex-1 text-body-2-regular text-text-primary">{loadError}</p>
+            <Button size="small" variant="secondary" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </div>
         )}
 
         {!profile && !loadError ? (
-          <div className="space-y-6" aria-busy="true" aria-label="Loading settings">
+          <div aria-busy="true" aria-label="Loading settings">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-40 animate-pulse rounded-xl bg-background-secondary-default" />
+              <div key={i} className="flex flex-col gap-4 border-t border-separator-border py-8 first:border-t-0 first:pt-0">
+                <SkeletonBlock className="h-5 w-32" />
+                <SkeletonBlock className="h-3.5 w-72 max-w-full" />
+                <SkeletonBlock className="h-9 w-full rounded-md" />
+              </div>
             ))}
           </div>
         ) : profile ? (
-          <div className="space-y-6">
-            <Section icon={RiUserLine} title="Profile" description="How you appear in Flight Deck.">
-              <form onSubmit={saveName} className="space-y-5">
+          <div>
+            <Section id="profile" title="Profile" description="Your name is shown in the account menu. Your email is how you sign in.">
+              <form onSubmit={saveName} className="flex flex-col gap-5">
                 <Input label="Name" value={name} onChange={setName} maxLength={120} placeholder="Your name" />
-                <div className="flex flex-col gap-3 rounded-lg bg-background-tertiary-default px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="text-caption-1-medium text-text-tertiary">Email</p>
-                    <p className="truncate text-body-medium text-text-primary">{profile.email}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-3">
-                    {profile.emailVerified ? (
-                      <Chip variant="subtle" color="lime">
-                        Verified
-                      </Chip>
-                    ) : (
-                      <>
-                        <Chip variant="subtle" color="yellow">
-                          Not verified
-                        </Chip>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="xs"
-                          leadingIcon={RiMailCheckLine}
-                          onClick={resendVerification}
-                          disabled={resending}
-                        >
-                          {resending ? 'Sending…' : 'Resend link'}
-                        </Button>
-                      </>
-                    )}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-body-2-medium text-text-primary">Email</span>
+                  <div className="flex flex-col gap-2 rounded-md border border-separator-border bg-background-secondary-default px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="min-w-0 truncate text-body-2-regular text-text-primary">{profile.email}</span>
+                    <span className="flex shrink-0 items-center gap-3">
+                      {profile.emailVerified ? (
+                        <span className="inline-flex items-center gap-1.5 text-caption-1-medium text-text-secondary">
+                          <Dot tone="ok" />
+                          Verified
+                        </span>
+                      ) : (
+                        <>
+                          <span className="inline-flex items-center gap-1.5 text-caption-1-medium text-text-secondary">
+                            <Dot tone="warn" />
+                            Not verified
+                          </span>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="xs"
+                            leadingIcon={RiMailCheckLine}
+                            onClick={resendVerification}
+                            disabled={resending}
+                          >
+                            {resending ? 'Sending…' : 'Resend link'}
+                          </Button>
+                        </>
+                      )}
+                    </span>
                   </div>
                 </div>
                 <div className="flex justify-end">
-                  <Button type="submit" size="small" disabled={savingName || name.trim() === (profile.name ?? '')}>
-                    {savingName ? 'Saving…' : 'Save'}
+                  <Button type="submit" variant="secondary" size="small" disabled={savingName || name.trim() === (profile.name ?? '')}>
+                    {savingName ? 'Saving…' : 'Save name'}
                   </Button>
                 </div>
               </form>
             </Section>
 
-            <Section
-              icon={RiLockPasswordLine}
-              title="Password"
-              description="Changing your password signs out every other device."
-            >
-              <form onSubmit={changePassword} className="space-y-4">
+            <Section id="password" title="Password" description="Changing your password signs out every other device.">
+              <form onSubmit={changePassword} className="flex flex-col gap-4">
                 <Input
                   label="Current password"
                   type="password"
@@ -386,46 +369,42 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="flex justify-end">
-                  <Button type="submit" size="small" disabled={changingPassword || !currentPassword || !newPassword}>
+                  <Button type="submit" variant="secondary" size="small" disabled={changingPassword || !currentPassword || !newPassword}>
                     {changingPassword ? 'Changing…' : 'Change password'}
                   </Button>
                 </div>
               </form>
             </Section>
 
-            <Section icon={RiComputerLine} title="Sessions" description="Devices currently signed in to your account.">
+            <Section id="sessions" title="Sessions" description="Devices signed in to your account.">
               {sessions === null ? (
-                <div className="h-16 animate-pulse rounded-lg bg-background-tertiary-default" />
+                <SkeletonBlock className="h-16 w-full rounded-md" />
               ) : (
-                <ul className="divide-y divide-separator-border overflow-hidden rounded-lg border border-separator-border">
+                <ul className="divide-y divide-separator-border overflow-hidden rounded-md border border-separator-border bg-background-primary-default">
                   {sessions.map((s) => {
                     const device = describeDevice(s.userAgent);
                     const DeviceIcon = device.mobile ? RiSmartphoneLine : RiComputerLine;
                     return (
-                      <li key={s.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                        <DeviceIcon className="size-5 shrink-0 text-foreground-icon-tertiary" aria-hidden />
+                      <li key={s.id} className="flex items-center gap-3 px-4 py-3">
+                        <DeviceIcon className="size-[18px] shrink-0 text-foreground-icon-secondary" aria-hidden />
                         <div className="min-w-0 flex-1">
-                          <p className="flex flex-wrap items-center gap-2 text-body-medium text-text-primary">
+                          <p className="flex flex-wrap items-center gap-x-2 text-body-2-medium text-text-primary">
                             {device.label}
-                            {s.current && (
-                              <Chip variant="subtle" color="blue">
-                                This device
-                              </Chip>
-                            )}
+                            {s.current && <span className="text-caption-1-medium text-text-tertiary">This device</span>}
                           </p>
-                          <p className="text-caption-1-regular text-text-tertiary">
+                          <p className="text-caption-1-regular tabular-nums text-text-secondary">
                             Signed in {formatDate(s.createdAt)}
                             {s.lastSeenAt ? ` · Active ${formatDate(s.lastSeenAt)}` : ''}
-                            {s.ipAddress ? ` · ${s.ipAddress}` : ''}
+                            {s.ipAddress ? (
+                              <>
+                                {' · '}
+                                <span className="font-mono">{s.ipAddress}</span>
+                              </>
+                            ) : null}
                           </p>
                         </div>
                         {!s.current && (
-                          <Button
-                            variant="ghost"
-                            size="xs"
-                            onClick={() => revoke({ id: s.id })}
-                            disabled={revoking !== null}
-                          >
+                          <Button variant="ghost" size="xs" onClick={() => revoke({ id: s.id })} disabled={revoking !== null}>
                             {revoking === s.id ? 'Signing out…' : 'Sign out'}
                           </Button>
                         )}
@@ -434,109 +413,82 @@ export default function SettingsPage() {
                   })}
                 </ul>
               )}
-              <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <Button
-                  variant="secondary"
-                  size="small"
-                  onClick={() => revoke({ scope: 'others' })}
-                  disabled={revoking !== null || otherSessions === 0}
-                >
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button variant="secondary" size="small" onClick={() => revoke({ scope: 'others' })} disabled={revoking !== null || otherSessions === 0}>
                   {revoking === 'others' ? 'Signing out…' : 'Sign out other devices'}
                 </Button>
-                <Button
-                  variant="secondary"
-                  size="small"
-                  leadingIcon={RiLogoutBoxRLine}
-                  onClick={() => revoke({ scope: 'all' })}
-                  disabled={revoking !== null}
-                >
+                <Button variant="secondary" size="small" leadingIcon={RiLogoutBoxRLine} onClick={() => revoke({ scope: 'all' })} disabled={revoking !== null}>
                   Sign out everywhere
                 </Button>
               </div>
             </Section>
 
-            <Section
-              icon={RiDeleteBinLine}
-              title="Delete account"
-              description="Permanently delete your account and every mission, waypoint and zone in it. This cannot be undone."
-              tone="danger"
-            >
-              <div className="flex justify-end">
-                <Button variant="danger" size="small" leadingIcon={RiDeleteBinLine} onClick={() => setDeleteOpen(true)}>
+            <Section id="danger" title="Danger zone" description="Actions here cannot be undone.">
+              <div className="flex flex-col gap-4 rounded-md border border-(color:--fd-danger)/50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-body-2-medium text-text-primary">Delete account</p>
+                  <p className="mt-0.5 text-body-2-regular text-text-secondary text-pretty">
+                    Permanently deletes your account and every mission, waypoint and zone in it.
+                  </p>
+                </div>
+                <Button variant="danger" size="small" className="shrink-0 self-start sm:self-center" onClick={() => setDeleteOpen(true)}>
                   Delete account…
                 </Button>
               </div>
             </Section>
           </div>
         ) : null}
-      </div>
+      </main>
 
-      <Dialog
+      <AppDialog
         open={deleteOpen}
-        onClose={() => {
-          if (deleting) return;
-          setDeleteOpen(false);
-          setDeletePassword('');
-          setDeleteConfirm('');
-          setDeleteError(null);
-        }}
+        onClose={closeDelete}
+        busy={deleting}
         size="md"
-      >
-        <form onSubmit={deleteAccount}>
-          <DialogBody className="space-y-4 p-5">
-            <div>
-              <h2 className="text-headline-semibold text-text-primary">Delete your account?</h2>
-              <p className="mt-1 text-body-2-regular text-text-secondary">
-                All missions and settings for <span className="text-text-primary">{profile?.email}</span> are deleted
-                immediately. You will be signed out on every device.
-              </p>
-            </div>
-            <Input
-              label="Password"
-              type="password"
-              autoComplete="current-password"
-              value={deletePassword}
-              onChange={setDeletePassword}
-              isRequired
-              isInvalid={Boolean(deleteError)}
-              hint={deleteError ?? undefined}
-            />
-            <Input
-              label='Type "DELETE" to confirm'
-              value={deleteConfirm}
-              onChange={setDeleteConfirm}
-              autoComplete="off"
-              isRequired
-            />
-          </DialogBody>
-          <DialogFooter className="gap-3 px-5 py-4">
-            <Button type="button" variant="secondary" size="small" onClick={() => setDeleteOpen(false)} disabled={deleting}>
+        tone="danger"
+        title="Delete your account?"
+        description={
+          <>
+            All missions and settings for <span className="text-text-primary">{profile?.email}</span> are deleted immediately. You
+            will be signed out on every device.
+          </>
+        }
+        onSubmit={() => void deleteAccount()}
+        footer={
+          <>
+            <Button type="button" variant="secondary" size="small" onClick={closeDelete} disabled={deleting}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              variant="danger"
-              size="small"
-              disabled={deleting || !deletePassword || deleteConfirm !== 'DELETE'}
-            >
+            <Button type="submit" variant="danger" size="small" disabled={deleting || !deletePassword || deleteConfirm !== 'DELETE'}>
               {deleting ? 'Deleting…' : 'Delete account'}
             </Button>
-          </DialogFooter>
-        </form>
-      </Dialog>
+          </>
+        }
+      >
+        <Input
+          label="Password"
+          type="password"
+          autoComplete="current-password"
+          value={deletePassword}
+          onChange={setDeletePassword}
+          isRequired
+          isInvalid={Boolean(deleteError)}
+          hint={deleteError ?? undefined}
+        />
+        <Input label='Type "DELETE" to confirm' value={deleteConfirm} onChange={setDeleteConfirm} autoComplete="off" isRequired />
+      </AppDialog>
 
-      <NotificationViewport position="bottom-end">
+      <ToastStack>
         {toasts.map((t) => (
-          <Notification
+          <ToastItem
             key={t.id}
-            status={t.status}
+            tone={t.status === 'information' ? 'info' : t.status}
             title={t.title}
             description={t.description}
-            autoDismissDuration={5000}
             onDismiss={() => setToasts((list) => list.filter((x) => x.id !== t.id))}
           />
         ))}
-      </NotificationViewport>
-    </div>
+      </ToastStack>
+    </AppShell>
   );
 }

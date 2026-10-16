@@ -3,107 +3,118 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { RiMore2Fill } from '@remixicon/react';
-import { ButtonLink } from '@/components/base/buttons/button';
-import { Chip } from '@/components/base/badges/chip';
 import { Dropdown, DropdownDivider, DropdownItem, DropdownPopover, DropdownTrigger } from '@/components/base/dropdown/dropdown';
-import { formatDurationShort } from '@/lib/domain/metrics';
-import { formatDistance } from '@/components/map/map-geo';
+import { SkeletonBlock } from '@/components/common/skeleton-loader';
+import { cx } from '@/utils/cx';
 import { MissionThumbnail } from './mission-thumbnail';
+import { StatusLabel, distanceText, durationText, exactTime } from './mission-status';
 import { relativeTime, type MissionSummary } from './types';
 
 export type CardAction = 'rename' | 'duplicate' | 'export' | 'delete';
 
-function StatusChip({ m }: { m: MissionSummary }) {
-  if (m.errorCount && m.errorCount > 0)
-    return (
-      <Chip variant="caption" color="rose">
-        {m.errorCount} error{m.errorCount === 1 ? '' : 's'}
-      </Chip>
-    );
-  if (m.warningCount && m.warningCount > 0)
-    return (
-      <Chip variant="caption" color="yellow">
-        {m.warningCount} warning{m.warningCount === 1 ? '' : 's'}
-      </Chip>
-    );
-  if (m.status === 'ready')
-    return (
-      <Chip variant="caption" color="lime">
-        Ready
-      </Chip>
-    );
-  if (m.status === 'archived')
-    return (
-      <Chip variant="caption" color="gray">
-        Archived
-      </Chip>
-    );
+/** The per-mission overflow menu, shared by grid cards and table rows. */
+export function MissionActionsMenu({
+  mission,
+  onAction,
+  className,
+}: {
+  mission: MissionSummary;
+  onAction: (a: CardAction, m: MissionSummary) => void;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const act = (a: CardAction) => () => {
+    setOpen(false);
+    onAction(a, mission);
+  };
   return (
-    <Chip variant="caption" color="neutral">
-      {m.errorCount === 0 && m.waypointCount > 0 ? 'Checks pass' : 'Draft'}
-    </Chip>
+    <Dropdown isOpen={open} onOpenChange={setOpen}>
+      <DropdownTrigger
+        aria-label={`More actions for ${mission.name}`}
+        className={cx(
+          'flex size-8 shrink-0 items-center justify-center rounded-md text-foreground-icon-secondary transition-colors duration-150',
+          'hover:bg-background-secondary-default hover:text-foreground-icon-primary',
+          className
+        )}
+      >
+        <RiMore2Fill className="size-[18px]" aria-hidden />
+      </DropdownTrigger>
+      <DropdownPopover aria-label="Mission actions" placement="bottom end" className="w-[200px]">
+        <DropdownItem onSelect={act('rename')}>Rename…</DropdownItem>
+        <DropdownItem onSelect={act('duplicate')}>Duplicate</DropdownItem>
+        <DropdownItem onSelect={act('export')}>Export…</DropdownItem>
+        <DropdownDivider />
+        <DropdownItem onSelect={act('delete')} className="text-(color:--fd-danger)">
+          Delete…
+        </DropdownItem>
+      </DropdownPopover>
+    </Dropdown>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+/** "3.20 km" → number in ink, unit in tertiary. */
+function ValueUnit({ text }: { text: string }) {
+  const i = text.lastIndexOf(' ');
+  if (i < 0) return <>{text}</>;
   return (
-    <div className="flex min-w-0 flex-col">
-      <dt className="text-caption-1-regular text-text-tertiary">{label}</dt>
-      <dd className="truncate font-mono text-body-2-medium tabular-nums text-text-primary">{value}</dd>
-    </div>
+    <>
+      {text.slice(0, i)} <span className="text-text-tertiary">{text.slice(i + 1)}</span>
+    </>
   );
 }
 
 export function MissionCard({ mission, onAction }: { mission: MissionSummary; onAction: (a: CardAction, m: MissionSummary) => void }) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const href = `/missions/${mission.id}`;
-  const act = (a: CardAction) => () => {
-    setMenuOpen(false);
-    onAction(a, mission);
-  };
 
   return (
-    <article className="group flex flex-col gap-4 rounded-2lg border border-separator-border bg-background-primary-default p-4 transition-shadow hover:shadow-md">
-      <Link href={href} aria-label={`Open ${mission.name}`} className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring">
-        <MissionThumbnail id={mission.id} version={mission.version} hasGeometry={!!mission.bbox} />
-      </Link>
-      <div className="flex items-start gap-2">
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <h3 className="truncate text-body-semibold text-text-primary">
-            <Link href={href} className="outline-none hover:underline focus-visible:underline">
+    <article
+      className={cx(
+        'group relative flex flex-col overflow-hidden rounded-md border border-separator-border bg-background-primary-default',
+        'transition-colors duration-150 hover:border-(color:--fd-line-strong) has-[a:focus-visible]:border-(color:--fd-line-strong)'
+      )}
+    >
+      <MissionThumbnail id={mission.id} version={mission.version} hasGeometry={!!mission.bbox} className="border-b border-separator-border" />
+      <div className="flex flex-col gap-2 px-4 pt-3 pb-3.5">
+        <div className="flex items-center gap-2">
+          <h3 className="min-w-0 flex-1 truncate text-body-medium text-text-primary">
+            <Link
+              href={href}
+              className={cx(
+                'outline-none after:absolute after:inset-0 after:rounded-md after:content-[""]',
+                'focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-border-focus-ring'
+              )}
+            >
               {mission.name}
             </Link>
           </h3>
-          <p className="text-caption-1-regular text-text-secondary">Edited {relativeTime(mission.updatedAt)}</p>
+          <MissionActionsMenu mission={mission} onAction={onAction} className="relative z-10 -me-2" />
         </div>
-        <StatusChip m={mission} />
+        <dl className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-body-2-regular tabular-nums text-text-primary">
+          <div className="flex gap-1">
+            <dt className="sr-only">Waypoints</dt>
+            <dd>
+              {mission.waypointCount} <span className="text-text-tertiary">{mission.waypointCount === 1 ? 'waypoint' : 'waypoints'}</span>
+            </dd>
+          </div>
+          <div className="flex gap-1">
+            <dt className="sr-only">Distance</dt>
+            <dd>
+              <ValueUnit text={distanceText(mission)} />
+            </dd>
+          </div>
+          <div className="flex gap-1">
+            <dt className="sr-only">Estimated time</dt>
+            <dd>
+              <ValueUnit text={durationText(mission)} />
+            </dd>
+          </div>
+        </dl>
       </div>
-      <dl className="grid grid-cols-3 gap-2">
-        <Stat label="Items" value={String(mission.waypointCount)} />
-        <Stat label="Distance" value={mission.distanceM != null ? formatDistance(mission.distanceM) : '—'} />
-        <Stat label="Time" value={mission.durationS != null ? formatDurationShort(mission.durationS) : '—'} />
-      </dl>
-      <div className="flex items-center gap-2 border-t border-separator-border pt-3">
-        <ButtonLink href={href} size="small" variant="secondary" className="flex-1">
-          Open
-        </ButtonLink>
-        <Dropdown isOpen={menuOpen} onOpenChange={setMenuOpen}>
-          <DropdownTrigger
-            aria-label={`More actions for ${mission.name}`}
-            className="flex size-8 items-center justify-center rounded-lg text-foreground-icon-secondary outline-none hover:bg-background-primary-hover focus-visible:ring-2 focus-visible:ring-border-focus-ring"
-          >
-            <RiMore2Fill className="size-[18px]" aria-hidden />
-          </DropdownTrigger>
-          <DropdownPopover aria-label="Mission actions" placement="bottom end" className="w-[200px]">
-            <DropdownItem onSelect={act('rename')}>Rename…</DropdownItem>
-            <DropdownItem onSelect={act('duplicate')}>Duplicate</DropdownItem>
-            <DropdownItem onSelect={act('export')}>Export…</DropdownItem>
-            <DropdownDivider />
-            <DropdownItem onSelect={act('delete')} className="text-red">
-              Delete…
-            </DropdownItem>
-          </DropdownPopover>
-        </Dropdown>
+      <div className="mt-auto flex items-center justify-between gap-3 border-t border-separator-border px-4 py-2.5">
+        <StatusLabel mission={mission} />
+        <time dateTime={mission.updatedAt} title={exactTime(mission.updatedAt)} className="truncate text-caption-1-regular tabular-nums text-text-tertiary">
+          Edited {relativeTime(mission.updatedAt)}
+        </time>
       </div>
     </article>
   );
@@ -111,15 +122,16 @@ export function MissionCard({ mission, onAction }: { mission: MissionSummary; on
 
 export function MissionCardSkeleton() {
   return (
-    <div className="flex flex-col gap-4 rounded-2lg border border-separator-border p-4" aria-hidden>
-      <div className="h-[140px] animate-pulse rounded-lg bg-background-secondary-default" />
-      <div className="h-5 w-2/3 animate-pulse rounded-md bg-background-secondary-default" />
-      <div className="grid grid-cols-3 gap-2">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="h-9 animate-pulse rounded-md bg-background-secondary-default" />
-        ))}
+    <div className="flex flex-col overflow-hidden rounded-md border border-separator-border bg-background-primary-default" aria-hidden>
+      <SkeletonBlock className="aspect-[32/15] rounded-none" />
+      <div className="flex flex-col gap-2.5 px-4 pt-3.5 pb-4">
+        <SkeletonBlock className="h-4 w-2/3" />
+        <SkeletonBlock className="h-3.5 w-1/2" />
       </div>
-      <div className="h-8 animate-pulse rounded-lg bg-background-secondary-default" />
+      <div className="flex items-center justify-between border-t border-separator-border px-4 py-3">
+        <SkeletonBlock className="h-3 w-16" />
+        <SkeletonBlock className="h-3 w-20" />
+      </div>
     </div>
   );
 }
