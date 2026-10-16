@@ -46,4 +46,16 @@ test.describe('authentication', () => {
     await page.waitForURL(/\/dashboard/);
     await expect(page.getByRole('heading', { name: /^Missions/ })).toBeVisible();
   });
+
+  test('an off-site ?next= after sign-in stays in the app', async ({ page, baseURL }) => {
+    for (const next of ['//example.com/phish', 'https://example.com/', '/\\example.com']) {
+      await page.context().clearCookies();
+      await page.goto(`/login?next=${encodeURIComponent(next)}`);
+      await page.getByLabel('Email').fill(DEMO.email);
+      await page.getByLabel('Password', { exact: true }).fill(DEMO.password);
+      await page.getByRole('button', { name: 'Sign in' }).click();
+      await page.waitForURL(/\/dashboard/);
+      expect(new URL(page.url()).origin).toBe(new URL(baseURL!).origin);
+    }
+  });
 });
