@@ -222,7 +222,7 @@ export function TerrainFragment() {
 export function ExportFragment() {
   const formats = Object.values(EXPORT_FORMATS);
   return (
-    <div className="rounded-[10px] border border-(--fd-line) bg-(--fd-surface) p-1 shadow-[0_1px_2px_rgb(0_0_0/.06),0_8px_24px_rgb(0_0_0/.08)] dark:shadow-[0_0_0_1px_var(--fd-line),0_8px_24px_rgb(0_0_0/.5)]">
+    <div className="rounded-[10px] border border-(--fd-line) bg-(--fd-surface) p-1 shadow-fd-float">
       <ul aria-label="Export formats">
         {formats.map((f, i) => (
           <li

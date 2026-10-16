@@ -1,4 +1,4 @@
-import { RiArrowRightLine, RiLoader4Line } from '@remixicon/react';
+import { RiLoader4Line } from '@remixicon/react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/base/buttons/button';
 
@@ -14,8 +14,8 @@ export function SubmitButton({ loading, disabled, children }: { loading: boolean
       variant="primary"
       disabled={disabled}
       aria-busy={loading || undefined}
-      trailingIcon={loading ? Spinner : RiArrowRightLine}
-      className="w-full"
+      trailingIcon={loading ? Spinner : undefined}
+      className="h-10 w-full"
     >
       {children}
     </Button>

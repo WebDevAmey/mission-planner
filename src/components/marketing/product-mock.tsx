@@ -107,7 +107,7 @@ function MapCanvas() {
       </svg>
 
       {/* overlays in HTML so text stays crisp */}
-      <div className="absolute top-3 left-3 hidden items-center gap-2 rounded-[10px] border border-(--fd-line) bg-(--fd-surface) px-2.5 py-1.5 text-[12px]/[16px] text-(--fd-ink-2) shadow-[0_1px_2px_rgb(0_0_0/.06),0_8px_24px_rgb(0_0_0/.08)] sm:flex">
+      <div className="absolute top-3 left-3 hidden items-center gap-2 rounded-[10px] border border-(--fd-line) bg-(--fd-surface) px-2.5 py-1.5 text-[12px]/[16px] text-(--fd-ink-2) shadow-fd-float sm:flex">
         <span className="text-(--fd-ink)">Survey area</span>
         <span className="tabular-nums">12.4 ha · 5 lanes · 70% side overlap</span>
       </div>
@@ -125,7 +125,7 @@ function Inspector() {
     <div className="hidden w-[248px] shrink-0 flex-col border-l border-(--fd-line) bg-(--fd-surface) md:flex lg:w-[288px]">
       <div className="p-2">
         <div className="grid grid-cols-3 gap-0.5 rounded-[6px] bg-(--fd-surface-2) p-0.5 text-[12px]/[16px]">
-          <span className="rounded-[4px] bg-(--fd-surface) py-1 text-center font-medium text-(--fd-ink) shadow-[0_0_0_1px_var(--fd-line)]">Waypoints</span>
+          <span className="rounded-[4px] bg-(--fd-surface) py-1 text-center font-medium text-(--fd-ink) ring-1 ring-(--fd-line)">Waypoints</span>
           <span className="py-1 text-center text-(--fd-ink-2)">Item</span>
           <span className="flex items-center justify-center gap-1 py-1 text-(--fd-ink-2)">
             Checks

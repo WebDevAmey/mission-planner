@@ -38,7 +38,7 @@ export const textLink = `underline decoration-(--fd-line-strong) decoration-1 un
 /** Square marketing buttons (2px radius). One primary per view. */
 const btnBase = `inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-[2px] px-4 text-[15px]/[20px] font-medium transition-[background-color,border-color,color,transform] duration-[120ms] active:scale-[.98] motion-reduce:active:scale-100 ${focusRing}`;
 export const button = {
-  primary: `${btnBase} bg-(--fd-accent) text-(--fd-accent-ink) hover:bg-(--fd-accent)/90`,
+  primary: `${btnBase} bg-(--fd-accent) text-(--fd-accent-ink) hover:bg-fd-accent-hover`,
   secondary: `${btnBase} border border-(--fd-line-strong) bg-(--fd-surface) text-(--fd-ink) hover:bg-(--fd-surface-3)`,
   small: 'h-9 px-3 text-[14px]/[20px]',
 } as const;
