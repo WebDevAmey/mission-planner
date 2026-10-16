@@ -6,6 +6,7 @@ import { db } from '@/prisma/db';
 import { POST as loginPOST } from '@/app/api/auth/login/route';
 import { POST as forgotPOST } from '@/app/api/auth/forgot-password/route';
 import { PATCH as accountPATCH } from '@/app/api/account/route';
+import { sendEmail } from '@/lib/email/send';
 import { deleteUser, hasDb, makeUser, PASSWORD, req, signInAs, type TestUser } from './helpers';
 
 function captureLogs() {
@@ -70,5 +71,19 @@ describe.skipIf(!hasDb)('security logging', () => {
     const token = new URL(body.devResetUrl).searchParams.get('token')!;
     expect(lines.join('\n')).not.toContain(token);
     expect(lines.join('\n')).not.toContain(user.email);
+  });
+  it('email delivery has a timeout and redacts the address on failure', async () => {
+    vi.stubEnv('RESEND_API_KEY', 'test-key');
+    const lines = captureLogs();
+    const fetchMock = vi.fn<(url: string, init: RequestInit) => Promise<Response>>(
+      async () => new Response(`bad recipient ${user.email}`, { status: 422 })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const result = await sendEmail({ to: user.email, subject: 's', html: 'h', text: 't' });
+    expect(result.delivered).toBe(false);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
+    expect(lines.join('\n')).not.toContain(user.email);
+    expect(lines.join('\n')).not.toContain('test-key');
   });
 });
