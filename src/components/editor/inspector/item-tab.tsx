@@ -17,6 +17,9 @@ import {
 import { round7 } from '@/lib/utils';
 import { NumberField, Section, SelectField, TextInputField } from '../fields';
 import { IssueRow } from './checks-tab';
+import { ItemBadge } from './waypoints-tab';
+import { ICON_BUTTON } from '../editor-styles';
+import { Button as AriaButton } from 'react-aria-components';
 
 type ParamKey = 'param1' | 'param2' | 'param3' | 'param4';
 interface ParamField {
@@ -95,9 +98,9 @@ export function ItemTab() {
 
   if (!mission || !item) {
     return (
-      <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-        <p className="text-body-medium text-text-primary">Nothing selected</p>
-        <p className="text-body-2-regular text-text-secondary">Select a waypoint on the map or in the Waypoints list to edit it here.</p>
+      <div className="flex flex-col items-start gap-2 px-4 py-6">
+        <p className="text-[14px] font-medium text-text-primary">Nothing selected</p>
+        <p className="max-w-[36ch] text-[13px] text-text-secondary">Select a waypoint on the map or in the Waypoints list to edit it here.</p>
         <Button size="small" variant="secondary" onClick={() => setInspectorTab('waypoints')}>
           Show waypoints
         </Button>
@@ -112,28 +115,25 @@ export function ItemTab() {
     update(item.id, { parameters: { ...item.parameters, [key]: v ?? 0 } });
 
   return (
-    <div key={item.id} className="flex flex-col gap-6 px-4 pb-6">
+    <div key={item.id} className="flex flex-col gap-5 px-4 pb-6">
       <div className="flex items-center gap-2">
-        <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-cyan px-1 font-mono text-caption-1-semibold text-bg-base">
-          {index + 1}
-        </span>
-        <span className="min-w-0 flex-1 truncate text-headline-semibold text-text-primary">
+        <ItemBadge n={index + 1} kind={def.supportsCoordinates ? 'spatial' : 'command'} selected />
+        <span className="min-w-0 flex-1 truncate text-[16px] font-medium text-text-primary">
           {COMMAND_SHORT_LABELS[item.command] ?? def.label}
         </span>
         {def.supportsCoordinates && item.latitude !== null && item.longitude !== null && (
-          <Button
-            size="xs"
-            variant="ghost"
-            iconOnly
-            leadingIcon={RiFocus3Line}
+          <AriaButton
             aria-label="Show on map"
-            onClick={() => focusMap({ kind: 'point', point: [item.longitude!, item.latitude!] })}
-          />
+            onPress={() => focusMap({ kind: 'point', point: [item.longitude!, item.latitude!] })}
+            className={ICON_BUTTON}
+          >
+            <RiFocus3Line className="size-4" aria-hidden />
+          </AriaButton>
         )}
       </div>
 
       {issues.length > 0 && (
-        <ul className="flex flex-col gap-1" aria-label="Issues for this item">
+        <ul className="-mx-4 flex flex-col" aria-label="Issues for this item">
           {issues.map((issue, i) => (
             <IssueRow key={i} issue={issue} />
           ))}
@@ -142,14 +142,14 @@ export function ItemTab() {
 
       <Section title="Command">
         <SelectField label="Type" value={item.action} options={ACTION_OPTIONS} onChange={(a) => setAction(item.id, a)} />
-        <p className="-mt-1 text-caption-1-regular text-text-secondary">{def.description}</p>
+        <p className="-mt-1 text-[13px] text-text-secondary">{def.description}</p>
       </Section>
 
       {def.supportsCoordinates && (
         <Section title="Position">
           <div className="grid grid-cols-2 gap-3">
-            <NumberField label="Latitude" value={item.latitude} precision={7} min={-90} max={90} onCommit={(v) => v !== null && update(item.id, { latitude: round7(v) })} />
-            <NumberField label="Longitude" value={item.longitude} precision={7} min={-180} max={180} onCommit={(v) => v !== null && update(item.id, { longitude: round7(v) })} />
+            <NumberField label="Latitude" mono value={item.latitude} precision={7} min={-90} max={90} onCommit={(v) => v !== null && update(item.id, { latitude: round7(v) })} />
+            <NumberField label="Longitude" mono value={item.longitude} precision={7} min={-180} max={180} onCommit={(v) => v !== null && update(item.id, { longitude: round7(v) })} />
           </div>
         </Section>
       )}

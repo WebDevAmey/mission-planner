@@ -20,6 +20,7 @@ export function NumberField({
   precision,
   allowEmpty,
   hint,
+  mono,
   className,
 }: {
   label: string;
@@ -31,6 +32,8 @@ export function NumberField({
   precision?: number;
   allowEmpty?: boolean;
   hint?: ReactNode;
+  /** Literal coordinates render in the mono face; every other number is tabular sans. */
+  mono?: boolean;
   className?: string;
 }) {
   const shown = value == null || !Number.isFinite(value) ? '' : precision != null ? String(Number(value.toFixed(precision))) : String(value);
@@ -66,7 +69,7 @@ export function NumberField({
         if (e.key === 'Escape') setDraft(null);
       }}
       className={cx('min-w-0', className)}
-      fieldClassName="font-mono tabular-nums"
+      fieldClassName={mono ? 'font-mono tabular-nums' : 'tabular-nums'}
     />
   );
 }
@@ -121,7 +124,7 @@ export function SelectField<K extends string | number>({
 }) {
   return (
     <div className={cx('flex min-w-0 flex-col gap-1', className)}>
-      <span className="text-body-2-medium text-text-primary">{label}</span>
+      <span className="text-[13px] font-medium text-text-primary">{label}</span>
       <Select
         aria-label={label}
         size="sm"
@@ -147,7 +150,7 @@ export function Section({ title, action, children, className }: { title: string;
   return (
     <section className={cx('flex flex-col gap-3', className)}>
       <div className="flex min-h-8 items-center justify-between gap-2">
-        <h3 className="text-caption-1-semibold uppercase tracking-wide text-text-tertiary">{title}</h3>
+        <h3 className="text-[13px] font-medium text-text-primary">{title}</h3>
         {action}
       </div>
       {children}

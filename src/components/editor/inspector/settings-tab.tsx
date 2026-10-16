@@ -8,6 +8,7 @@ import { useUIStore } from '@/lib/store/ui-store';
 import { ZONE_KIND_LABEL, type MissionZone, type ZoneKind } from '@/lib/store/editor-types';
 import { zoneRing, formatDistance } from '@/components/map/map-geo';
 import { cx } from '@/utils/cx';
+import { FOCUS_RING_INSET, ROW_SELECTED, SWATCH } from '../editor-styles';
 import { NumberField, Section, SelectField, TextInputField } from '../fields';
 
 const KIND_OPTIONS: { value: ZoneKind; label: string }[] = [
@@ -32,8 +33,8 @@ function ZoneRow({ zone }: { zone: MissionZone }) {
   };
 
   return (
-    <li className={cx('rounded-2lg border', selected ? 'border-border-focus-ring bg-background-primary-default' : 'border-border-button-default')}>
-      <div className="flex items-center gap-2 p-2">
+    <li className="border-b border-separator-border first:border-t">
+      <div className={cx('flex min-h-10 items-center gap-2 pr-3', selected ? ROW_SELECTED : 'hover:bg-background-primary-hover')}>
         <button
           type="button"
           onClick={() => {
@@ -41,15 +42,12 @@ function ZoneRow({ zone }: { zone: MissionZone }) {
             if (!selected) zoomTo();
           }}
           aria-expanded={selected}
-          className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1 py-1 text-start outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+          className={cx('flex min-w-0 flex-1 items-center gap-2.5 self-stretch py-1.5 pl-4 text-start', FOCUS_RING_INSET)}
         >
-          <span
-            aria-hidden
-            className={cx('size-3 shrink-0 rounded-sm border-2 border-dashed', zone.kind === 'keep_in' ? 'border-blue bg-blue-bg' : 'border-red bg-red-bg')}
-          />
+          <span aria-hidden className={cx('shrink-0', zone.kind === 'keep_in' ? SWATCH.keepIn : SWATCH.keepOut)} />
           <span className="flex min-w-0 flex-col">
-            <span className={cx('truncate text-body-2-medium', zone.enabled ? 'text-text-primary' : 'text-text-tertiary line-through')}>{zone.label || 'Zone'}</span>
-            <span className="text-caption-1-regular text-text-secondary">
+            <span className={cx('truncate text-[14px]', zone.enabled ? 'text-text-primary' : 'text-text-tertiary line-through')}>{zone.label || 'Zone'}</span>
+            <span className="text-[12px] tabular-nums text-text-tertiary">
               {ZONE_KIND_LABEL[zone.kind]} · {zone.shape === 'circle' ? `circle ${formatDistance(zone.radiusM ?? 0)}` : `${zone.vertices?.length ?? 0}-point polygon`}
             </span>
           </span>
@@ -62,7 +60,7 @@ function ZoneRow({ zone }: { zone: MissionZone }) {
         />
       </div>
       {selected && (
-        <div className="flex flex-col gap-3 border-t border-separator-border p-3">
+        <div className="flex flex-col gap-3 border-t border-separator-border bg-background-secondary-default/50 px-4 py-3">
           <TextInputField label="Name" value={zone.label} onCommit={(v) => updateZone(zone.id, { label: v.trim() || zone.label })} />
           <SelectField label="Type" value={zone.kind} options={KIND_OPTIONS} onChange={(k) => updateZone(zone.id, { kind: k })} />
           {zone.shape === 'circle' && (
@@ -106,7 +104,7 @@ export function SettingsTab() {
   const l = mission.limits;
 
   return (
-    <div className="flex flex-col gap-8 px-4 pb-8">
+    <div className="flex flex-col gap-6 px-4 pb-8">
       <Section
         title={`Zones (${mission.zones.length})`}
         action={
@@ -116,11 +114,11 @@ export function SettingsTab() {
         }
       >
         {mission.zones.length === 0 ? (
-          <p className="text-body-2-regular text-text-secondary">
+          <p className="text-[13px] text-text-secondary">
             No zones. Draw keep-out, no-fly or keep-in areas; every leg is checked against them.
           </p>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="-mx-4 flex flex-col">
             {mission.zones.map((z) => (
               <ZoneRow key={z.id} zone={z} />
             ))}

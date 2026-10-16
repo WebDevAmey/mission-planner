@@ -1,42 +1,41 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, Check, CloudOff, Loader2, Pencil } from 'lucide-react';
+import { RiErrorWarningLine } from '@remixicon/react';
 import { useSaveStore } from '@/lib/store/save-store';
+import { Button } from '@/components/base/buttons/button';
 import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cx } from '@/utils/cx';
+import { TONE_DOT, TONE_TEXT } from './editor-styles';
 
-/** Header save state: Saving… / Saved / Unsaved changes / Not saved · Retry /
- * Changed elsewhere. Icon + text, never colour alone. */
+function clock(ts: number | null): string | null {
+  if (ts == null) return null;
+  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+/** Header save state: "Saved 12:04" / Saving… / Unsaved changes / Not saved · Retry /
+ * Changed elsewhere. Text carries the state; the dot only reinforces it. */
 export function SaveIndicator({ className }: { className?: string }) {
-  const { status, error, flush, overwrite } = useSaveStore();
+  const { status, error, flush, overwrite, lastSavedAt } = useSaveStore();
   const [busy, setBusy] = useState(false);
 
   const reload = () => window.location.reload();
+  const at = clock(lastSavedAt);
 
   return (
     <>
-      <div className={cn('flex min-w-0 items-center gap-2 text-[13px]', className)} aria-live="polite">
-        {status === 'saving' && (
-          <span className="flex items-center gap-1.5 text-text-dim">
-            <Loader2 size={14} className="animate-spin" aria-hidden /> Saving…
-          </span>
-        )}
-        {status === 'pending' && (
-          <span className="flex items-center gap-1.5 text-text-dim">
-            <Pencil size={14} aria-hidden /> Unsaved changes
-          </span>
-        )}
-        {status === 'saved' && (
-          <span className="flex items-center gap-1.5 text-text-dim">
-            <Check size={14} className="text-green" aria-hidden /> Saved
+      <div className={cx('flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[13px] text-text-tertiary', className)} aria-live="polite">
+        {status === 'saving' && <span>Saving…</span>}
+        {status === 'pending' && <span>Unsaved changes</span>}
+        {(status === 'saved' || (status === 'idle' && at)) && (
+          <span>
+            Saved{at && <span className="tabular-nums"> {at}</span>}
           </span>
         )}
         {status === 'error' && (
-          <span className="flex min-w-0 items-center gap-1.5 text-red" title={error ?? undefined}>
-            <CloudOff size={14} aria-hidden />
-            <span className="whitespace-nowrap">Not saved</span>
+          <span className={cx('flex min-w-0 items-center gap-1.5', TONE_TEXT.danger)} title={error ?? undefined}>
+            <RiErrorWarningLine className="size-3.5 shrink-0" aria-hidden />
+            <span>Not saved</span>
             <span aria-hidden>·</span>
             <button
               type="button"
@@ -46,36 +45,36 @@ export function SaveIndicator({ className }: { className?: string }) {
                 await flush();
                 setBusy(false);
               }}
-              className="rounded-sm font-medium underline underline-offset-2 hover:text-text focus-visible:outline-2 focus-visible:outline-blue"
+              className="rounded-sm font-medium underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring"
             >
               Retry
             </button>
           </span>
         )}
         {status === 'conflict' && (
-          <span className="flex items-center gap-1.5 text-amber">
-            <AlertTriangle size={14} aria-hidden /> Changed elsewhere
+          <span className={cx('flex items-center gap-1.5', TONE_TEXT.warn)}>
+            <span aria-hidden className={cx('size-1.5 rounded-full', TONE_DOT.warn)} /> Changed elsewhere
           </span>
         )}
       </div>
 
       <Dialog open={status === 'conflict'} onClose={() => undefined} size="sm">
         <DialogHeader>
-          <DialogTitle className="text-sm">This mission changed elsewhere</DialogTitle>
+          <DialogTitle className="text-[16px] font-medium">This mission changed elsewhere</DialogTitle>
         </DialogHeader>
         <DialogBody>
-          <p className="text-[13px] leading-relaxed text-text-dim">
+          <p className="text-[14px] leading-relaxed text-text-secondary">
             Another tab or device saved a newer version. Reload to see it (your unsaved edits here are discarded), or
             overwrite it with what you see now.
           </p>
         </DialogBody>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={reload}>
+          <Button variant="secondary" size="small" onClick={reload}>
             Reload
           </Button>
           <Button
             variant="primary"
-            size="sm"
+            size="small"
             disabled={busy}
             onClick={async () => {
               setBusy(true);

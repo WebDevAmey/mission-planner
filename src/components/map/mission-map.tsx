@@ -6,6 +6,7 @@ import {
   Map as MapLibreMap,
   Marker,
   ScaleControl,
+  type FilterSpecification,
   type GeoJSONSource,
   type MapGeoJSONFeature,
   type MapMouseEvent,
@@ -19,7 +20,7 @@ import { PlannerAction } from '@/lib/mavlink/commands';
 import { haversineM, type LngLat } from '@/lib/domain/geo';
 import { round7 } from '@/lib/utils';
 import { ZONE_KIND_LABEL } from '@/lib/store/editor-types';
-import { getMapColors, type MapColors } from './map-colors';
+import { readMapColors, watchTheme, type MapColors } from './map-colors';
 import {
   LABEL_FONT,
   VECTOR_STYLE_URL,
@@ -32,6 +33,9 @@ import {
   waypointFeatures,
   zoneFeatures,
 } from './map-geo';
+import { Kbd } from '@/components/base/kbd/kbd';
+import { DATA_MONO, FLOAT_PANEL, TONE_DOT } from '@/components/editor/editor-styles';
+import { cx } from '@/utils/cx';
 import { MapChrome } from './map-chrome';
 import { ToolHint } from './tool-hint';
 import { MapContextMenu, type ContextMenuState } from './map-context-menu';
@@ -75,8 +79,55 @@ function readLastView(): { center: [number, number]; zoom: number } | null {
   }
 }
 
+/** Every overlay layer id, bottom to top (used to remove and re-add them on a theme change). */
+const OVERLAY_LAYERS = [
+  'mp-zones-fill',
+  'mp-zones-line-out',
+  'mp-zones-line-in',
+  'mp-preview-line',
+  'mp-route-casing',
+  'mp-route-home',
+  'mp-route',
+  'mp-draft-fill',
+  'mp-draft-line',
+  'mp-draft-points',
+  'mp-wp-circle',
+  'mp-wp-shape',
+  'mp-wp-label',
+] as const;
+
+/** Layers a click or drag on a waypoint can hit. */
+const WP_LAYERS = ['mp-wp-circle', 'mp-wp-shape'];
+
+/**
+ * Signed-distance-field glyph for the takeoff square and landing diamond, so a
+ * single image can be tinted (icon-color) by selection state and haloed.
+ * Encoding follows MapLibre/TinySDF: 8px radius, 0.25 cutoff.
+ */
+function shapeSdf(shape: 'square' | 'diamond', size = 32, half = 9): { width: number; height: number; data: Uint8Array } {
+  const data = new Uint8Array(size * size * 4);
+  const c = size / 2;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dx = Math.abs(x + 0.5 - c);
+      const dy = Math.abs(y + 0.5 - c);
+      const d = shape === 'square' ? Math.max(dx, dy) - half : (dx + dy) / Math.SQRT2 - half;
+      const v = Math.max(0, Math.min(255, Math.round(255 - 255 * (d / 8 + 0.25))));
+      const i = (y * size + x) * 4;
+      data[i] = data[i + 1] = data[i + 2] = 255;
+      data[i + 3] = v;
+    }
+  }
+  return { width: size, height: size, data };
+}
+
+function removeOverlayLayers(map: MapLibreMap) {
+  for (const id of OVERLAY_LAYERS) if (map.getLayer(id)) map.removeLayer(id);
+}
+
 /** Adds every overlay source + layer (idempotent). Called on each style load so
- * overlays survive switching between the vector and satellite basemaps. */
+ * overlays survive switching between the vector and satellite basemaps, and on a
+ * theme change (after `removeOverlayLayers`) so colours follow the tokens. */
 function installOverlays(map: MapLibreMap, c: MapColors) {
   const add = (id: string, promoteId?: string) => {
     if (!map.getSource(id)) map.addSource(id, { type: 'geojson', data: emptyFC(), ...(promoteId && { promoteId }) });
@@ -86,45 +137,87 @@ function installOverlays(map: MapLibreMap, c: MapColors) {
   add(SRC.preview);
   add(SRC.draft);
   add(SRC.wps, 'id');
+  if (!map.hasImage('mp-square')) map.addImage('mp-square', shapeSdf('square'), { sdf: true });
+  if (!map.hasImage('mp-diamond')) map.addImage('mp-diamond', shapeSdf('diamond', 32, 10), { sdf: true });
 
   const layer = (spec: Parameters<MapLibreMap['addLayer']>[0]) => {
     if (!map.getLayer(spec.id)) map.addLayer(spec);
   };
-  const zoneColor = ['match', ['get', 'kind'], 'keep_in', c.keepIn, c.keepOut] as unknown as string;
+  const expr = <T,>(e: unknown) => e as T;
   const selected = ['boolean', ['feature-state', 'selected'], false];
   const hover = ['boolean', ['feature-state', 'hover'], false];
+  const keepIn = ['==', ['get', 'kind'], 'keep_in'];
+  const disabled = ['==', ['get', 'enabled'], 0];
+  const shaped = ['in', ['get', 'kind'], ['literal', ['takeoff', 'land']]];
 
+  // Zones: keep-out / no-fly = danger 12% + dashed danger; keep-in = info 8% + info line.
   layer({
     id: 'mp-zones-fill',
     type: 'fill',
     source: SRC.zones,
     paint: {
-      'fill-color': zoneColor,
-      'fill-opacity': ['case', ['==', ['get', 'enabled'], 0], 0.04, selected, 0.28, hover, 0.2, 0.14] as unknown as number,
+      'fill-color': expr<string>(['case', keepIn, c.info, c.danger]),
+      'fill-opacity': expr<number>([
+        'case',
+        disabled,
+        0.03,
+        selected,
+        ['case', keepIn, 0.16, 0.22],
+        hover,
+        ['case', keepIn, 0.12, 0.17],
+        ['case', keepIn, 0.08, 0.12],
+      ]),
     },
   });
   layer({
-    id: 'mp-zones-line',
+    id: 'mp-zones-line-out',
     type: 'line',
     source: SRC.zones,
+    filter: ['!=', ['get', 'kind'], 'keep_in'],
     paint: {
-      'line-color': zoneColor,
-      'line-width': ['case', selected, 3, 1.5] as unknown as number,
+      'line-color': c.danger,
+      'line-width': expr<number>(['case', selected, 2.5, 1.5]),
       'line-dasharray': [3, 2],
-      'line-opacity': ['case', ['==', ['get', 'enabled'], 0], 0.4, 0.9] as unknown as number,
+      'line-opacity': expr<number>(['case', disabled, 0.4, 1]),
     },
   });
+  layer({
+    id: 'mp-zones-line-in',
+    type: 'line',
+    source: SRC.zones,
+    filter: keepIn as unknown as FilterSpecification,
+    paint: {
+      'line-color': c.info,
+      'line-width': expr<number>(['case', selected, 2.5, 1.5]),
+      'line-opacity': expr<number>(['case', disabled, 0.4, 1]),
+    },
+  });
+  // Planner previews (survey passes, optimise / avoid route) in info.
   layer({
     id: 'mp-preview-line',
     type: 'line',
     source: SRC.preview,
     layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: {
-      'line-color': c.preview,
-      'line-width': ['match', ['get', 'role'], 'pass', 1.5, 3] as unknown as number,
+      'line-color': c.info,
+      'line-width': expr<number>(['match', ['get', 'role'], 'pass', 1, 2]),
       'line-dasharray': [2, 1.5],
-      'line-opacity': 0.95,
     },
+  });
+  // Route: accent 3px on a surface casing (1px each side) so it reads on satellite.
+  layer({
+    id: 'mp-route-casing',
+    type: 'line',
+    source: SRC.route,
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': c.surface, 'line-width': expr<number>(['case', ['==', ['get', 'home'], 1], 4, 5]) },
+  });
+  layer({
+    id: 'mp-route-home',
+    type: 'line',
+    source: SRC.route,
+    filter: ['==', ['get', 'home'], 1],
+    paint: { 'line-color': c.accent, 'line-width': 2, 'line-dasharray': [2, 2] },
   });
   layer({
     id: 'mp-route',
@@ -133,31 +226,24 @@ function installOverlays(map: MapLibreMap, c: MapColors) {
     filter: ['==', ['get', 'home'], 0],
     layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: {
-      'line-color': ['match', ['get', 'severity'], 'error', c.routeError, c.route] as unknown as string,
+      'line-color': expr<string>(['match', ['get', 'severity'], 'error', c.danger, c.accent]),
       'line-width': 3,
-      'line-opacity': 0.9,
     },
   });
-  layer({
-    id: 'mp-route-home',
-    type: 'line',
-    source: SRC.route,
-    filter: ['==', ['get', 'home'], 1],
-    paint: { 'line-color': c.route, 'line-width': 2, 'line-dasharray': [2, 2], 'line-opacity': 0.7 },
-  });
+  // Drawing drafts (survey outline, zone, measure).
   layer({
     id: 'mp-draft-fill',
     type: 'fill',
     source: SRC.draft,
     filter: ['==', ['geometry-type'], 'Polygon'],
-    paint: { 'fill-color': ['coalesce', ['get', 'color'], c.measure] as unknown as string, 'fill-opacity': 0.15 },
+    paint: { 'fill-color': expr<string>(['coalesce', ['get', 'color'], c.ink2]), 'fill-opacity': 0.1 },
   });
   layer({
     id: 'mp-draft-line',
     type: 'line',
     source: SRC.draft,
     filter: ['in', ['geometry-type'], ['literal', ['LineString', 'Polygon']]],
-    paint: { 'line-color': ['coalesce', ['get', 'color'], c.measure] as unknown as string, 'line-width': 2, 'line-dasharray': [2, 1] },
+    paint: { 'line-color': expr<string>(['coalesce', ['get', 'color'], c.ink2]), 'line-width': 1.5, 'line-dasharray': [3, 2] },
   });
   layer({
     id: 'mp-draft-points',
@@ -165,29 +251,48 @@ function installOverlays(map: MapLibreMap, c: MapColors) {
     source: SRC.draft,
     filter: ['==', ['geometry-type'], 'Point'],
     paint: {
-      'circle-radius': 5,
-      'circle-color': ['coalesce', ['get', 'color'], c.measure] as unknown as string,
-      'circle-stroke-color': c.halo,
-      'circle-stroke-width': 2,
+      'circle-radius': 4,
+      'circle-color': c.surface,
+      'circle-stroke-color': expr<string>(['coalesce', ['get', 'color'], c.ink2]),
+      'circle-stroke-width': 1.5,
     },
   });
+  // Waypoints: 22px surface circles with an ink ring; selected = accent fill.
   layer({
     id: 'mp-wp-circle',
     type: 'circle',
     source: SRC.wps,
+    filter: ['!', shaped] as unknown as FilterSpecification,
     paint: {
-      'circle-radius': ['case', selected, 14, hover, 13, 11] as unknown as number,
-      'circle-color': ['case', selected, c.selected, c.waypoint] as unknown as string,
-      'circle-stroke-width': ['case', ['!=', ['get', 'severity'], ''], 3, 2] as unknown as number,
-      'circle-stroke-color': [
+      'circle-radius': expr<number>(['case', selected, 11, hover, 11, 10]),
+      'circle-color': expr<string>(['case', selected, c.accent, c.surface]),
+      'circle-stroke-width': expr<number>(['case', ['!=', ['get', 'severity'], ''], 2.5, 1.5]),
+      'circle-stroke-color': expr<string>([
         'match',
         ['get', 'severity'],
         'error',
-        c.error,
+        c.danger,
         'warning',
-        c.warning,
-        c.halo,
-      ] as unknown as string,
+        c.warn,
+        ['case', selected, c.accent, c.ink],
+      ]),
+    },
+  });
+  // Takeoff = ink square, landing = ink diamond.
+  layer({
+    id: 'mp-wp-shape',
+    type: 'symbol',
+    source: SRC.wps,
+    filter: shaped as unknown as FilterSpecification,
+    layout: {
+      'icon-image': expr<string>(['match', ['get', 'kind'], 'land', 'mp-diamond', 'mp-square']),
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
+    },
+    paint: {
+      'icon-color': expr<string>(['case', selected, c.accent, c.ink]),
+      'icon-halo-color': expr<string>(['match', ['get', 'severity'], 'error', c.danger, 'warning', c.warn, c.surface]),
+      'icon-halo-width': 2,
     },
   });
   layer({
@@ -197,11 +302,11 @@ function installOverlays(map: MapLibreMap, c: MapColors) {
     layout: {
       'text-field': ['get', 'label'],
       'text-font': LABEL_FONT,
-      'text-size': 12,
+      'text-size': 11,
       'text-allow-overlap': true,
       'text-ignore-placement': true,
     },
-    paint: { 'text-color': c.waypointText },
+    paint: { 'text-color': expr<string>(['case', selected, c.accentInk, shaped, c.surface, c.ink]) },
   });
 }
 
@@ -215,6 +320,7 @@ export function MissionMap() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const homeMarkerRef = useRef<Marker | null>(null);
+  const coordRef = useRef<HTMLSpanElement>(null);
   const colorsRef = useRef<MapColors | null>(null);
   const draftRef = useRef<Draft>(emptyDraft());
   const dragRef = useRef<{ id: string; moved: boolean; pos: LngLat } | null>(null);
@@ -248,7 +354,7 @@ export function MissionMap() {
     if (!map || !c || !map.getSource(SRC.draft)) return;
     const { activeTool: tool, zoneDraft: zd, surveyArea: area } = useUIStore.getState();
     const d = draftRef.current;
-    const color = tool === 'draw-zone' ? (zd.kind === 'keep_in' ? c.keepIn : c.keepOut) : tool === 'draw-area' ? c.preview : c.measure;
+    const color = tool === 'draw-zone' ? (zd.kind === 'keep_in' ? c.info : c.danger) : tool === 'draw-area' ? c.info : c.ink2;
     const features: Feature<Geometry>[] = [];
 
     if (tool === 'draw-zone' && zd.shape === 'circle' && d.center) {
@@ -267,7 +373,7 @@ export function MissionMap() {
     }
     // A finished survey area stays visible while the survey planner is open.
     if (area && area.length >= 3 && d.points.length === 0) {
-      features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[...area, area[0]]] }, properties: { color: c.preview } });
+      features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[...area, area[0]]] }, properties: { color: c.info } });
     }
     setData(map, SRC.draft, { type: 'FeatureCollection', features });
   }, []);
@@ -311,12 +417,13 @@ export function MissionMap() {
       pitchWithRotate: false,
     });
     map.touchZoomRotate.disableRotation();
-    map.addControl(new AttributionControl({ compact: true }), 'bottom-left');
+    // Attribution stays visible bottom-right (MapLibre collapses it on narrow maps).
+    map.addControl(new AttributionControl({}), 'bottom-right');
     map.addControl(new ScaleControl({ unit: 'metric' }), 'bottom-left');
     mapRef.current = map;
 
     map.on('style.load', () => {
-      colorsRef.current = colorsRef.current ?? getMapColors();
+      colorsRef.current = colorsRef.current ?? readMapColors();
       installOverlays(map, colorsRef.current);
       setStyleNonce((n) => n + 1);
     });
@@ -326,6 +433,7 @@ export function MissionMap() {
     });
     map.on('moveend', () => {
       const c = map.getCenter();
+      if (coordRef.current) coordRef.current.textContent = `${c.lat.toFixed(6)}, ${c.lng.toFixed(6)}`;
       const zoom = map.getZoom();
       useUIStore.getState().setMapView({ lat: c.lat, lng: c.lng, zoom });
       try {
@@ -347,6 +455,19 @@ export function MissionMap() {
       }
     };
   }, []);
+
+  // Theme change: re-read the token colours and re-add the overlay layers (sources,
+  // their data and feature state are kept).
+  useEffect(() => {
+    return watchTheme(() => {
+      const map = mapRef.current;
+      colorsRef.current = readMapColors();
+      if (!map || !map.isStyleLoaded()) return;
+      removeOverlayLayers(map);
+      installOverlays(map, colorsRef.current);
+      renderDraft();
+    });
+  }, [renderDraft]);
 
   // Basemap switch: overlays are re-added by the style.load handler.
   useEffect(() => {
@@ -393,7 +514,7 @@ export function MissionMap() {
     canvas.style.cursor = activeTool === 'select' ? '' : 'crosshair';
   }, [activeTool, zoneDraft.shape, renderDraft]);
 
-  // Home marker (DOM, styled with tokens via class names).
+  // Home marker: ink square with a surface ring (DOM, styled with token classes).
   useEffect(() => {
     const map = mapRef.current;
     const home = mission?.homePosition;
@@ -406,7 +527,7 @@ export function MissionMap() {
     if (!homeMarkerRef.current) {
       const el = document.createElement('div');
       el.className =
-        'flex size-7 items-center justify-center rounded-full border-2 border-amber bg-bg-base text-caption-1-bold text-amber shadow-lg';
+        'flex size-[22px] items-center justify-center rounded-[3px] bg-text-primary font-mono text-[11px] font-medium leading-none text-background-primary-default ring-[1.5px] ring-background-primary-default';
       el.textContent = 'H';
       el.setAttribute('aria-label', 'Home position');
       el.title = 'Home';
@@ -550,7 +671,7 @@ export function MissionMap() {
       const d = draftRef.current;
 
       if (tool === 'select' || tool === 'add-wp') {
-        const wp = hit(e, ['mp-wp-circle']);
+        const wp = hit(e, WP_LAYERS);
         if (wp) {
           ui.selectMissionItem(String(wp.properties.id));
           if (ui.inspectorTab !== 'item') ui.setInspectorTab('item');
@@ -620,6 +741,7 @@ export function MissionMap() {
     };
 
     const onMove = (e: MapMouseEvent) => {
+      if (coordRef.current) coordRef.current.textContent = `${e.lngLat.lat.toFixed(6)}, ${e.lngLat.lng.toFixed(6)}`;
       const tool = useUIStore.getState().activeTool;
       const d = draftRef.current;
       if (DRAWING_TOOLS.includes(tool) && (d.points.length > 0 || d.center)) {
@@ -629,7 +751,7 @@ export function MissionMap() {
         renderDraft();
       }
       if (tool !== 'select' && tool !== 'add-wp') return;
-      const f = hit(e, ['mp-wp-circle']) ?? (tool === 'select' ? hit(e, ['mp-zones-fill']) : undefined);
+      const f = hit(e, WP_LAYERS) ?? (tool === 'select' ? hit(e, ['mp-zones-fill']) : undefined);
       const next = f ? { source: f.source, id: String(f.properties.id) } : null;
       const prev = hoverRef.current;
       if (prev?.id === next?.id) return;
@@ -644,7 +766,7 @@ export function MissionMap() {
       const tool = useUIStore.getState().activeTool;
       if (tool !== 'select' && tool !== 'add-wp') return;
       if ('points' in e && e.points.length > 1) return;
-      const f = hit(e, ['mp-wp-circle']);
+      const f = hit(e, WP_LAYERS);
       if (!f) return;
       e.preventDefault();
       dragRef.current = { id: String(f.properties.id), moved: false, pos: [e.lngLat.lng, e.lngLat.lat] };
@@ -710,24 +832,41 @@ export function MissionMap() {
   const empty = !!mission && mission.items.length === 0;
 
   return (
-    <div className="relative h-full min-h-0 w-full overflow-hidden bg-bg-raised">
+    <div
+      className={cx(
+        'relative h-full min-h-0 w-full overflow-hidden bg-background-secondary-default',
+        // MapLibre's own controls: scale above the coordinate readout, quiet attribution.
+        '[&_.maplibregl-ctrl-bottom-left]:bottom-7',
+        '[&_.maplibregl-ctrl-scale]:border-text-tertiary [&_.maplibregl-ctrl-scale]:bg-background-primary-default/80 [&_.maplibregl-ctrl-scale]:font-mono [&_.maplibregl-ctrl-scale]:text-[10px] [&_.maplibregl-ctrl-scale]:text-text-secondary',
+        '[&_.maplibregl-ctrl-attrib]:bg-background-primary-default/85 [&_.maplibregl-ctrl-attrib]:text-[10px] [&_.maplibregl-ctrl-attrib]:text-text-tertiary [&_.maplibregl-ctrl-attrib_a]:text-text-secondary'
+      )}
+    >
       <div ref={containerRef} className="absolute inset-0" aria-label="Mission map" role="application" />
       <ToolHint info={draftInfo} onFinish={finishDraft} onCancel={cancelDraft} />
       {empty && activeTool === 'select' && (
         <div className="pointer-events-none absolute inset-x-0 top-16 flex justify-center px-4">
-          <p className="rounded-lg border border-border-button-default bg-background-primary-default/95 px-4 py-2 text-body-2-regular text-text-secondary shadow-dropdown">
-            No waypoints yet. Press <kbd className="font-sans font-semibold text-text-primary">A</kbd> and click the map, or draw a survey area with{' '}
-            <kbd className="font-sans font-semibold text-text-primary">P</kbd>.
+          <p className={cx(FLOAT_PANEL, 'px-3 py-2 text-[13px] text-text-secondary')}>
+            No waypoints yet. Press <Kbd>A</Kbd> and click the map, or outline a survey area with <Kbd>P</Kbd>.
           </p>
         </div>
       )}
       {tilesFailedFor === mapStyle && (
-        <div role="status" className="absolute inset-x-0 bottom-12 flex justify-center px-4">
-          <p className="rounded-lg border border-amber/40 bg-amber-bg px-3 py-1.5 text-body-2-medium text-amber">
-            Map tiles could not load. Editing still works; try the other basemap in Layers.
+        <div role="status" className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center px-4">
+          <p className={cx(FLOAT_PANEL, 'flex items-center gap-2 px-3 py-1.5 text-[13px] text-text-secondary')}>
+            <span aria-hidden className={cx('size-1.5 shrink-0 rounded-full', TONE_DOT.warn)} />
+            Basemap tiles could not load. Editing still works; try {mapStyle === 'satellite' ? 'the map' : 'satellite'} on the tool rail.
           </p>
         </div>
       )}
+      <p
+        aria-hidden
+        className={cx(
+          DATA_MONO,
+          'pointer-events-none absolute bottom-2 left-2 z-[2] rounded-[4px] bg-background-primary-default/85 px-1.5 py-0.5 text-[11px] leading-4 text-text-secondary'
+        )}
+      >
+        <span ref={coordRef}>–</span>
+      </p>
       <MapChrome mapRef={mapRef} />
       {contextMenu && <MapContextMenu state={contextMenu} onClose={() => setContextMenu(null)} />}
     </div>
