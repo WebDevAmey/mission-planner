@@ -1,4 +1,3 @@
-import { headers } from 'next/headers';
 import { db } from '@/prisma/db';
 import { forgotPasswordSchema } from '@/lib/validation/auth';
 import { generateToken, hashToken } from '@/lib/auth/tokens';
@@ -7,6 +6,7 @@ import { isSameOriginRequest } from '@/lib/http/same-origin';
 import { sendPasswordResetEmail } from '@/lib/email/send';
 import { toIsoString } from '@/lib/db/serialize';
 import { AUTH_MAX_BODY_BYTES, readJsonBody } from '@/lib/http/api';
+import { appOrigin } from '@/lib/http/app-origin';
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
@@ -55,8 +55,7 @@ export async function POST(request: Request) {
       expiresAt: toIsoString(new Date(Date.now() + RESET_TOKEN_TTL_MS)),
     });
 
-    const headerList = await headers();
-    const origin = headerList.get('origin') ?? new URL(request.url).origin;
+      const origin = appOrigin(request);
     const resetUrl = `${origin}/reset-password?token=${resetToken}`;
     const { delivered } = await sendPasswordResetEmail(user.email, resetUrl);
 

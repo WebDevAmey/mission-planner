@@ -27,3 +27,29 @@ describe.skipIf(!hasDb)('auth flows', () => {
     expect(statuses).toEqual([200, 200, 200, 200, 200, 429]);
   });
 });
+
+describe.skipIf(!hasDb)('emailed links', () => {
+  let user: TestUser;
+
+  beforeAll(async () => {
+    user = await makeUser();
+  });
+
+  afterAll(async () => {
+    vi.unstubAllEnvs();
+    await db.orm.public.AuthAttempt.where((a) => a.identifier.eq(user.email)).deleteAll();
+    await deleteUser(user);
+  });
+
+  it('reset links use the configured APP_URL, never the request Host/Origin', async () => {
+    signInAs(null);
+    vi.stubEnv('APP_URL', 'https://flightdeck.example');
+    const evil = new Request('https://evil.example/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { origin: 'https://evil.example', 'content-type': 'application/json' },
+      body: JSON.stringify({ email: user.email }),
+    });
+    const body = await (await forgotPOST(evil)).json();
+    expect(body.devResetUrl).toMatch(/^https:\/\/flightdeck\.example\/reset-password\?token=/);
+  });
+});

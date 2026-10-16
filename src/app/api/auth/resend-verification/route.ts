@@ -1,4 +1,3 @@
-import { headers } from 'next/headers';
 import { db } from '@/prisma/db';
 import { getCurrentUser } from '@/lib/auth/guard';
 import { generateToken, hashToken } from '@/lib/auth/tokens';
@@ -6,6 +5,7 @@ import { isSameOriginRequest } from '@/lib/http/same-origin';
 import { sendVerificationEmail } from '@/lib/email/send';
 import { toIsoString } from '@/lib/db/serialize';
 import { checkRateLimit, recordAttempt } from '@/lib/auth/rate-limit';
+import { appOrigin } from '@/lib/http/app-origin';
 
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -40,8 +40,7 @@ export async function POST(request: Request) {
     expiresAt: toIsoString(new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS)),
   });
 
-  const headerList = await headers();
-  const origin = headerList.get('origin') ?? new URL(request.url).origin;
+  const origin = appOrigin(request);
   const verifyUrl = `${origin}/verify-email?token=${verificationToken}`;
   const { delivered } = await sendVerificationEmail(user.email, verifyUrl);
 

@@ -1,4 +1,4 @@
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { db } from '@/prisma/db';
 import { signupSchema } from '@/lib/validation/auth';
 import { hashPassword } from '@/lib/auth/password';
@@ -10,6 +10,7 @@ import { getClientIp } from '@/lib/http/client-ip';
 import { sendVerificationEmail } from '@/lib/email/send';
 import { toIsoString } from '@/lib/db/serialize';
 import { AUTH_MAX_BODY_BYTES, readJsonBody } from '@/lib/http/api';
+import { appOrigin } from '@/lib/http/app-origin';
 
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -68,8 +69,7 @@ export async function POST(request: Request) {
     expiresAt: toIsoString(new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS)),
   });
 
-  const headerList = await headers();
-  const origin = headerList.get('origin') ?? new URL(request.url).origin;
+  const origin = appOrigin(request);
   const verifyUrl = `${origin}/verify-email?token=${verificationToken}`;
 
   const { delivered } = await sendVerificationEmail(user.email, verifyUrl);
