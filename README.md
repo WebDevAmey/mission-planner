@@ -117,6 +117,21 @@ pnpm start
 pnpm lint
 ```
 
+### Scripts
+
+| Command | What it does |
+| --- | --- |
+| `pnpm dev` | Copies the MapLibre worker, then starts the dev server on :3000 |
+| `pnpm build` / `pnpm start` | Emits the database contract, copies the MapLibre worker, builds; then serves the build |
+| `pnpm maplibre:worker` | Copies MapLibre 6's worker modules to `public/maplibre` (gitignored). `dev` and `build` run it; run it by hand if the map draws no route after `next start` |
+| `pnpm lint` | ESLint (CI runs it with `--max-warnings=0`) |
+| `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm design:lint` | Fails on banned design patterns in UI code (gradients, glow blobs, `rounded-2xl`, sparkle icons and similar; `docs/DESIGN_SPEC.md` §8.1). Needs ripgrep (`rg`) |
+| `pnpm test` | Vitest unit tests (`tests/unit`) |
+| `pnpm test:integration` | Route and database tests (`tests/integration`); needs `DATABASE_URL` pointing at a migrated scratch database |
+| `pnpm test:e2e` | Playwright end-to-end tests (`tests/e2e`) against a production build: run `pnpm build` first, with a migrated and seeded database in `DATABASE_URL`. Starts `next start` on port 3100 unless `E2E_BASE_URL` is set. Install the browser once with `pnpm exec playwright install chromium` |
+| `pnpm db:migrate` / `pnpm db:sign` / `pnpm db:seed` | Apply migrations, sign the database, create the demo user (see [Migrations](#migrations)) |
+
 ## Project Structure
 
 ```

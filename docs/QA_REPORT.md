@@ -71,7 +71,7 @@ The suite has 19 specs in `tests/e2e`. Configuration is in `playwright.config.ts
 
 CI runs on pull requests and on pushes to main. It uses Node 22, and the pnpm version comes from the `packageManager` field.
 
-- **`checks` job:** `pnpm install --frozen-lockfile`, `pnpm lint --max-warnings=0`, typecheck, unit tests, then a build with a dummy `DATABASE_URL`.
+- **`checks` job:** `pnpm install --frozen-lockfile`, `pnpm lint --max-warnings=0`, typecheck, unit tests, `pnpm design:lint` (ripgrep is installed first if the runner lacks it), then a build with a dummy `DATABASE_URL`.
 - **`integration-e2e` job:** a Postgres 16 service container; `pnpm db:migrate && pnpm db:sign && pnpm db:seed`; integration tests; build; `playwright install --with-deps chromium`; `pnpm test:e2e`; the Playwright report is uploaded as an artifact.
 - **Secrets:** none are needed.
 
@@ -79,7 +79,7 @@ The full sequence was simulated locally against an empty database and every step
 
 ## Remaining items
 
-- **Prefetch 404 for signed-in users (needs sec):** after logging in, and on the landing page, signed-in users get one console 404. Next prefetches `/login` and `/signup`, the proxy redirects those prefetches to `/dashboard`, and the browser follows the redirect without RSC headers, so `/dashboard?_rsc=…` answers 404. Navigation works. The fix belongs in `src/proxy.ts` (sec's file): skip the redirect for requests that carry `next-router-prefetch`. Requested in requests.md.
+- **Prefetch 404 for signed-in users (fixed by sec in de335c3, the proxy now lets RSC prefetches of `/login` and `/signup` through):** after logging in, and on the landing page, signed-in users get one console 404. Next prefetches `/login` and `/signup`, the proxy redirects those prefetches to `/dashboard`, and the browser follows the redirect without RSC headers, so `/dashboard?_rsc=…` answers 404. Navigation works. The fix belongs in `src/proxy.ts` (sec's file): skip the redirect for requests that carry `next-router-prefetch`. Requested in requests.md.
 - **Menu semantics:** dropdown menus (More actions, Plan, Add, card actions) are built as dialogs of buttons rather than ARIA `menu`/`menuitem`. They are keyboard-operable with Tab and Escape and axe passes, but there is no arrow-key navigation. Changing this is a component-level refactor of `base/dropdown`; logged as a follow-up.
 - **Local reruns and rate limits:** the signup rate limit (5 per hour per IP or email) applies to local reruns of the E2E suite. Clear the `AuthAttempt` table in a scratch database between runs. CI always starts from a fresh database.
 - **Map rendering in E2E:** with blocked tile hosts, the editor E2E specs exercise the blank fallback basemap. Real tile rendering was not visually verified in this container.

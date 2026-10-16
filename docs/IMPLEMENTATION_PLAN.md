@@ -1,6 +1,6 @@
 # Mission Planner: Implementation Plan
 
-Status: **In progress** (statuses updated 2026-10-15 after the revamp merge on `feature/revamp`) · Baseline `0f7aab3` · Specs: [PRODUCT_SPEC](PRODUCT_SPEC.md), [TECHNICAL_SPEC](TECHNICAL_SPEC.md), [DECISIONS](DECISIONS.md)
+Status: **In progress** (statuses updated 2026-10-16 after the hardening merge on `feature/hardening`) · Baseline `0f7aab3` · Specs: [PRODUCT_SPEC](PRODUCT_SPEC.md), [TECHNICAL_SPEC](TECHNICAL_SPEC.md), [DECISIONS](DECISIONS.md)
 
 The order differs from the brief's suggested sequence because the audit found that **saving is broken in production** (PRODUCT_SPEC §2.1-1). Postgres, auth and mission CRUD already exist, so the plan starts by stopping data loss, then adds the test harness, then builds on top.
 
@@ -8,20 +8,21 @@ The order differs from the brief's suggested sequence because the audit found th
 
 | # | Phase | Depends on | Status |
 |---|---|---|---|
-| 0 | Baseline and test harness | none | Partial: Vitest unit (55) and integration (35, scratch Postgres) done; no Playwright E2E suite or CI workflow yet |
+| 0 | Baseline and test harness | none | Done: Vitest unit and integration (scratch Postgres), Playwright E2E (`tests/e2e`, `pnpm test:e2e`) and the GitHub Actions workflow (`.github/workflows/ci.yml`) |
 | 1 | Stop data loss: save fix, blank editor, local data leak | 0 | Done |
 | 2 | Shared domain layer and unified validator | 0 | Done |
 | 3 | Schema: version, summary, zones, limits on server | 1, 2 | Done (no backfill of summary columns; they fill on next save) |
 | 4 | API hardening and new endpoints | 3 | Done |
 | 5 | Editor redesign: declutter, layout, tokens, a11y | 1, 2 | Done |
 | 6 | Map rendering rewrite (GeoJSON layers, zones, tools) | 5 | Done (fit-on-load and tiles not verified: tile hosts blocked in the test container) |
-| 7 | Path planning algorithms | 2, 6 | Done (survey has no polygon holes; planners run on the main thread, no Web Worker) |
+| 7 | Path planning algorithms | 2, 6 | Done (survey has no polygon holes; planners run on the main thread, no Web Worker; optimise shows "Computing…" over 500 items) |
 | 8 | Exports and import | 2, 3 | Done |
 | 9 | Dashboard upgrade | 3, 4 | Done (thumbnails fetch each mission; list API has no route geometry) |
 | 10 | Account settings | 4 | Done |
 | 11 | Landing page revamp | none (parallel) | Done (Lighthouse AC not measured) |
 | 12 | Hardening, staging, rollout | all | Not started |
 | 13 | Design overhaul ([DESIGN_SPEC](DESIGN_SPEC.md)) | 5, 9, 11 | Done on `feature/design-overhaul` (light accent fill darkened to #C63B15 for AA; basemap tiles and terrain chart not verified, hosts blocked in the test container; screenshots in [screenshots/overhaul](screenshots/overhaul/)) |
+| 14 | Security, QA and performance hardening | all | Done on `feature/hardening`: OWASP audit ([SECURITY_AUDIT](SECURITY_AUDIT.md)), latency pass ([PERFORMANCE](PERFORMANCE.md)), final QA with E2E and CI ([QA_REPORT](QA_REPORT.md)) |
 
 Phases 2, 5 and 11 can run in parallel once Phase 0 lands. Phases 7 and 8 can run in parallel.
 
@@ -125,5 +126,13 @@ Phases 2, 5 and 11 can run in parallel once Phase 0 lands. Phases 7 and 8 can ru
 - **AC:** DESIGN_SPEC §8.
 - **Rollback:** revert the merge; purely presentational.
 
+### Phase 14: Security, QA and performance hardening
+- **Goal:** ship-ready: no known security gaps, every check green, no latency regressions on large missions.
+- **Branch:** `feature/hardening`, merging `task/h-sec`, `task/h-qa` and `task/h-perf`.
+- **Security** ([SECURITY_AUDIT](SECURITY_AUDIT.md), [SECURITY.md](../SECURITY.md)): OWASP Top 10 review of every route; session idle timeout and rotation, login rate limits, open-redirect and reset-poisoning fixes, capped request and upstream bodies, security headers and CSP, JSON security logs; `tests/integration/access-control.itest.ts` sweeps every API handler for 401/403/404.
+- **QA** ([QA_REPORT](QA_REPORT.md)): Playwright E2E suite with axe checks, runtime crawl of every page in both themes at 390/1440 px, CI workflow (lint, typecheck, unit, design lint, build, integration, E2E).
+- **Performance** ([PERFORMANCE](PERFORMANCE.md)): fewer reads and smaller replies on save, faster domain algorithms at 2,000 points, lazy-loaded map and editor dialogs, field-level store subscriptions.
+- **Done when** all checks pass locally and in CI. Status: Done.
+
 ## Checklist
-- [~] Phase 0 · [x] 1 · [x] 2 · [x] 3 · [x] 4 · [x] 5 · [x] 6 · [x] 7 · [x] 8 · [x] 9 · [x] 10 · [x] 11 · [ ] 12 · [x] 13
+- [x] Phase 0 · [x] 1 · [x] 2 · [x] 3 · [x] 4 · [x] 5 · [x] 6 · [x] 7 · [x] 8 · [x] 9 · [x] 10 · [x] 11 · [ ] 12 · [x] 13 · [x] 14
