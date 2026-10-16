@@ -136,7 +136,12 @@ export function NewMissionDialog({
             <Button size="small" variant="ghost" leadingIcon={RiMapPinLine} onClick={locate} className="self-start">
               Use my location
             </Button>
-            {searchError && <p className="text-caption-1-regular text-fd-danger">{searchError}</p>}
+            {searchError && (
+              <p role="alert" className="text-caption-1-regular text-fd-danger">
+                {searchError}
+                {needsHome ? '' : ' You can still create the mission and set home on the map.'}
+              </p>
+            )}
             {results && (
               <ul className="flex max-h-40 flex-col overflow-y-auto rounded-fd-control border border-separator-border" aria-label="Search results">
                 {results.length === 0 && <li className="px-3 py-2 text-body-2-regular text-text-secondary">No places found</li>}
