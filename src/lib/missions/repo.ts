@@ -42,22 +42,25 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 /** The bare mission row if it exists and belongs to `userId`, otherwise null. */
 export async function getOwnedMission(id: string, userId: string, orm: Orm = db.orm) {
   if (!UUID_RE.test(id)) return null;
-  const mission = await orm.public.Mission.where({ id }).first();
-  return mission && mission.userId === userId ? mission : null;
+  // Ownership is part of the query, so a foreign mission costs one indexed lookup and no row data.
+  return orm.public.Mission.where({ id, userId }).select('id', 'userId', 'version').first();
+}
+
+function fullMissionQuery(where: { id: string; userId?: string }, orm: Orm) {
+  return orm.public.Mission.where(where)
+    .include('waypoints', (w) => w)
+    .include('settings', (s) => s)
+    .include('zones', (z) => z);
 }
 
 export async function loadFullMission(id: string, orm: Orm = db.orm) {
-  return orm.public.Mission.where({ id })
-    .include('waypoints', (w) => w)
-    .include('settings', (s) => s)
-    .include('zones', (z) => z)
-    .first();
+  return fullMissionQuery({ id }, orm).first();
 }
 
 export async function getOwnedFullMission(id: string, userId: string, orm: Orm = db.orm) {
   if (!UUID_RE.test(id)) return null;
-  const mission = await loadFullMission(id, orm);
-  return mission && mission.userId === userId ? mission : null;
+  // Filtering on userId in SQL means a foreign id never loads (or decodes) its waypoints.
+  return fullMissionQuery({ id, userId }, orm).first();
 }
 
 export type FullMission = NonNullable<Awaited<ReturnType<typeof loadFullMission>>>;
@@ -113,52 +116,59 @@ function settingsColumns(settings?: SettingsInput, limits?: LimitsInput) {
   return out;
 }
 
+// deleteAndCount/updateAndCount: the old rows are never needed, so don't ship them back
+// (deleteAll() returned and decoded every replaced waypoint on each save).
 async function replaceWaypoints(tx: Tx, missionId: string, items: WaypointInput[]) {
-  await tx.orm.public.Waypoint.where({ missionId }).deleteAll();
+  await tx.orm.public.Waypoint.where({ missionId }).deleteAndCount();
   if (items.length) await tx.orm.public.Waypoint.createAndCount(waypointRows(missionId, items));
 }
 
 async function replaceZones(tx: Tx, missionId: string, zones: ZoneInputData[]) {
-  await tx.orm.public.Zone.where({ missionId }).deleteAll();
+  await tx.orm.public.Zone.where({ missionId }).deleteAndCount();
   if (zones.length) await tx.orm.public.Zone.createAndCount(zoneRows(missionId, zones));
 }
 
-/** Recomputes and stores the denormalised summary columns from what's now in the DB. */
-export async function refreshSummary(tx: Tx, missionId: string) {
+/**
+ * Recomputes and stores the denormalised summary columns from what's now in the DB.
+ * Returns the full mission as stored (summary columns included), so callers can answer
+ * without reading it again; null if the mission is gone.
+ */
+export async function refreshSummary(tx: Tx, missionId: string): Promise<FullMission | null> {
   const full = await loadFullMission(missionId, tx.orm);
-  if (!full) return;
+  if (!full) return null;
   const s = full.settings;
-  const summary = computeMissionSummary(
-    [...full.waypoints].sort((a, b) => a.sequence - b.sequence),
-    {
-      defaultSpeed: s?.defaultSpeed ?? 12,
-      cruiseSpeed: s?.cruiseSpeed,
-      ratedEnduranceS: s?.ratedEnduranceS,
-      maxDistanceM: s?.maxDistanceM,
-      maxAltM: s?.maxAltM,
-      minAltM: s?.minAltM,
-      maxSpeedMs: s?.maxSpeedMs,
-    },
+  const waypoints = [...full.waypoints].sort((a, b) => a.sequence - b.sequence);
+  const settings = {
+    defaultSpeed: s?.defaultSpeed ?? 12,
+    cruiseSpeed: s?.cruiseSpeed,
+    ratedEnduranceS: s?.ratedEnduranceS,
+    maxDistanceM: s?.maxDistanceM,
+    maxAltM: s?.maxAltM,
+    minAltM: s?.minAltM,
+    maxSpeedMs: s?.maxSpeedMs,
+  };
+  const home =
     full.homeLatitude !== null && full.homeLongitude !== null
       ? { latitude: full.homeLatitude, longitude: full.homeLongitude }
-      : null,
-    full.zones
-  );
+      : null;
   // Distance, time and issue counts come from the shared domain layer so the
-  // dashboard agrees with the editor; bbox comes from the simple pass above.
+  // dashboard agrees with the editor; bbox and count come from the simple pass,
+  // which only needs the (expensive) zone sampling when it is the fallback.
+  let summary;
   try {
     const analysis = analyseMission(toMissionPlan(asDbMission(full)));
+    summary = computeMissionSummary(waypoints, settings, home);
     summary.distanceM = Math.round(analysis.metrics.distanceM * 10) / 10;
     summary.durationS = Math.round(analysis.metrics.timeS);
     summary.errorCount = analysis.errorCount;
     summary.warningCount = analysis.warningCount;
   } catch (err) {
     console.error('[missions] domain analysis failed; keeping fallback summary', err);
+    summary = computeMissionSummary(waypoints, settings, home, full.zones);
   }
-  await tx.orm.public.Mission.where({ id: missionId }).update({
-    ...summary,
-    lastValidatedAt: toIsoString(new Date()),
-  });
+  const lastValidatedAt = toIsoString(new Date());
+  await tx.orm.public.Mission.where({ id: missionId }).updateAndCount({ ...summary, lastValidatedAt });
+  return Object.assign(full, summary, { lastValidatedAt });
 }
 
 /**
@@ -167,8 +177,8 @@ export async function refreshSummary(tx: Tx, missionId: string) {
  * replacement (multi-row inserts), version + 1, summary recompute.
  * Throws VersionConflictError when `baseVersion` is stale.
  */
-export async function saveMissionDocument(missionId: string, patch: MissionPatch): Promise<void> {
-  await db.transaction(async (tx) => {
+export async function saveMissionDocument(missionId: string, patch: MissionPatch): Promise<FullMission> {
+  return db.transaction(async (tx) => {
     const current = await tx.orm.public.Mission.where({ id: missionId }).forNoKeyUpdate().first();
     if (!current) throw new Error('Mission vanished during save');
     if (patch.baseVersion !== undefined && patch.baseVersion !== current.version) {
@@ -188,7 +198,7 @@ export async function saveMissionDocument(missionId: string, patch: MissionPatch
       update.homeLongitude = patch.homePosition?.longitude ?? null;
       update.homeAltitude = patch.homePosition?.altitude ?? null;
     }
-    await tx.orm.public.Mission.where({ id: missionId }).update(update);
+    await tx.orm.public.Mission.where({ id: missionId }).updateAndCount(update);
 
     const cols = settingsColumns(patch.settings, patch.limits);
     if (Object.keys(cols).length) {
@@ -201,7 +211,9 @@ export async function saveMissionDocument(missionId: string, patch: MissionPatch
     if (patch.items) await replaceWaypoints(tx, missionId, patch.items);
     if (patch.zones) await replaceZones(tx, missionId, patch.zones);
 
-    await refreshSummary(tx, missionId);
+    const saved = await refreshSummary(tx, missionId);
+    if (!saved) throw new Error('Mission vanished during save');
+    return saved;
   });
 }
 
@@ -219,6 +231,11 @@ export interface NewMissionDocument {
 
 /** Creates a mission with its settings, items and zones in one transaction; returns the new id. */
 export async function createMissionDocument(userId: string, doc: NewMissionDocument): Promise<string> {
+  return (await createMissionWithDocument(userId, doc)).id;
+}
+
+/** Like `createMissionDocument`, but returns the stored mission so the caller needn't re-read it. */
+export async function createMissionWithDocument(userId: string, doc: NewMissionDocument): Promise<FullMission> {
   return db.transaction(async (tx) => {
     const mission = await tx.orm.public.Mission.create({
       name: doc.name,
@@ -233,15 +250,21 @@ export async function createMissionDocument(userId: string, doc: NewMissionDocum
     await tx.orm.public.MissionSettings.create({ missionId: mission.id, ...settingsColumns(doc.settings, doc.limits) });
     if (doc.items?.length) await tx.orm.public.Waypoint.createAndCount(waypointRows(mission.id, doc.items));
     if (doc.zones?.length) await tx.orm.public.Zone.createAndCount(zoneRows(mission.id, doc.zones));
-    await refreshSummary(tx, mission.id);
-    return mission.id;
+    const created = await refreshSummary(tx, mission.id);
+    if (!created) throw new Error('Mission vanished during create');
+    return created;
   });
 }
 
 /** Copies a mission (settings, limits, waypoints, zones) for `userId`; returns the new id. */
 export async function duplicateMission(original: FullMission, userId: string): Promise<string> {
+  return (await duplicateMissionDocument(original, userId)).id;
+}
+
+/** Like `duplicateMission`, but returns the stored copy so the caller needn't re-read it. */
+export async function duplicateMissionDocument(original: FullMission, userId: string): Promise<FullMission> {
   const s = original.settings;
-  return createMissionDocument(userId, {
+  return createMissionWithDocument(userId, {
     name: `${original.name} (Copy)`.slice(0, 200),
     description: original.description,
     vehicleType: original.vehicleType,
