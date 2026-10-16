@@ -28,7 +28,8 @@ const HOUR = 60 * 60 * 1000;
 const POLICIES: Record<AuthAttemptKind, RateLimitPolicy> = {
   login: { windowMs: 15 * 60 * 1000, maxAttempts: 10 },
   signup: { windowMs: HOUR, maxAttempts: 5, countSuccess: true },
-  forgot_password: { windowMs: HOUR, maxAttempts: 5 },
+  // Every request is recorded as a success, so this must count successes to ever trip.
+  forgot_password: { windowMs: HOUR, maxAttempts: 5, countSuccess: true },
   resend_verification: { windowMs: HOUR, maxAttempts: 5, countSuccess: true },
   password_change: { windowMs: 15 * 60 * 1000, maxAttempts: 5 },
   account_delete: { windowMs: 15 * 60 * 1000, maxAttempts: 5 },
