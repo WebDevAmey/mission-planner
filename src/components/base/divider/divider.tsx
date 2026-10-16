@@ -29,7 +29,7 @@ const styles = sortCx({
   withContent: {
     single: "flex items-center gap-3",
     double: "flex items-center border-y border-separator-border py-2.5",
-    fill: "flex items-center rounded-2lg bg-background-secondary-default px-4 py-2.5",
+    fill: "flex items-center rounded-md bg-background-secondary-default px-4 py-2.5",
   },
   empty: {
     single: "h-px bg-separator-border",

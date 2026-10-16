@@ -9,29 +9,31 @@ export type ButtonSize = 'xs' | 'sm' | 'md';
 export type IconButtonSize = 'xs' | 'sm' | 'md';
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: 'bg-foreground text-background border border-foreground hover:bg-foreground/90',
-  accent: 'bg-green text-black border border-green font-mono hover:bg-green-dim',
-  secondary: 'bg-bg-raised text-text border border-border-mid hover:bg-bg-hover hover:border-border-hi',
-  outline: 'bg-transparent text-text border border-border-mid hover:bg-bg-hover hover:border-border-hi',
-  ghost: 'bg-transparent text-text-dim border border-transparent hover:bg-bg-hover hover:text-text',
-  danger: 'bg-transparent text-text-dim border border-transparent hover:bg-red-bg hover:text-red',
+  // Solid ink fill: the strong neutral action (accent is reserved for one per view).
+  primary: 'bg-fd-ink text-fd-surface border border-fd-ink hover:bg-fd-ink/90',
+  // The view's single accent-filled control.
+  accent: 'bg-fd-accent text-fd-accent-ink border border-fd-accent hover:bg-fd-accent-hover hover:border-fd-accent-hover',
+  secondary: 'bg-fd-surface text-fd-ink border border-fd-line-strong hover:bg-fd-surface-2 hover:border-fd-ink-3',
+  outline: 'bg-transparent text-fd-ink border border-fd-line-strong hover:bg-fd-surface-2 hover:border-fd-ink-3',
+  ghost: 'bg-transparent text-fd-ink-2 border border-transparent hover:bg-fd-surface-2 hover:text-fd-ink',
+  danger: 'bg-transparent text-fd-ink-2 border border-transparent hover:bg-fd-danger-tint hover:text-fd-danger',
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
-  xs: 'h-6 gap-1 rounded-sm px-2 text-[10px] font-mono',
-  sm: 'h-7 gap-1.5 rounded-sm px-2.5 text-xs',
-  md: 'h-9 gap-2 rounded-md px-4 text-[13px]',
+  xs: 'h-6 gap-1 rounded-sm px-2 text-caption-1-medium',
+  sm: 'h-8 gap-1.5 rounded-md px-2.5 text-body-2-medium',
+  md: 'h-9 gap-2 rounded-md px-3.5 text-body-medium',
 };
 
 const ICON_SIZE_CLASSES: Record<IconButtonSize, string> = {
   xs: 'h-6 w-6 rounded-sm p-0',
-  sm: 'h-7 w-7 rounded-sm p-0',
+  sm: 'h-8 w-8 rounded-md p-0',
   md: 'h-8 w-8 rounded-md p-0',
 };
 
 const BASE_CLASSES =
   'inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap font-medium ' +
-  'transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring ' +
+  'transition-colors duration-120 ease-fd outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fd-accent ' +
   'disabled:pointer-events-none disabled:opacity-50';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -54,7 +56,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
         BASE_CLASSES,
         VARIANT_CLASSES[variant],
         SIZE_CLASSES[size],
-        active && 'border-green bg-green-bg text-green',
+        active && 'border-fd-line-strong bg-fd-surface-3 text-fd-ink',
         className
       )}
       {...props}
@@ -103,7 +105,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(f
         BASE_CLASSES,
         VARIANT_CLASSES[variant],
         ICON_SIZE_CLASSES[size],
-        active && 'border-green bg-green-bg text-green',
+        active && 'border-fd-line-strong bg-fd-surface-3 text-fd-ink',
         className
       )}
       {...props}

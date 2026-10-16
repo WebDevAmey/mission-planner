@@ -117,8 +117,8 @@ const STATUS_ICON: Record<NotificationStatus, IconComponent> = {
 const styles = sortCx({
   card: [
     "relative flex w-full items-start gap-3 overflow-hidden p-4 pe-11",
-    "rounded-2xl border border-border-button-default",
-    "bg-background-primary-default shadow-dropdown",
+    "rounded-2lg border border-fd-line",
+    "bg-background-primary-default shadow-fd-float",
   ].join(" "),
   visual: "relative flex size-10 shrink-0 items-center justify-center rounded-full",
   icon: "size-5",

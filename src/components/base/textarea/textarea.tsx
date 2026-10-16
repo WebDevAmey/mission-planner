@@ -73,9 +73,9 @@ export interface TextareaBaseProps
 const textareaStyles = sortCx({
   field: [
     "relative flex w-full flex-col",
-    "rounded-2lg",
-    "bg-background-tertiary-default text-foreground-icon-tertiary",
-    "ring-2 ring-inset ring-transparent",
+    "rounded-md",
+    "bg-background-primary-default text-foreground-icon-tertiary",
+    "ring-1 ring-inset ring-fd-line-strong",
     "transition-[background-color,box-shadow,color] duration-[var(--input-transition-ms)] ease",
   ].join(" "),
 
@@ -170,17 +170,17 @@ export function TextareaBase({
             !isFocusWithin &&
             !isDisabled &&
             !isInvalid &&
-            "ring-border-button-hover",
+            "ring-fd-ink-3",
           // Focus wins over hover
           isFocusWithin &&
             !isDisabled &&
             !isInvalid &&
-            "ring-border-button-active",
+            "ring-2 ring-fd-accent",
           // Disabled
           isDisabled &&
             "bg-input-disabled-background text-input-disabled-foreground",
           // Invalid
-          isInvalid && "bg-background-tertiary-error text-foreground-icon-error",
+          isInvalid && "ring-fd-danger text-foreground-icon-error",
           ctx.fieldClassName,
           fieldClassName,
         )

@@ -634,12 +634,13 @@
   --fd-line-strong:  #b9b6ad;
   --fd-ink:          #0e1013;
   --fd-ink-2:        #4a4d52;
-  --fd-ink-3:        #6b6e73;
+  --fd-ink-3:        #64676c; /* spec #6B6E73 is 4.33:1 on surface-2; nudged for AA */
   --fd-accent:       #e0461c;
   --fd-accent-hover: #c63b15;
   --fd-accent-press: #a33011;
   --fd-accent-ink:   #ffffff;
   --fd-accent-tint:  #fbe6de;
+  --fd-accent-text:  #c63b15; /* accent for small text/links: 4.7:1 on bg */
   --fd-info:         #1f5fd6;
   --fd-ok:           #1e7f4f;
   --fd-warn:         #b7791f;
@@ -775,6 +776,7 @@
   --fd-accent-press: #e0461c;
   --fd-accent-ink:   #0a0b0d;
   --fd-accent-tint:  #2a1610;
+  --fd-accent-text:  #ff5a2b;
   --fd-info:         #5b8cff;
   --fd-ok:           #3fbf7f;
   --fd-warn:         #e3a63b;
@@ -894,6 +896,7 @@
   --color-fd-accent-press: var(--fd-accent-press);
   --color-fd-accent-ink:   var(--fd-accent-ink);
   --color-fd-accent-tint:  var(--fd-accent-tint);
+  --color-fd-accent-text:  var(--fd-accent-text);
   --color-fd-info:         var(--fd-info);
   --color-fd-ok:           var(--fd-ok);
   --color-fd-warn:         var(--fd-warn);
@@ -908,6 +911,7 @@
   --radius-fd-overlay: var(--fd-radius-overlay);
 
   --shadow-fd-float: var(--fd-shadow-float);
+  --shadow-float:    var(--fd-shadow-float); /* alias: shadow-float */
 
   --ease-fd: var(--fd-ease);
 }

@@ -18,15 +18,15 @@ export function EmptyState({ icon: Icon, title, description, action, tone = 'neu
         <div
           className={cn(
             'mb-1 flex h-9 w-9 items-center justify-center rounded-full border',
-            tone === 'danger' ? 'border-red/40 bg-red-bg text-red' : 'border-border bg-bg-raised text-text-muted'
+            tone === 'danger' ? 'border-fd-danger/40 bg-fd-danger-tint text-fd-danger' : 'border-fd-line bg-fd-surface-2 text-fd-ink-3'
           )}
         >
           <Icon size={16} />
         </div>
       )}
-      <div className="font-mono text-[11px] font-semibold text-text-dim">{title}</div>
+      <div className="text-body-medium text-fd-ink">{title}</div>
       {description && (
-        <p className="max-w-[240px] font-sans text-[11px] leading-relaxed text-text-muted">{description}</p>
+        <p className="max-w-[280px] text-body-2-regular text-fd-ink-2">{description}</p>
       )}
       {action}
     </div>

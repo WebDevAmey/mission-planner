@@ -185,6 +185,9 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* ring-offset-* gaps take the page colour, not Tailwind's default white. */
+  *, ::before, ::after { --tw-ring-offset-color: var(--fd-bg); }
+
   /* Focus: 2px accent ring, 2px offset, on every interactive element. */
   :focus-visible {
     outline: 2px solid var(--fd-focus);

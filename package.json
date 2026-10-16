@@ -15,7 +15,8 @@
     "db:seed": "tsx src/prisma/seed.ts",
     "test": "vitest run --passWithNoTests",
     "test:integration": "vitest run --config tests/integration/vitest.config.ts",
-    "typecheck": "tsc --noEmit --incremental false"
+    "typecheck": "tsc --noEmit --incremental false",
+    "design:lint": "bash scripts/design-lint.sh"
   },
   "dependencies": {
     "@arclux/arc-ui": "4.9.1",

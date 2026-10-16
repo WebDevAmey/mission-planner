@@ -33,8 +33,8 @@ import { cx, sortCx } from "@/utils/cx";
  * Dismissal is self-managed: clicking the close button plays a soft blur +
  * scale-down (0.85) exit via `motion/react`, then unmounts and fires the
  * optional `onClose` callback. The leading `icon` defaults to the shield used
- * in the frame; pass any Remix Icon component reference (`RiSparklingFill`,
- * not `<RiSparklingFill />`).
+ * in the frame; pass any Remix Icon component reference (`RiMegaphoneLine`,
+ * not `<RiMegaphoneLine />`).
  *
  * `introDelay` opts into a matching entrance: blur + fade + scale up from
  * 0.85, rising 15px up from below into place, after the given delay (seconds).
@@ -77,7 +77,7 @@ export interface AnnouncementProps
 const styles = sortCx({
   card: [
     "relative flex w-full flex-col items-start gap-3 p-3",
-    "rounded-xl border border-border-button-default bg-background-primary-default",
+    "rounded-md border border-border-button-default bg-background-primary-default",
   ].join(" "),
   content: "flex w-full flex-col items-start gap-1",
   icon: "size-5 shrink-0 text-foreground-icon-secondary",
