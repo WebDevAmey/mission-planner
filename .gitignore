@@ -46,3 +46,9 @@ dist/
 
 # MapLibre worker modules, copied from node_modules by scripts/copy-maplibre-worker.mjs
 /public/maplibre/
+
+# playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/tests/e2e/.auth/
