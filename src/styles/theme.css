@@ -29,7 +29,7 @@
    * a raw hue, so the whole system re-tints by overriding these eleven
    * variables at runtime (see components/application/theme/accent.ts) or in
    * a customer project after importing this file. Flight Deck: re-pointed to
-   * the signal-orange ramp built around #E0461C (DESIGN_SPEC §3.1); dark lifts
+   * the signal-orange ramp built around #C63B15 (DESIGN_SPEC §3.1); dark lifts
    * 400/500 to #FF5A2B in the .dark block below. Content/data blues (charts, status chips, calendar
    * events, info notifications) deliberately keep referencing blue-*.
    * --------------------------------------------------------------------------*/
@@ -38,8 +38,8 @@
   --color-accent-200: #f6c8b5;
   --color-accent-300: #f0a385;
   --color-accent-400: #e8734f;
-  --color-accent-500: #e0461c;
-  --color-accent-600: #c63b15;
+  --color-accent-500: #c63b15; /* light fill darkened from #e0461c: white label 5.2:1 */
+  --color-accent-600: #a33011;
   --color-accent-700: #a33011;
   --color-accent-800: #822810;
   --color-accent-900: #6a2310;
@@ -635,9 +635,9 @@
   --fd-ink:          #0e1013;
   --fd-ink-2:        #4a4d52;
   --fd-ink-3:        #64676c; /* spec #6B6E73 is 4.33:1 on surface-2; nudged for AA */
-  --fd-accent:       #e0461c;
-  --fd-accent-hover: #c63b15;
-  --fd-accent-press: #a33011;
+  --fd-accent:       #c63b15; /* darkened from #E0461C for 4.5:1 label contrast */
+  --fd-accent-hover: #a33011;
+  --fd-accent-press: #822810;
   --fd-accent-ink:   #ffffff;
   --fd-accent-tint:  #fbe6de;
   --fd-accent-text:  #c63b15; /* accent for small text/links: 4.7:1 on bg */

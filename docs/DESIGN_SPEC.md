@@ -58,7 +58,7 @@ Implemented once in `src/styles/theme.css` (BoardUI semantic layer) and `src/app
 | Text primary | `--fd-ink` → `text-primary` | `#0E1013` | `#EDEDEA` |
 | Text secondary | `--fd-ink-2` → `text-secondary` | `#4A4D52` | `#A3A7AD` |
 | Text tertiary / labels | `--fd-ink-3` → `text-tertiary` | `#6B6E73` | `#7E838A` |
-| Accent (signal orange) | `--fd-accent` → `accent-500/600` ramp | `#E0461C` | `#FF5A2B` |
+| Accent (signal orange) | `--fd-accent` → `accent-500/600` ramp | `#C63B15` (darkened from #E0461C for 4.5:1 label contrast) | `#FF5A2B` |
 | On accent | `--fd-accent-ink` | `#FFFFFF` | `#0A0B0D` |
 | Accent tint (selected row) | `--fd-accent-tint` | `#FBE6DE` | `#2A1610` |
 | Info / map overlay (cobalt) | `--fd-info` | `#1F5FD6` | `#5B8CFF` |
@@ -66,7 +66,7 @@ Implemented once in `src/styles/theme.css` (BoardUI semantic layer) and `src/app
 | Warning | `--fd-warn` | `#B7791F` | `#E3A63B` |
 | Danger | `--fd-danger` | `#B42318` | `#F0574A` |
 
-- The BoardUI accent ramp (`--color-accent-50…950`) is re-pointed to an orange ramp built around `#E0461C` (light) so every BoardUI control picks it up. The primary button **gradient is removed**: solid accent fill.
+- The BoardUI accent ramp (`--color-accent-50…950`) is re-pointed to an orange ramp built around `#C63B15` (light) so every BoardUI control picks it up. The primary button **gradient is removed**: solid accent fill.
 - The legacy editor tokens (`--color-bg-base`, `--color-green`, `--color-text-dim`, …) are re-pointed to the new semantic values so nothing breaks, then removed from components during the editor pass. `--color-green` must no longer be `#00ff41`.
 - **Map colours** (`src/components/map/map-colors.ts`): route line = accent, 3px, with a 1px surface-coloured casing; waypoints = 22px circles, surface fill, ink 1.5px stroke, mono number; selected = accent fill, accent-ink number; takeoff/RTL = ink square/diamond; keep-out zone = danger 12% fill + 1.5px danger dashed stroke; keep-in = info 8% fill + info stroke; survey preview = info 1px lines. Contrast checked on both vector and satellite basemaps (casing makes it legible on satellite).
 - Contrast: all text pairs meet WCAG AA (4.5:1 body, 3:1 for ≥18px and UI glyphs). Verify `ink-3` on `surface-2` in both themes.
