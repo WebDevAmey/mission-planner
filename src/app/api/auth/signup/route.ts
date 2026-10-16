@@ -1,14 +1,16 @@
-import { cookies, headers } from 'next/headers';
 import { db } from '@/prisma/db';
 import { signupSchema } from '@/lib/validation/auth';
 import { hashPassword } from '@/lib/auth/password';
-import { createSession, SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from '@/lib/auth/session';
+import { startSession } from '@/lib/auth/guard';
 import { generateToken, hashToken } from '@/lib/auth/tokens';
 import { checkRateLimit, normalizeIdentifier, recordAttempt } from '@/lib/auth/rate-limit';
 import { isSameOriginRequest } from '@/lib/http/same-origin';
 import { getClientIp } from '@/lib/http/client-ip';
 import { sendVerificationEmail } from '@/lib/email/send';
 import { toIsoString } from '@/lib/db/serialize';
+import { AUTH_MAX_BODY_BYTES, readJsonBody } from '@/lib/http/api';
+import { appOrigin } from '@/lib/http/app-origin';
+import { securityEvent, subjectRef } from '@/lib/http/security-log';
 
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -17,12 +19,9 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, error: 'Invalid request origin' }, { status: 403 });
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ ok: false, error: 'Invalid request body' }, { status: 400 });
-  }
+  const read = await readJsonBody(request, { maxBytes: AUTH_MAX_BODY_BYTES });
+  if (!read.ok) return read.response;
+  const body = read.data;
 
   const parsed = signupSchema.safeParse(body);
   if (!parsed.success) {
@@ -41,6 +40,7 @@ export async function POST(request: Request) {
   const keys = rateLimitKey === emailKey ? [emailKey] : [rateLimitKey, emailKey];
   const allowed = await Promise.all(keys.map((k) => checkRateLimit(k, 'signup')));
   if (allowed.includes(false)) {
+    securityEvent('signup_throttled', { subject: subjectRef(email), ip });
     return Response.json(
       { ok: false, error: 'Too many signup attempts. Try again later.' },
       { status: 429 }
@@ -70,26 +70,13 @@ export async function POST(request: Request) {
     expiresAt: toIsoString(new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS)),
   });
 
-  const headerList = await headers();
-  const origin = headerList.get('origin') ?? new URL(request.url).origin;
+  const origin = appOrigin(request);
   const verifyUrl = `${origin}/verify-email?token=${verificationToken}`;
 
   const { delivered } = await sendVerificationEmail(user.email, verifyUrl);
 
-  const { token: sessionToken, expiresAt } = await createSession(user.id, {
-    userAgent: request.headers.get('user-agent'),
-    ipAddress: ip,
-  });
-
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, sessionToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: SESSION_MAX_AGE_SECONDS,
-    expires: expiresAt,
-  });
+  await startSession(user.id, request);
+  securityEvent('signup', { userId: user.id, ip });
 
   await Promise.all(keys.map((k) => recordAttempt(k, 'signup', true)));
 

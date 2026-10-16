@@ -58,47 +58,55 @@ export interface FlightDeckResult {
 }
 
 /** Request payload posted by the client — server has no access to the client's zustand stores. */
+const lat = z.number().min(-90).max(90);
+const lng = z.number().min(-180).max(180);
+const label = z.string().max(200);
+
 export const FlightDeckRequestSchema = z.object({
   prompt: z.string().min(1).max(2000),
   settings: z.object({
-    defaultAltitude: z.number(),
-    defaultSpeed: z.number(),
-    defaultLoiterTime: z.number(),
-    defaultWaitTime: z.number(),
+    defaultAltitude: z.number().min(0).max(10000),
+    defaultSpeed: z.number().min(0).max(200),
+    defaultLoiterTime: z.number().min(0).max(86400),
+    defaultWaitTime: z.number().min(0).max(86400),
     altitudeReference: z.literal('relative'),
   }),
   constraints: z.object({
-    maxDistanceM: z.number(),
-    maxAltM: z.number(),
-    minAltM: z.number(),
-    maxSpeedMs: z.number(),
-    minAGLClearance: z.number(),
-    defaultSpeedMs: z.number(),
+    maxDistanceM: z.number().min(0).max(1_000_000),
+    maxAltM: z.number().min(0).max(10000),
+    minAltM: z.number().min(0).max(10000),
+    maxSpeedMs: z.number().min(0).max(200),
+    minAGLClearance: z.number().min(0).max(10000),
+    defaultSpeedMs: z.number().min(0).max(200),
   }),
-  nfzs: z.array(
-    z.object({
-      id: z.string(),
-      latitude: z.number(),
-      longitude: z.number(),
-      radiusM: z.number(),
-      label: z.string(),
-    })
-  ),
-  geofences: z.array(
-    z.object({
-      id: z.string(),
-      type: z.enum(['circle', 'polygon']),
-      mode: z.enum(['keep-in', 'keep-out']),
-      label: z.string(),
-      color: z.string(),
-      center: z.object({ lat: z.number(), lng: z.number() }).optional(),
-      radiusM: z.number().optional(),
-      vertices: z.array(z.object({ lat: z.number(), lng: z.number() })).optional(),
-      enabled: z.boolean(),
-    })
-  ),
+  nfzs: z
+    .array(
+      z.object({
+        id: z.string().max(100),
+        latitude: lat,
+        longitude: lng,
+        radiusM: z.number().min(0).max(100000),
+        label,
+      })
+    )
+    .max(200),
+  geofences: z
+    .array(
+      z.object({
+        id: z.string().max(100),
+        type: z.enum(['circle', 'polygon']),
+        mode: z.enum(['keep-in', 'keep-out']),
+        label,
+        color: z.string().max(50),
+        center: z.object({ lat, lng }).optional(),
+        radiusM: z.number().min(0).max(100000).optional(),
+        vertices: z.array(z.object({ lat, lng })).max(500).optional(),
+        enabled: z.boolean(),
+      })
+    )
+    .max(200),
   homePosition: z
-    .object({ latitude: z.number(), longitude: z.number(), altitude: z.number() })
+    .object({ latitude: lat, longitude: lng, altitude: z.number().min(-1000).max(10000) })
     .nullable(),
   /** Unified mission zones; when present they replace `nfzs` and `geofences` for the audit. */
   zones: z.array(zoneInputSchema).max(200).optional(),

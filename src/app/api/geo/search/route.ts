@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { apiError, authorize, validationError } from '@/lib/http/api';
 import { Spacing, TtlCache, sleep } from '@/lib/http/ttl-cache';
+import { fetchUpstreamJson, upstreamUrl } from '@/lib/http/upstream';
 
 /**
  * GET /api/geo/search?q=&limit= — geocoding proxy (S9, DECISIONS D-05).
@@ -23,8 +24,8 @@ const querySchema = z.object({
   limit: z.coerce.number().int().min(1).max(10).default(5),
 });
 
-const NOMINATIM_URL = process.env.GEOCODER_URL || 'https://nominatim.openstreetmap.org/search';
-const USER_AGENT = process.env.GEOCODER_USER_AGENT || 'FlightDeck-MissionPlanner/1.0 (server proxy)';
+const NOMINATIM_URL = upstreamUrl(process.env.GEOCODER_URL, 'https://nominatim.openstreetmap.org/search');
+const USER_AGENT = (process.env.GEOCODER_USER_AGENT || 'FlightDeck-MissionPlanner/1.0 (server proxy)').replace(/[\r\n]/g, ' ');
 
 const cache = new TtlCache<GeoResult[]>(1000, 24 * 60 * 60 * 1000);
 const perUser = new Spacing(1000);
@@ -86,12 +87,11 @@ export async function GET(request: Request) {
 
   let rows: NominatimRow[];
   try {
-    const res = await fetch(url, {
+    rows = (await fetchUpstreamJson(url, {
       headers: { 'User-Agent': USER_AGENT, Accept: 'application/json', 'Accept-Language': 'en' },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return apiError(502, 'UPSTREAM_FAILED', 'Location search is unavailable right now');
-    rows = (await res.json()) as NominatimRow[];
+      timeoutMs: 8000,
+      maxBytes: 512 * 1024,
+    })) as NominatimRow[];
   } catch {
     return apiError(502, 'UPSTREAM_FAILED', 'Location search is unavailable right now');
   }

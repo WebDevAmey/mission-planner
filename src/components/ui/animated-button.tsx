@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { MotionProps } from "framer-motion";
+import type { MotionProps } from "motion/react";
 import { cn } from "@/lib/utils";
 
 type AnimatedButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &

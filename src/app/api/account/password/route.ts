@@ -1,12 +1,12 @@
-import { cookies } from 'next/headers';
 import { db } from '@/prisma/db';
 import { apiError, authorize, readJsonBody, validationError } from '@/lib/http/api';
 import { changePasswordSchema } from '@/lib/validation/account';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { checkRateLimit, recordAttempt } from '@/lib/auth/rate-limit';
-import { createSession, deleteAllSessionsForUser, SESSION_COOKIE, sessionCookieOptions } from '@/lib/auth/session';
-import { getClientIp } from '@/lib/http/client-ip';
+import { deleteAllSessionsForUser } from '@/lib/auth/session';
+import { startSession } from '@/lib/auth/guard';
 import { toIsoString } from '@/lib/db/serialize';
+import { securityEvent } from '@/lib/http/security-log';
 
 /**
  * POST /api/account/password `{ currentPassword, newPassword }` → `{ ok: true }`.
@@ -30,6 +30,7 @@ export async function POST(request: Request) {
   const row = await db.orm.public.User.where({ id: user.id }).first();
   if (!row || !(await verifyPassword(parsed.data.currentPassword, row.passwordHash))) {
     await recordAttempt(rateKey, 'password_change', false);
+    securityEvent('password_change_failed', { userId: user.id });
     return apiError(403, 'INVALID_CREDENTIALS', 'Current password is incorrect', {
       issues: [{ path: 'currentPassword', message: 'Current password is incorrect' }],
     });
@@ -38,14 +39,12 @@ export async function POST(request: Request) {
   const passwordHash = await hashPassword(parsed.data.newPassword);
   await db.orm.public.User.where({ id: user.id }).update({ passwordHash, updatedAt: toIsoString(new Date()) });
   await recordAttempt(rateKey, 'password_change', true);
+  // A reset link requested before the change must not be able to undo it.
+  await db.orm.public.PasswordResetToken.where({ userId: user.id }).deleteAll();
 
   await deleteAllSessionsForUser(user.id);
-  const { token, expiresAt } = await createSession(user.id, {
-    userAgent: request.headers.get('user-agent'),
-    ipAddress: getClientIp(request),
-  });
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions(expiresAt));
+  await startSession(user.id, request);
+  securityEvent('password_changed', { userId: user.id });
 
   return Response.json({ ok: true });
 }

@@ -48,6 +48,8 @@ export async function sendEmail(input: SendEmailInput): Promise<{ delivered: boo
         html: input.html,
         text: input.text,
       }),
+      // Sign-up and password reset wait on this call; never hang them on the provider.
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!res.ok) {
@@ -58,7 +60,7 @@ export async function sendEmail(input: SendEmailInput): Promise<{ delivered: boo
 
     return { delivered: true };
   } catch (err) {
-    console.error('[email] Failed to reach Resend', err);
+    console.error('[email] Failed to reach Resend', err instanceof Error ? err.message : 'unknown error');
     return { delivered: false };
   }
 }

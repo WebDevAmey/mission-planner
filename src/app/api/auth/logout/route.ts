@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { deleteSessionByToken, SESSION_COOKIE } from '@/lib/auth/session';
 import { isSameOriginRequest } from '@/lib/http/same-origin';
+import { securityEvent } from '@/lib/http/security-log';
 
 export async function POST(request: Request) {
   if (!isSameOriginRequest(request)) {
@@ -12,6 +13,7 @@ export async function POST(request: Request) {
 
   if (token) {
     await deleteSessionByToken(token);
+    securityEvent('logout');
   }
 
   cookieStore.delete(SESSION_COOKIE);

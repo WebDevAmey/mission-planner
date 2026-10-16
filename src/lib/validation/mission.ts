@@ -24,10 +24,11 @@ export const MAX_MISSION_ZONES = 200;
 
 export const waypointInputSchema = z.object({
   id: z.string().min(1).optional(),
-  sequence: z.number().int().min(0),
+  sequence: z.number().int().min(0).max(100_000),
   action: z.enum(MISSION_ACTIONS),
-  command: z.number().int(),
-  frame: z.number().int(),
+  // MAVLink wire types: command is uint16, frame is uint8 (and both are int4 columns).
+  command: z.number().int().min(0).max(65535),
+  frame: z.number().int().min(0).max(255),
   name: z.string().min(1).max(200),
   latitude: z.number().min(-90).max(90).nullable(),
   longitude: z.number().min(-180).max(180).nullable(),
@@ -140,7 +141,7 @@ export const zoneInputSchema = z
 
 export type ZoneInputData = z.infer<typeof zoneInputSchema>;
 
-const homeSchema = z.object({
+export const homeSchema = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   altitude: z.number().min(-1000).max(10000),

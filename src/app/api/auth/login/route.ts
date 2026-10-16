@@ -1,12 +1,13 @@
-import { cookies } from 'next/headers';
 import { db } from '@/prisma/db';
 import { loginSchema } from '@/lib/validation/auth';
 import { verifyPassword } from '@/lib/auth/password';
-import { createSession, SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from '@/lib/auth/session';
+import { startSession } from '@/lib/auth/guard';
 import { checkRateLimit, normalizeIdentifier, recordAttempt } from '@/lib/auth/rate-limit';
 import { isSameOriginRequest } from '@/lib/http/same-origin';
 import { getClientIp } from '@/lib/http/client-ip';
 import { maybeCleanupAuthTables } from '@/lib/auth/cleanup';
+import { AUTH_MAX_BODY_BYTES, readJsonBody } from '@/lib/http/api';
+import { securityEvent, subjectRef } from '@/lib/http/security-log';
 
 const GENERIC_ERROR = 'Incorrect email or password';
 
@@ -15,12 +16,9 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, error: 'Invalid request origin' }, { status: 403 });
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ ok: false, error: 'Invalid request body' }, { status: 400 });
-  }
+  const read = await readJsonBody(request, { maxBytes: AUTH_MAX_BODY_BYTES });
+  if (!read.ok) return read.response;
+  const body = read.data;
 
   const parsed = loginSchema.safeParse(body);
   if (!parsed.success) {
@@ -32,7 +30,14 @@ export async function POST(request: Request) {
   const { email, password } = parsed.data;
   const identifier = normalizeIdentifier(email);
 
-  if (!(await checkRateLimit(identifier, 'login'))) {
+  const ip = getClientIp(request);
+  const ipKey = ip ? `ip:${normalizeIdentifier(ip)}` : null;
+  const [emailAllowed, ipAllowed] = await Promise.all([
+    checkRateLimit(identifier, 'login'),
+    ipKey ? checkRateLimit(ipKey, 'login_ip') : true,
+  ]);
+  if (!emailAllowed || !ipAllowed) {
+    securityEvent('login_throttled', { subject: subjectRef(identifier), ip, by: emailAllowed ? 'ip' : 'email' });
     return Response.json(
       { ok: false, error: 'Too many attempts. Try again later.' },
       { status: 429 }
@@ -49,25 +54,16 @@ export async function POST(request: Request) {
   const valid = user ? await verifyPassword(password, user.passwordHash) : await verifyPassword(password, DUMMY_HASH);
 
   if (!user || !valid) {
-    await recordAttempt(identifier, 'login', false);
+    await Promise.all([
+      recordAttempt(identifier, 'login', false),
+      ipKey ? recordAttempt(ipKey, 'login_ip', false) : undefined,
+    ]);
+    securityEvent('login_failed', { subject: subjectRef(identifier), userId: user?.id ?? null, ip });
     return Response.json({ ok: false, error: GENERIC_ERROR }, { status: 401 });
   }
 
-  const ip = getClientIp(request);
-  const { token, expiresAt } = await createSession(user.id, {
-    userAgent: request.headers.get('user-agent'),
-    ipAddress: ip,
-  });
-
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: SESSION_MAX_AGE_SECONDS,
-    expires: expiresAt,
-  });
+  await startSession(user.id, request);
+  securityEvent('login_success', { userId: user.id, ip });
 
   await recordAttempt(identifier, 'login', true);
   maybeCleanupAuthTables();

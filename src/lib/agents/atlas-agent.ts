@@ -62,8 +62,12 @@ export async function runAtlas(params: {
   const push = (e: AgentEvent) => events.push(e);
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    const msg = 'ANTHROPIC_API_KEY is not set on the server — add it to .env.local and restart the dev server.';
-    push({ id: eventId(), agent: 'ATLAS', type: 'error', title: 'Missing API key', detail: msg, timestamp: now() });
+    // Only development gets the setup hint; production must not describe its configuration.
+    const msg =
+      process.env.NODE_ENV === 'development'
+        ? 'ANTHROPIC_API_KEY is not set on the server — add it to .env.local and restart the dev server.'
+        : 'The assistant is not available right now.';
+    push({ id: eventId(), agent: 'ATLAS', type: 'error', title: 'Assistant unavailable', detail: msg, timestamp: now() });
     return { draft: null, events, error: msg };
   }
 

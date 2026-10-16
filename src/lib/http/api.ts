@@ -72,10 +72,12 @@ export async function authorize(request: Request): Promise<SessionUser | Respons
 }
 
 export const DEFAULT_MAX_BODY_BYTES = 1024 * 1024;
+/** Auth forms carry an email, a password and maybe a name or token: 8 KB is plenty. */
+export const AUTH_MAX_BODY_BYTES = 8 * 1024;
 
 /**
  * Reads a JSON body with a hard size cap (checked against Content-Length up
- * front and the actual byte count after reading). `allowEmpty` treats an empty
+ * front and enforced on the stream while reading). `allowEmpty` treats an empty
  * body as `{}`.
  */
 export async function readJsonBody(
@@ -91,13 +93,10 @@ export async function readJsonBody(
   const declared = Number(request.headers.get('content-length') ?? '');
   if (Number.isFinite(declared) && declared > maxBytes) return tooLarge();
 
-  let text: string;
-  try {
-    text = await request.text();
-  } catch {
-    return { ok: false, response: apiError(400, 'INVALID_BODY', 'Invalid request body') };
-  }
-  if (Buffer.byteLength(text, 'utf8') > maxBytes) return tooLarge();
+  const read = await readBodyText(request, maxBytes);
+  if (read === 'too_large') return tooLarge();
+  if (read === null) return { ok: false, response: apiError(400, 'INVALID_BODY', 'Invalid request body') };
+  const text = read;
   if (!text.trim()) {
     return opts.allowEmpty
       ? { ok: true, data: {} }
@@ -108,6 +107,40 @@ export async function readJsonBody(
   } catch {
     return { ok: false, response: apiError(400, 'INVALID_BODY', 'Request body is not valid JSON') };
   }
+}
+
+/**
+ * Reads the raw body, aborting as soon as more than `maxBytes` have arrived.
+ * Content-Length can be absent (chunked uploads) or wrong, so the cap is enforced
+ * on the stream itself rather than after buffering everything.
+ * Returns null when the body cannot be read.
+ */
+export async function readBodyBytes(request: Request, maxBytes: number): Promise<Uint8Array<ArrayBuffer> | 'too_large' | null> {
+  if (!request.body) return new Uint8Array(0);
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel().catch(() => {});
+        return 'too_large';
+      }
+      chunks.push(value);
+    }
+  } catch {
+    return null;
+  }
+  return new Uint8Array(Buffer.concat(chunks));
+}
+
+/** `readBodyBytes` decoded as UTF-8. */
+export async function readBodyText(request: Request, maxBytes: number): Promise<string | 'too_large' | null> {
+  const bytes = await readBodyBytes(request, maxBytes);
+  return bytes instanceof Uint8Array ? new TextDecoder().decode(bytes) : bytes;
 }
 
 /** `[^a-z0-9-_]` → `-`, collapsed, at most 80 chars (TECHNICAL_SPEC §8). */

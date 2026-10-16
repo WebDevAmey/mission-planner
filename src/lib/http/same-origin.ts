@@ -1,3 +1,5 @@
+import { securityEvent } from '@/lib/http/security-log';
+
 /**
  * CSRF defense for cookie-authenticated mutating requests: a cross-site form
  * post or <img>/<script> trick can't set a custom header or control the
@@ -8,6 +10,18 @@
  * this is the defense-in-depth layer for the rest.
  */
 export function isSameOriginRequest(request: Request): boolean {
+  const ok = checkSameOrigin(request);
+  if (!ok) {
+    securityEvent('origin_rejected', {
+      method: request.method,
+      path: new URL(request.url).pathname,
+      origin: request.headers.get('origin')?.slice(0, 200) ?? null,
+    });
+  }
+  return ok;
+}
+
+function checkSameOrigin(request: Request): boolean {
   const origin = request.headers.get('origin');
   // Same-origin requests from fetch() always carry an Origin header for
   // non-GET requests; its absence means something unusual (SSR-to-SSR, a

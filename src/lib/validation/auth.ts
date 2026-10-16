@@ -24,7 +24,7 @@ export const signupSchema = z.object({
 
 export const loginSchema = z.object({
   email: emailSchema,
-  password: z.string().min(1, 'Password is required'),
+  password: z.string().min(1, 'Password is required').max(200, 'Password is too long'),
 });
 
 export const forgotPasswordSchema = z.object({
@@ -32,10 +32,10 @@ export const forgotPasswordSchema = z.object({
 });
 
 export const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Reset link is invalid'),
+  token: z.string().min(1, 'Reset link is invalid').max(256, 'Reset link is invalid'),
   password: passwordSchema,
 });
 
 export const verifyEmailSchema = z.object({
-  token: z.string().min(1, 'Verification link is invalid'),
+  token: z.string().min(1, 'Verification link is invalid').max(256, 'Verification link is invalid'),
 });

@@ -11,6 +11,7 @@ import {
   SESSION_COOKIE,
 } from '@/lib/auth/session';
 import { toIsoString } from '@/lib/db/serialize';
+import { securityEvent } from '@/lib/http/security-log';
 
 /** Hide the host part of an IP for display: 203.0.113.42 → 203.0.113.x */
 function maskIp(ip: string | null): string | null {
@@ -71,6 +72,7 @@ export async function DELETE(request: Request) {
     revoked = await deleteOtherSessions(userId, current.sessionId);
   }
 
+  securityEvent('sessions_revoked', { userId, scope: id ? 'one' : scope, revoked, signedOut });
   if (signedOut) (await cookies()).delete(SESSION_COOKIE);
   return Response.json({ ok: true, revoked, signedOut });
 }

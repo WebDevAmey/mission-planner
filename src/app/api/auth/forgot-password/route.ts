@@ -1,4 +1,3 @@
-import { headers } from 'next/headers';
 import { db } from '@/prisma/db';
 import { forgotPasswordSchema } from '@/lib/validation/auth';
 import { generateToken, hashToken } from '@/lib/auth/tokens';
@@ -6,6 +5,9 @@ import { checkRateLimit, normalizeIdentifier, recordAttempt } from '@/lib/auth/r
 import { isSameOriginRequest } from '@/lib/http/same-origin';
 import { sendPasswordResetEmail } from '@/lib/email/send';
 import { toIsoString } from '@/lib/db/serialize';
+import { AUTH_MAX_BODY_BYTES, readJsonBody } from '@/lib/http/api';
+import { appOrigin } from '@/lib/http/app-origin';
+import { securityEvent, subjectRef } from '@/lib/http/security-log';
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
@@ -18,12 +20,9 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, error: 'Invalid request origin' }, { status: 403 });
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ ok: false, error: 'Invalid request body' }, { status: 400 });
-  }
+  const read = await readJsonBody(request, { maxBytes: AUTH_MAX_BODY_BYTES });
+  if (!read.ok) return read.response;
+  const body = read.data;
 
   const parsed = forgotPasswordSchema.safeParse(body);
   if (!parsed.success) {
@@ -36,6 +35,7 @@ export async function POST(request: Request) {
   const identifier = normalizeIdentifier(email);
 
   if (!(await checkRateLimit(identifier, 'forgot_password'))) {
+    securityEvent('password_reset_throttled', { subject: subjectRef(identifier) });
     return Response.json(
       { ok: false, error: 'Too many requests. Try again later.' },
       { status: 429 }
@@ -44,6 +44,7 @@ export async function POST(request: Request) {
 
   const user = await db.orm.public.User.where((u) => u.email.eq(email)).first();
   await recordAttempt(identifier, 'forgot_password', true);
+  securityEvent('password_reset_requested', { subject: subjectRef(identifier), userId: user?.id ?? null });
 
   let devResetUrl: string | undefined;
 
@@ -57,8 +58,7 @@ export async function POST(request: Request) {
       expiresAt: toIsoString(new Date(Date.now() + RESET_TOKEN_TTL_MS)),
     });
 
-    const headerList = await headers();
-    const origin = headerList.get('origin') ?? new URL(request.url).origin;
+      const origin = appOrigin(request);
     const resetUrl = `${origin}/reset-password?token=${resetToken}`;
     const { delivered } = await sendPasswordResetEmail(user.email, resetUrl);
 

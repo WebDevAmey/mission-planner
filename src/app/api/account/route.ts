@@ -6,6 +6,7 @@ import { verifyPassword } from '@/lib/auth/password';
 import { checkRateLimit, recordAttempt } from '@/lib/auth/rate-limit';
 import { SESSION_COOKIE } from '@/lib/auth/session';
 import { toIsoString } from '@/lib/db/serialize';
+import { securityEvent } from '@/lib/http/security-log';
 
 async function loadProfile(userId: string) {
   const u = await db.orm.public.User.where({ id: userId }).first();
@@ -64,10 +65,12 @@ export async function DELETE(request: Request) {
   const row = await db.orm.public.User.where({ id: user.id }).first();
   if (!row || !(await verifyPassword(parsed.data.password, row.passwordHash))) {
     await recordAttempt(rateKey, 'account_delete', false);
+    securityEvent('account_delete_failed', { userId: user.id });
     return apiError(403, 'INVALID_CREDENTIALS', 'Password is incorrect');
   }
 
   await db.orm.public.User.where({ id: user.id }).delete();
+  securityEvent('account_deleted', { userId: user.id });
   await db.orm.public.AuthAttempt.where((a) => a.identifier.eq(rateKey)).deleteAll();
 
   const cookieStore = await cookies();

@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "src/prisma/contract.d.ts",
     "src/prisma/contract.json",
     "migrations/**",
+    // Copied from node_modules by scripts/copy-maplibre-worker.mjs.
+    "public/maplibre/**",
   ]),
 ]);
 
