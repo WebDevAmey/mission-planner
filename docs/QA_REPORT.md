@@ -31,6 +31,7 @@ Date: 2026-10-16. Branch `task/h-qa`, built on sec's dependency commits (next 16
 | 5 | Template cards said "1 items" | template-picker.tsx | Pluralised (090241b) |
 | 6 | axe `label-content-name-mismatch` (WCAG 2.5.3, serious) on the shell search button and the avatar menu | app-shell.tsx, account-menu.tsx | The search button is named by its visible text, and the avatar label includes the initials (96fb4dc) |
 | 7 | Every session row's "Sign out" button had the same name | settings/page.tsx | Each label names the device and sign-in date (945495a) |
+| 9 | Open redirect: `/login?next=//evil.example` sent the user off-site after sign-in (requested by sec as defence in depth) | login/page.tsx | `safeNextPath()`, falling back to /dashboard, plus an E2E spec that failed before the fix |
 | 8 | After the MapLibre 6 upgrade, each waypoint number logged "Image mp-num-N could not be loaded" | mission-map.tsx | Numbers are drawn via `setMissingStyleImageResolver` (525f1be) |
 
 ### Blocked external hosts are handled without errors
@@ -55,16 +56,16 @@ No crawl step showed page errors, hydration warnings, React key warnings or hori
 
 ### E2E (Playwright): `pnpm build && pnpm test:e2e`
 
-The suite has 18 specs in `tests/e2e`. Configuration is in `playwright.config.ts`. It uses one worker against `next start`, or against `E2E_BASE_URL` if that is set. The global setup stores a session for the seeded demo user.
+The suite has 19 specs in `tests/e2e`. Configuration is in `playwright.config.ts`. It uses one worker against `next start`, or against `E2E_BASE_URL` if that is set. The global setup stores a session for the seeded demo user.
 
-- **auth:** sign up a new user, sign out and sign back in; wrong password shows a generic error; demo user signs in through the form
+- **auth:** sign up a new user, sign out and sign back in; wrong password shows a generic error; demo user signs in through the form; an off-site `?next=` after sign-in stays in the app
 - **dashboard:** create, rename and delete a mission
 - **editor:** add 3 waypoints, see "Saved", reload and still have 3; apply a template; survey generation is undone in one step; a keep-out zone across a leg raises a "crosses keep-out zone" check and an error count on the checks chip; `.plan` export downloads valid QGroundControl JSON
 - **import:** import a `.plan` from the dashboard and open it
 - **settings:** change the display name; sign out other sessions (the other device gets a 401, this one stays signed in)
 - **a11y:** keyboard-only tab order of the landing nav with visible focus rings; skip link and nav anchors; axe with no serious or critical violations on landing, login, dashboard and editor
 
-**Result:** 18 of 18 passed. This was checked twice: once against :3203, and once from a fresh database in CI mode (`CI=1`, Playwright starting its own server).
+**Result:** 19 of 19 passed on the final build. The first 18 specs also passed This was checked twice: once against :3203, and once from a fresh database in CI mode (`CI=1`, Playwright starting its own server).
 
 ### CI: `.github/workflows/ci.yml`
 
