@@ -7,6 +7,7 @@ import { Button } from '@/components/base/buttons/button';
 import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cx } from '@/utils/cx';
 import { TONE_DOT, TONE_TEXT } from './editor-styles';
+import { useShallow } from 'zustand/react/shallow';
 
 function clock(ts: number | null): string | null {
   if (ts == null) return null;
@@ -16,7 +17,15 @@ function clock(ts: number | null): string | null {
 /** Header save state: "Saved 12:04" / Saving… / Unsaved changes / Not saved · Retry /
  * Changed elsewhere. Text carries the state; the dot only reinforces it. */
 export function SaveIndicator({ className }: { className?: string }) {
-  const { status, error, flush, overwrite, lastSavedAt } = useSaveStore();
+  const { status, error, flush, overwrite, lastSavedAt } = useSaveStore(
+    useShallow((s) => ({
+      status: s.status,
+      error: s.error,
+      flush: s.flush,
+      overwrite: s.overwrite,
+      lastSavedAt: s.lastSavedAt,
+    }))
+  );
   const [busy, setBusy] = useState(false);
 
   const reload = () => window.location.reload();

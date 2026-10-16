@@ -20,6 +20,7 @@ import { IssueRow } from './checks-tab';
 import { ItemBadge } from './waypoints-tab';
 import { ICON_BUTTON } from '../editor-styles';
 import { Button as AriaButton } from 'react-aria-components';
+import { useShallow } from 'zustand/react/shallow';
 
 type ParamKey = 'param1' | 'param2' | 'param3' | 'param4';
 interface ParamField {
@@ -90,7 +91,13 @@ export function ItemTab() {
   const duplicate = useMissionStore((s) => s.duplicateMissionItem);
   const reorder = useMissionStore((s) => s.reorderMissionItems);
   const selectedId = useUIStore((s) => s.selectedMissionItemId);
-  const { selectMissionItem, focusMap, setInspectorTab } = useUIStore();
+  const { selectMissionItem, focusMap, setInspectorTab } = useUIStore(
+    useShallow((s) => ({
+      selectMissionItem: s.selectMissionItem,
+      focusMap: s.focusMap,
+      setInspectorTab: s.setInspectorTab,
+    }))
+  );
   const analysis = useMissionAnalysis();
 
   const index = mission?.items.findIndex((i) => i.id === selectedId) ?? -1;

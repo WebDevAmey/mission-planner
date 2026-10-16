@@ -27,6 +27,7 @@ import { ICON_BUTTON, INK_BUTTON } from '../editor-styles';
 import { cx } from '@/utils/cx';
 import { Button as AriaButton } from 'react-aria-components';
 import { QuietButton } from '@/components/editor/quiet-button';
+import { useShallow } from 'zustand/react/shallow';
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -127,7 +128,14 @@ const CAMERAS: { value: string; label: string; spec: CameraSpec | null }[] = [
 
 function SurveyPanel({ mission }: { mission: EditorMission }) {
   const area = useUIStore((s) => s.surveyArea);
-  const { setActiveTool, openPlanPanel, setSurveyArea, addToast } = useUIStore();
+  const { setActiveTool, openPlanPanel, setSurveyArea, addToast } = useUIStore(
+    useShallow((s) => ({
+      setActiveTool: s.setActiveTool,
+      openPlanPanel: s.openPlanPanel,
+      setSurveyArea: s.setSurveyArea,
+      addToast: s.addToast,
+    }))
+  );
   const replaceItems = useMissionStore((s) => s.replaceItems);
   const [altitudeM, setAltitude] = useState(mission.settings.defaultAltitude || 60);
   const [camera, setCamera] = useState('none');
@@ -234,7 +242,12 @@ function SurveyPanel({ mission }: { mission: EditorMission }) {
 function OptimisePanel({ mission }: { mission: EditorMission }) {
   const replaceItems = useMissionStore((s) => s.replaceItems);
   const selectedId = useUIStore((s) => s.selectedMissionItemId);
-  const { openPlanPanel, addToast } = useUIStore();
+  const { openPlanPanel, addToast } = useUIStore(
+    useShallow((s) => ({
+      openPlanPanel: s.openPlanPanel,
+      addToast: s.addToast,
+    }))
+  );
   const [lockSelected, setLockSelected] = useState(false);
 
   const result = useMemo(
@@ -278,7 +291,13 @@ function OptimisePanel({ mission }: { mission: EditorMission }) {
 
 function AvoidPanel({ mission }: { mission: EditorMission }) {
   const replaceItems = useMissionStore((s) => s.replaceItems);
-  const { openPlanPanel, addToast, selectMissionItem } = useUIStore();
+  const { openPlanPanel, addToast, selectMissionItem } = useUIStore(
+    useShallow((s) => ({
+      openPlanPanel: s.openPlanPanel,
+      addToast: s.addToast,
+      selectMissionItem: s.selectMissionItem,
+    }))
+  );
   const [marginM, setMargin] = useState(20);
   const zones = useMemo(() => mission.zones.filter((z) => z.enabled), [mission.zones]);
 

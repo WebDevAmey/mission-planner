@@ -13,6 +13,7 @@ import { cx } from '@/utils/cx';
 import { INK_BUTTON, LABEL_MONO, SEGMENT_LIST, SEGMENT_TAB, TONE_DOT, TONE_TEXT, type Tone } from '@/components/editor/editor-styles';
 import { QuietButton } from '@/components/editor/quiet-button';
 import { MissionPromptBar } from './mission-prompt-bar';
+import { useShallow } from 'zustand/react/shallow';
 
 /** User-facing names for the run's stages (D-11). Code identifiers and event names are unchanged. */
 const AGENT_LABEL: Record<AgentEvent['agent'], string> = {
@@ -78,7 +79,13 @@ function EventRow({ event }: { event: AgentEvent }) {
 }
 
 function ApprovalCard() {
-  const { result, clearRun, setConsoleOpen } = useAgentStore();
+  const { result, clearRun, setConsoleOpen } = useAgentStore(
+    useShallow((s) => ({
+      result: s.result,
+      clearRun: s.clearRun,
+      setConsoleOpen: s.setConsoleOpen,
+    }))
+  );
   const mission = useMissionStore((s) => s.mission);
   const replaceItems = useMissionStore((s) => s.replaceItems);
   const addToast = useUIStore((s) => s.addToast);
@@ -123,7 +130,12 @@ function ApprovalCard() {
 }
 
 function HistoryPanel() {
-  const { history, clearHistory } = useAgentStore();
+  const { history, clearHistory } = useAgentStore(
+    useShallow((s) => ({
+      history: s.history,
+      clearHistory: s.clearHistory,
+    }))
+  );
 
   const exportLog = () => {
     const blob = new Blob([JSON.stringify(history, null, 2)], { type: 'application/json' });
@@ -180,7 +192,15 @@ function HistoryPanel() {
 /** Assistant drawer (D-11): opened from the header overflow ("Draft from description").
  * Same panel style as the inspector; a plain progress line while a draft runs. */
 export function AgentConsole() {
-  const { consoleOpen, setConsoleOpen, events, status, clearRun } = useAgentStore();
+  const { consoleOpen, setConsoleOpen, events, status, clearRun } = useAgentStore(
+    useShallow((s) => ({
+      consoleOpen: s.consoleOpen,
+      setConsoleOpen: s.setConsoleOpen,
+      events: s.events,
+      status: s.status,
+      clearRun: s.clearRun,
+    }))
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

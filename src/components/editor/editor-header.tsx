@@ -25,6 +25,7 @@ import { cx } from '@/utils/cx';
 import { SaveIndicator } from './save-indicator';
 import { EditorExportMenu } from './export/export-menu';
 import { FOCUS_RING, ICON_BUTTON, MENU_PANEL, TONE_DOT, type Tone } from './editor-styles';
+import { useShallow } from 'zustand/react/shallow';
 
 function HeaderIconButton({
   label,
@@ -147,7 +148,15 @@ export function EditorHeader() {
   const canUndo = useMissionStore((s) => s.past.length > 0);
   const canRedo = useMissionStore((s) => s.future.length > 0);
   const inspectorOpen = useUIStore((s) => s.inspectorOpen);
-  const { setTemplatePickerOpen, setShortcutsOpen, setParamTableOpen, toggleInspector, addToast } = useUIStore();
+  const { setTemplatePickerOpen, setShortcutsOpen, setParamTableOpen, toggleInspector, addToast } = useUIStore(
+    useShallow((s) => ({
+      setTemplatePickerOpen: s.setTemplatePickerOpen,
+      setShortcutsOpen: s.setShortcutsOpen,
+      setParamTableOpen: s.setParamTableOpen,
+      toggleInspector: s.toggleInspector,
+      addToast: s.addToast,
+    }))
+  );
   const setConsoleOpen = useAgentStore((s) => s.setConsoleOpen);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);

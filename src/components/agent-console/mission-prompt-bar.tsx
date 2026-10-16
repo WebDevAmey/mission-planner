@@ -10,13 +10,22 @@ import { zonesToGeofences } from '@/lib/store/geofence-store';
 import { useAgentStore } from '@/lib/store/agent-store';
 import { runFlightDeck } from '@/lib/agents/client';
 import type { FlightDeckRequest } from '@/lib/agents/schemas';
+import { useShallow } from 'zustand/react/shallow';
 
 /** Prompt form inside the assistant drawer. Sends the mission's zones and rated
  * endurance so the pre-flight audit runs against the same rules as the Checks tab. */
 export function MissionPromptBar() {
   const [value, setValue] = useState('');
   const mission = useMissionStore((s) => s.mission);
-  const { status, startRun, addEvent, finishRun, fail } = useAgentStore();
+  const { status, startRun, addEvent, finishRun, fail } = useAgentStore(
+    useShallow((s) => ({
+      status: s.status,
+      startRun: s.startRun,
+      addEvent: s.addEvent,
+      finishRun: s.finishRun,
+      fail: s.fail,
+    }))
+  );
   const running = status === 'running';
 
   const submit = useCallback(async () => {

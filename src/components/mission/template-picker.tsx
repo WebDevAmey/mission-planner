@@ -8,6 +8,7 @@ import { Dialog, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/c
 import { Button } from '@/components/base/buttons/button';
 import { cx } from '@/utils/cx';
 import { FOCUS_RING, INK_BUTTON, TONE_DOT } from '@/components/editor/editor-styles';
+import { useShallow } from 'zustand/react/shallow';
 
 /** Where to anchor a template: home, else the first located item, else the map centre. */
 function resolveAnchor(
@@ -26,7 +27,13 @@ export function TemplatePicker() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const mission = useMissionStore((s) => s.mission);
   const applyChange = useMissionStore((s) => s.applyChange);
-  const { setTemplatePickerOpen, addToast, mapView } = useUIStore();
+  const { setTemplatePickerOpen, addToast, mapView } = useUIStore(
+    useShallow((s) => ({
+      setTemplatePickerOpen: s.setTemplatePickerOpen,
+      addToast: s.addToast,
+      mapView: s.mapView,
+    }))
+  );
 
   const selected = MISSION_TEMPLATES.find((t) => t.id === selectedId);
   const close = () => setTemplatePickerOpen(false);

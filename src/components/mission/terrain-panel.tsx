@@ -9,6 +9,7 @@ import { formatDistance } from '@/components/map/map-geo';
 import { cx } from '@/utils/cx';
 import { ICON_BUTTON } from '@/components/editor/editor-styles';
 import { Button as AriaButton } from 'react-aria-components';
+import { useShallow } from 'zustand/react/shallow';
 
 const W = 1000;
 const H = 160;
@@ -20,7 +21,7 @@ const PAD_B = 4;
  * relative, so AGL = planned alt + home elevation − terrain (see `aglM`).
  */
 export function TerrainPanel() {
-  const { samples, status } = useTerrainStore();
+  const { samples, status } = useTerrainStore(useShallow((s) => ({ samples: s.samples, status: s.status })));
   const minAgl = useMissionStore((s) => s.mission?.limits.minAGLClearance ?? 0);
   const setTerrainOpen = useUIStore((s) => s.setTerrainOpen);
   const selectMissionItem = useUIStore((s) => s.selectMissionItem);

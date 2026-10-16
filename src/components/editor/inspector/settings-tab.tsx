@@ -10,6 +10,7 @@ import { zoneRing, formatDistance } from '@/components/map/map-geo';
 import { cx } from '@/utils/cx';
 import { FOCUS_RING_INSET, ROW_SELECTED, SWATCH } from '../editor-styles';
 import { NumberField, Section, SelectField, TextInputField } from '../fields';
+import { useShallow } from 'zustand/react/shallow';
 
 const KIND_OPTIONS: { value: ZoneKind; label: string }[] = [
   { value: 'keep_out', label: 'Keep-out' },
@@ -21,7 +22,13 @@ function ZoneRow({ zone }: { zone: MissionZone }) {
   const updateZone = useMissionStore((s) => s.updateZone);
   const deleteZone = useMissionStore((s) => s.deleteZone);
   const selectedZoneId = useUIStore((s) => s.selectedZoneId);
-  const { selectZone, focusMap, addToast } = useUIStore();
+  const { selectZone, focusMap, addToast } = useUIStore(
+    useShallow((s) => ({
+      selectZone: s.selectZone,
+      focusMap: s.focusMap,
+      addToast: s.addToast,
+    }))
+  );
   const selected = selectedZoneId === zone.id;
 
   const zoomTo = () => {
@@ -98,7 +105,7 @@ export function SettingsTab() {
   const mission = useMissionStore((s) => s.mission);
   const updateSettings = useMissionStore((s) => s.updateSettings);
   const updateLimits = useMissionStore((s) => s.updateLimits);
-  const { setActiveTool } = useUIStore();
+  const setActiveTool = useUIStore((s) => s.setActiveTool);
   if (!mission) return null;
   const s = mission.settings;
   const l = mission.limits;

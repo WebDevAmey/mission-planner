@@ -7,11 +7,19 @@ import { useMissionAnalysis } from '@/hooks/useMissionAnalysis';
 import type { Issue } from '@/lib/domain/validate';
 import { cx } from '@/utils/cx';
 import { FOCUS_RING_INSET, TONE_DOT, TONE_TEXT } from '../editor-styles';
+import { useShallow } from 'zustand/react/shallow';
 
 /** One issue: icon + text (never colour alone); clicking selects the affected item or zone. */
 export function IssueRow({ issue }: { issue: Issue }) {
   const items = useMissionStore((s) => s.mission?.items);
-  const { selectMissionItem, selectZone, focusMap, setInspectorTab } = useUIStore();
+  const { selectMissionItem, selectZone, focusMap, setInspectorTab } = useUIStore(
+    useShallow((s) => ({
+      selectMissionItem: s.selectMissionItem,
+      selectZone: s.selectZone,
+      focusMap: s.focusMap,
+      setInspectorTab: s.setInspectorTab,
+    }))
+  );
   const numbers = issue.itemIds
     .map((id) => (items ?? []).findIndex((i) => i.id === id))
     .filter((i) => i >= 0)
