@@ -1,7 +1,7 @@
 import { createMissionSchema, listMissionsQuerySchema } from '@/lib/validation/mission';
 import { apiError, authorize, readJsonBody, validationError } from '@/lib/http/api';
 import { toMissionPlan, toMissionSummary } from '@/lib/missions/map';
-import { asDbMission, createMissionDocument, listMissions, loadFullMission } from '@/lib/missions/repo';
+import { asDbMission, createMissionWithDocument, listMissions } from '@/lib/missions/repo';
 import { templateName, templateWaypoints } from '@/lib/missions/templates';
 
 /** GET /api/missions?query=&sort=updated|name|created&status= → `{ ok, missions: MissionSummary[] }` */
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     items = templateWaypoints(template, home) ?? [];
   }
 
-  const id = await createMissionDocument(user.id, {
+  const created = await createMissionWithDocument(user.id, {
     name: name ?? (template && template !== 'blank' ? templateName(template)! : 'Untitled Mission'),
     description,
     vehicleType,
@@ -43,6 +43,5 @@ export async function POST(request: Request) {
     items,
   });
 
-  const full = await loadFullMission(id);
-  return Response.json({ ok: true, mission: toMissionPlan(asDbMission(full!)) }, { status: 201 });
+  return Response.json({ ok: true, mission: toMissionPlan(asDbMission(created)) }, { status: 201 });
 }

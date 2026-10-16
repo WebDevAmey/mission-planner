@@ -10,7 +10,7 @@ import {
 } from '@/lib/validation/mission';
 import { apiError, authorize, readBodyBytes, readJsonBody, validationError } from '@/lib/http/api';
 import { toMissionPlan, DEFAULT_SETTINGS } from '@/lib/missions/map';
-import { asDbMission, createMissionDocument, loadFullMission, type SettingsInput } from '@/lib/missions/repo';
+import { asDbMission, createMissionWithDocument, type SettingsInput } from '@/lib/missions/repo';
 import { z } from 'zod';
 
 const MAX_IMPORT_BYTES = 1024 * 1024;
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
   }
 
   const fallbackName = upload.filename.replace(/\.[^.]+$/, '').trim() || 'Imported mission';
-  const id = await createMissionDocument(user.id, {
+  const created = await createMissionWithDocument(user.id, {
     name: (upload.name ?? imported.name?.trim() ?? fallbackName).slice(0, 200) || fallbackName,
     description: imported.description?.slice(0, 2000) ?? null,
     home,
@@ -136,6 +136,5 @@ export async function POST(request: Request) {
     zones,
   });
 
-  const full = await loadFullMission(id);
-  return Response.json({ ok: true, mission: toMissionPlan(asDbMission(full!)), warnings }, { status: 201 });
+  return Response.json({ ok: true, mission: toMissionPlan(asDbMission(created)), warnings }, { status: 201 });
 }
