@@ -1,4 +1,5 @@
 import { haversineDistance } from '@/lib/utils';
+import { fetchUpstreamJson } from '@/lib/http/upstream';
 import { aglM, sampleSpacingM } from '@/lib/domain/metrics';
 
 /** Process-wide cache; bounded so a long-running server can't grow it without limit. */
@@ -51,23 +52,18 @@ export async function getElevations(
   for (let start = 0; start < toFetch.length; start += CHUNK_SIZE) {
     const chunk = toFetch.slice(start, start + CHUNK_SIZE);
     try {
-      const response = await fetch('https://api.open-elevation.com/api/v1/lookup', {
+      const data = (await fetchUpstreamJson('https://api.open-elevation.com/api/v1/lookup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           locations: chunk.map((p) => ({ latitude: p.lat, longitude: p.lng })),
         }),
-        signal: AbortSignal.timeout(8000),
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const data = (await response.json()) as {
-        results: { elevation: number }[];
-      };
+        timeoutMs: 8000,
+        maxBytes: 256 * 1024,
+      })) as { results?: { elevation: number }[] };
 
       for (let i = 0; i < chunk.length; i++) {
-        const elev = data.results[i]?.elevation ?? 0;
+        const elev = data.results?.[i]?.elevation ?? 0;
         results[chunk[i].idx] = elev;
         remember(cacheKey(chunk[i].lat, chunk[i].lng), elev);
       }
