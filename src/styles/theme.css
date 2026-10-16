@@ -732,8 +732,8 @@
 
   /* Ghost buttons are quiet (no accent tint): one accent per view. */
   --color-button-ghost-background:          transparent;
-  --color-button-ghost-hover:               var(--fd-surface-2);
-  --color-button-ghost-active:              var(--fd-surface-3);
+  --color-button-ghost-hover:               var(--fd-surface-3);
+  --color-button-ghost-active:              var(--fd-line);
   --color-button-ghost-disabled:            transparent;
   --color-button-ghost-foreground:          var(--fd-ink);
   --color-button-ghost-disabled-foreground: var(--fd-ink-3);

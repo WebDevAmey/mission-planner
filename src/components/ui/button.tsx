@@ -33,7 +33,7 @@ const ICON_SIZE_CLASSES: Record<IconButtonSize, string> = {
 
 const BASE_CLASSES =
   'inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap font-medium ' +
-  'transition-colors duration-120 ease-fd outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fd-accent ' +
+  'transition-colors duration-120 ease-fd focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fd-accent ' +
   'disabled:pointer-events-none disabled:opacity-50';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
