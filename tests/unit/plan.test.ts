@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PlannerAction } from '@/lib/mavlink/commands';
 import { createProjection, rotate, segmentIntersectsPolygon, type LngLat } from '@/lib/domain/geo';
-import { avoidZones, generateSurvey, openPathLength, optimiseRoute, routeLengthM, solveOpenPath, surveyToItems } from '@/lib/domain/plan';
+import { MAX_SURVEY_LINES, avoidZones, generateSurvey, openPathLength, optimiseRoute, routeLengthM, solveOpenPath, surveyToItems } from '@/lib/domain/plan';
 import { EXACT_TSP_MAX_POINTS } from '@/lib/domain/plan/tsp';
 import { validateMission } from '@/lib/domain/validate';
 import type { Zone } from '@/lib/domain/zones';
@@ -70,6 +70,17 @@ describe('survey', () => {
     expect(items.filter((i) => i.action === PlannerAction.WAYPOINT)).toHaveLength(s.path.length);
     const cams = items.filter((i) => i.action === PlannerAction.CAM_TRIGG_DIST);
     expect(cams.map((c) => c.parameters.param1)).toEqual([Math.round(s.triggerDistanceM! * 100) / 100, 0]);
+  });
+});
+
+describe('survey limits', () => {
+  it('refuses areas that need more passes than a mission can hold, before building them', () => {
+    const big = [ll(0, 0), ll(20000, 0), ll(20000, 20000), ll(0, 20000)];
+    const t0 = performance.now();
+    expect(() => generateSurvey({ polygon: big, altitudeM: 60, spacingM: 1 })).toThrow(/passes/);
+    expect(performance.now() - t0).toBeLessThan(50);
+    const ok = generateSurvey({ polygon: big, altitudeM: 60, spacingM: 20000 / (MAX_SURVEY_LINES - 1) });
+    expect(ok.lineCount).toBeLessThanOrEqual(MAX_SURVEY_LINES);
   });
 });
 
