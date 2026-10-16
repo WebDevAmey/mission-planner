@@ -12,6 +12,7 @@ import {
   type MapGeoJSONFeature,
   type MapMouseEvent,
   type MapTouchEvent,
+  setWorkerUrl,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useMissionStore } from '@/lib/store/mission-store';
@@ -39,6 +40,10 @@ import { cx } from '@/utils/cx';
 import { MapChrome } from './map-chrome';
 import { ToolHint } from './tool-hint';
 import { MapContextMenu, type ContextMenuState } from './map-context-menu';
+
+// MapLibre 6 loads its worker as a module the bundler does not emit; serve the copy from
+// public/maplibre (scripts/copy-maplibre-worker.mjs) from our own origin.
+setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
 
 type Feature<G extends GeoJSON.Geometry | null = GeoJSON.Geometry> = GeoJSON.Feature<G>;
 type FeatureCollection<G extends GeoJSON.Geometry | null = GeoJSON.Geometry> = GeoJSON.FeatureCollection<G>;

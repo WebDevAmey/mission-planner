@@ -154,6 +154,7 @@ export default function SettingsPage() {
       const res = await api<{ user: Profile }>('/api/account');
       if (cancelled) return;
       if (!res.ok) {
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- session is gone; reload drops in-memory state
         if (res.code === 'UNAUTHORIZED') window.location.assign('/login?next=/settings');
         else setLoadError(res.error);
         return;
@@ -235,6 +236,7 @@ export default function SettingsPage() {
     if (!res.ok) return toast({ status: 'error', title: 'Could not sign out', description: res.error });
     if (res.signedOut) {
       clearLocalMissionData();
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- signed out; reload drops in-memory state
       window.location.assign('/login');
       return;
     }
@@ -252,6 +254,7 @@ export default function SettingsPage() {
     setDeleting(false);
     if (!res.ok) return setDeleteError(res.error);
     clearLocalMissionData();
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- account deleted; reload drops in-memory state
     window.location.assign('/?accountDeleted=1');
   }
 

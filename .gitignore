@@ -43,3 +43,6 @@ next-env.d.ts
 node_modules/
 dist/
 .env
+
+# MapLibre worker modules, copied from node_modules by scripts/copy-maplibre-worker.mjs
+/public/maplibre/
