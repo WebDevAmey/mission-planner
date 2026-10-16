@@ -19,15 +19,17 @@ export function initialsOf(user: ShellUser | null): string {
 export function AccountMenu({ user }: { user: ShellUser | null }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const initials = initialsOf(user);
 
   return (
     <Dropdown isOpen={open} onOpenChange={setOpen}>
       <DropdownTrigger
-        aria-label="Account menu"
+        // The visible initials stay part of the name (WCAG 2.5.3 label in name).
+        aria-label={initials ? `Account menu, ${initials}` : 'Account menu'}
         className="flex size-11 items-center justify-center rounded-full sm:size-9"
       >
         <span className="flex size-8 items-center justify-center rounded-full border border-separator-border bg-background-secondary-default text-caption-1-medium text-text-primary transition-colors duration-150 hover:border-fd-line-strong">
-          {initialsOf(user)}
+          {initials}
         </span>
       </DropdownTrigger>
       <DropdownPopover aria-label="Account" placement="bottom end" className="w-[260px]">

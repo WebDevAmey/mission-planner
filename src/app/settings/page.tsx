@@ -402,7 +402,13 @@ export default function SettingsPage() {
                           </p>
                         </div>
                         {!s.current && (
-                          <Button variant="ghost" size="xs" onClick={() => revoke({ id: s.id })} disabled={revoking !== null}>
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            aria-label={`Sign out ${device.label}, signed in ${formatDate(s.createdAt)}`}
+                            onClick={() => revoke({ id: s.id })}
+                            disabled={revoking !== null}
+                          >
                             {revoking === s.id ? 'Signing out…' : 'Sign out'}
                           </Button>
                         )}

@@ -81,7 +81,7 @@ export function TemplatePicker() {
           >
             <span className="text-[14px] font-medium text-text-primary">{tmpl.name}</span>
             <span className="text-[13px] leading-snug text-text-secondary">{tmpl.description}</span>
-            <span className="mt-1 text-[12px] tabular-nums text-text-tertiary">{tmpl.items.length} items</span>
+            <span className="mt-1 text-[12px] tabular-nums text-text-tertiary">{tmpl.items.length} {tmpl.items.length === 1 ? 'item' : 'items'}</span>
           </button>
         ))}
       </DialogBody>

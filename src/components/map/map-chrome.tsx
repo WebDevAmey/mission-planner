@@ -21,7 +21,8 @@ export interface GeoResult {
 export async function searchPlaces(q: string): Promise<GeoResult[]> {
   const res = await fetch(`/api/geo/search?q=${encodeURIComponent(q)}&limit=6`);
   if (res.status === 429) throw new Error('Searching too fast. Try again in a moment.');
-  if (!res.ok) throw new Error(`Search failed (${res.status})`);
+  if (res.status >= 500) throw new Error('Place search is unavailable right now.');
+  if (!res.ok) throw new Error('Search failed. Try a different place name.');
   const data = (await res.json()) as { results?: { name?: string; lat?: number; lng?: number; bbox?: number[] | null }[] };
   return (data.results ?? [])
     .map((r) => ({

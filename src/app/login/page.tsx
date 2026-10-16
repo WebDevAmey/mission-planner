@@ -7,11 +7,13 @@ import { AuthLink, AuthShell } from '@/components/auth/auth-shell';
 import { PasswordInput } from '@/components/auth/password-input';
 import { FormMessage } from '@/components/auth/form-message';
 import { SubmitButton } from '@/components/auth/submit-button';
+import { safeNextPath } from '@/lib/http/safe-redirect';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get('next') || '/dashboard';
+  // Only same-site paths: router.push('//evil.example') would leave the app (open redirect).
+  const next = safeNextPath(searchParams.get('next')) ?? '/dashboard';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
