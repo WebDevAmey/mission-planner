@@ -6,7 +6,7 @@ import { EditorShell } from '@/components/editor/editor-shell';
 import { useMissionStore } from '@/lib/store/mission-store';
 import { useAutosaveMission } from '@/hooks/useAutosaveMission';
 import { ButtonLink } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type LoadState = { kind: 'loading' } | { kind: 'ready'; version: number | null } | { kind: 'error'; message: string };
 
@@ -50,16 +50,32 @@ export default function MissionEditorPage() {
 
   if (load.kind === 'loading' || (load.kind === 'ready' && (!mission || mission.id !== missionId))) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-bg-base" role="status" aria-label="Loading mission">
-        <Spinner size={22} />
+      <div className="flex h-dvh flex-col bg-background-primary-default" role="status" aria-label="Loading mission">
+        <div className="flex h-12 shrink-0 items-center gap-3 border-b border-separator-border px-3">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-40" />
+          <div className="flex-1" />
+          <Skeleton className="h-8 w-24 rounded-fd-control" />
+        </div>
+        <div className="flex min-h-0 flex-1">
+          <div className="hidden w-12 shrink-0 border-r border-separator-border md:block" />
+          <div className="min-w-0 flex-1 bg-background-secondary-default" />
+          <div className="hidden w-[360px] shrink-0 flex-col gap-3 border-l border-separator-border p-3 lg:flex">
+            <Skeleton className="h-8 w-full rounded-fd-control" />
+            {Array.from({ length: 8 }, (_, i) => (
+              <Skeleton key={i} className="h-5 w-full" />
+            ))}
+          </div>
+        </div>
+        <div className="h-8 shrink-0 border-t border-separator-border" />
       </div>
     );
   }
 
   if (load.kind === 'error') {
     return (
-      <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-bg-base px-6 text-center">
-        <p className="max-w-sm text-sm text-text-dim">{load.message}</p>
+      <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-background-full px-6 text-center">
+        <p className="max-w-sm text-[14px] text-text-secondary">{load.message}</p>
         <ButtonLink href="/dashboard" variant="primary">
           Back to missions
         </ButtonLink>

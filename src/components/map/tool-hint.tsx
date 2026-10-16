@@ -4,7 +4,10 @@ import { Button } from '@/components/base/buttons/button';
 import { SegmentedControl, SegmentedControlItem } from '@/components/base/segmented-control/segmented-control';
 import { useUIStore } from '@/lib/store/ui-store';
 import type { ZoneKind } from '@/lib/store/editor-types';
+import { FLOAT_PANEL } from '@/components/editor/editor-styles';
+import { cx } from '@/utils/cx';
 import { formatDistance } from './map-geo';
+import { QuietButton } from '@/components/editor/quiet-button';
 
 interface Props {
   info: { count: number; lengthM: number; radiusM: number };
@@ -51,11 +54,11 @@ export function ToolHint({ info, onFinish, onCancel }: Props) {
   }
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-16">
+    <div className="pointer-events-none absolute inset-x-0 top-14 z-10 flex justify-center px-3 md:top-3 md:pl-[296px] xl:px-[296px]">
       <div
         role="status"
         aria-live="polite"
-        className="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-2 rounded-2lg border border-border-button-default bg-background-primary-default/95 px-3 py-1.5 shadow-dropdown backdrop-blur"
+        className={cx(FLOAT_PANEL, 'pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-2 px-2 py-1.5')}
       >
         {tool === 'draw-zone' && (
           <>
@@ -84,15 +87,15 @@ export function ToolHint({ info, onFinish, onCancel }: Props) {
             </SegmentedControl>
           </>
         )}
-        <span className="px-1 text-body-2-medium text-text-primary">{text}</span>
+        <span className="px-1 text-[13px] tabular-nums text-text-primary">{text}</span>
         {canFinish && (
-          <Button size="xs" variant="primary" onClick={onFinish}>
+          <Button size="xs" variant="secondary" onClick={onFinish}>
             Finish
           </Button>
         )}
-        <Button size="xs" variant="ghost" onClick={onCancel}>
+        <QuietButton size="xs" onPress={onCancel}>
           {tool === 'measure' && info.count > 0 ? 'Clear' : 'Cancel'}
-        </Button>
+        </QuietButton>
       </div>
     </div>
   );

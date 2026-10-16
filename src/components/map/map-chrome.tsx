@@ -3,17 +3,10 @@
 import { useState, type RefObject } from 'react';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { Button as AriaButton } from 'react-aria-components';
-import {
-  RiAddLine,
-  RiFocus3Line,
-  RiLoader4Line,
-  RiSearchLine,
-  RiStackLine,
-  RiSubtractLine,
-} from '@remixicon/react';
-import { Dropdown, DropdownGroup, DropdownPopover, DropdownTrigger } from '@/components/base/dropdown/dropdown';
-import { SegmentedControl, SegmentedControlItem } from '@/components/base/segmented-control/segmented-control';
+import { RiAddLine, RiInformationLine, RiLoader4Line, RiSearchLine, RiSubtractLine } from '@remixicon/react';
+import { Dropdown, DropdownPopover, DropdownTrigger } from '@/components/base/dropdown/dropdown';
 import { Tooltip, TooltipTrigger } from '@/components/base/tooltip/tooltip';
+import { FLOAT_PANEL, FOCUS_RING_INSET, LABEL_MONO, MENU_PANEL, SWATCH } from '@/components/editor/editor-styles';
 import { useUIStore } from '@/lib/store/ui-store';
 import { cx } from '@/utils/cx';
 
@@ -40,12 +33,14 @@ export async function searchPlaces(q: string): Promise<GeoResult[]> {
     .filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng));
 }
 
-const CONTROL =
-  'flex size-9 items-center justify-center bg-background-primary-default text-foreground-icon-primary outline-none transition-colors hover:bg-background-primary-hover focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus-ring';
+const CONTROL = cx(
+  'flex size-8 items-center justify-center text-text-secondary transition-colors duration-[120ms] hover:bg-background-primary-hover hover:text-text-primary',
+  FOCUS_RING_INSET
+);
 
 function MapButton({ label, onPress, children }: { label: string; onPress: () => void; children: React.ReactNode }) {
   return (
-    <TooltipTrigger>
+    <TooltipTrigger delay={300}>
       <AriaButton aria-label={label} onPress={onPress} className={CONTROL}>
         {children}
       </AriaButton>
@@ -56,17 +51,18 @@ function MapButton({ label, onPress, children }: { label: string; onPress: () =>
 
 function LegendRow({ swatch, label }: { swatch: string; label: string }) {
   return (
-    <div className="flex items-center gap-2 px-2 py-1 text-body-2-regular text-text-secondary">
-      <span aria-hidden className={cx('inline-block shrink-0', swatch)} />
+    <div className="flex min-h-7 items-center gap-2.5 px-2 text-[13px] text-text-secondary">
+      <span aria-hidden className="flex w-6 shrink-0 items-center justify-center">
+        <span className={cx('inline-block shrink-0', swatch)} />
+      </span>
       {label}
     </div>
   );
 }
 
-/** Map chrome per PRODUCT_SPEC §6.2: search top-left; zoom / fit / layers bottom-right. */
+/** Map chrome (DESIGN_SPEC §5.4): place search top-left; zoom and legend bottom-right.
+ * Basemap toggle and Fit route live on the tool rail. */
 export function MapChrome({ mapRef }: { mapRef: RefObject<MapLibreMap | null> }) {
-  const mapStyle = useUIStore((s) => s.mapStyle);
-  const setMapStyle = useUIStore((s) => s.setMapStyle);
   const focusMap = useUIStore((s) => s.focusMap);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<GeoResult[] | null>(null);
@@ -107,19 +103,19 @@ export function MapChrome({ mapRef }: { mapRef: RefObject<MapLibreMap | null> })
 
   return (
     <>
-      <div className="absolute left-3 top-3 z-10 w-[min(300px,calc(100%-24px))]">
+      <div className="absolute left-3 top-3 z-10 w-[min(280px,calc(100%-24px))]">
         <form
           role="search"
           onSubmit={(e) => {
             e.preventDefault();
             void runSearch();
           }}
-          className="flex h-9 items-center gap-2 rounded-2lg border border-border-button-default bg-background-primary-default px-2.5 shadow-dropdown focus-within:ring-2 focus-within:ring-border-focus-ring"
+          className={cx(FLOAT_PANEL, 'flex h-9 items-center gap-2 px-2.5 focus-within:ring-2 focus-within:ring-border-focus-ring')}
         >
           {searching ? (
-            <RiLoader4Line className="size-4 shrink-0 animate-spin text-foreground-icon-secondary" aria-hidden />
+            <RiLoader4Line className="size-4 shrink-0 animate-spin text-text-tertiary motion-reduce:animate-none" aria-hidden />
           ) : (
-            <RiSearchLine className="size-4 shrink-0 text-foreground-icon-secondary" aria-hidden />
+            <RiSearchLine className="size-4 shrink-0 text-text-tertiary" aria-hidden />
           )}
           <input
             type="search"
@@ -134,22 +130,22 @@ export function MapChrome({ mapRef }: { mapRef: RefObject<MapLibreMap | null> })
             }}
             placeholder="Search for a place"
             aria-label="Search for a place"
-            className="min-w-0 flex-1 bg-transparent text-body-2-regular text-text-primary outline-none placeholder:text-text-placeholder"
+            className="min-w-0 flex-1 bg-transparent text-[14px] text-text-primary outline-none placeholder:text-text-placeholder"
           />
         </form>
         {searchError && (
-          <p role="status" className="mt-1 rounded-lg bg-background-primary-default px-2.5 py-1.5 text-caption-1-medium text-text-secondary shadow-dropdown">
+          <p role="status" className={cx(FLOAT_PANEL, 'mt-1 px-2.5 py-1.5 text-[13px] text-text-secondary')}>
             {searchError}
           </p>
         )}
         {results && (
-          <ul role="listbox" aria-label="Search results" className="mt-1 overflow-hidden rounded-2lg border border-border-button-default bg-background-primary-default p-1 shadow-dropdown">
+          <ul role="listbox" aria-label="Search results" className={cx(FLOAT_PANEL, 'mt-1 overflow-hidden p-1')}>
             {results.map((r, i) => (
               <li key={`${r.lat},${r.lng},${i}`} role="option" aria-selected={false}>
                 <button
                   type="button"
                   onClick={() => go(r)}
-                  className="w-full truncate rounded-lg px-2.5 py-2 text-start text-body-2-regular text-text-primary outline-none hover:bg-dropdown-item-hover-background focus-visible:bg-dropdown-item-hover-background"
+                  className="w-full truncate rounded-md px-2.5 py-2 text-start text-[14px] text-text-primary outline-none hover:bg-background-primary-hover focus-visible:bg-background-primary-hover"
                 >
                   {r.label}
                 </button>
@@ -160,49 +156,29 @@ export function MapChrome({ mapRef }: { mapRef: RefObject<MapLibreMap | null> })
       </div>
 
       <div className="absolute bottom-10 right-3 z-10 flex flex-col gap-2">
-        <div className="flex flex-col divide-y divide-border-button-default overflow-hidden rounded-2lg border border-border-button-default shadow-dropdown">
+        <div className={cx(FLOAT_PANEL, 'flex flex-col divide-y divide-separator-border overflow-hidden')}>
           <MapButton label="Zoom in" onPress={() => zoom(1)}>
-            <RiAddLine className="size-5" aria-hidden />
+            <RiAddLine className="size-4" aria-hidden />
           </MapButton>
           <MapButton label="Zoom out" onPress={() => zoom(-1)}>
-            <RiSubtractLine className="size-5" aria-hidden />
+            <RiSubtractLine className="size-4" aria-hidden />
           </MapButton>
         </div>
-        <div className="flex flex-col divide-y divide-border-button-default overflow-hidden rounded-2lg border border-border-button-default shadow-dropdown">
-          <MapButton label="Fit mission" onPress={() => focusMap({ kind: 'route' })}>
-            <RiFocus3Line className="size-5" aria-hidden />
-          </MapButton>
+        <div className={cx(FLOAT_PANEL, 'overflow-hidden')}>
           <Dropdown>
-            <DropdownTrigger aria-label="Layers and legend" className={CONTROL}>
-              <RiStackLine className="size-5" aria-hidden />
+            <DropdownTrigger aria-label="Map legend" className={CONTROL}>
+              <RiInformationLine className="size-4" aria-hidden />
             </DropdownTrigger>
-            <DropdownPopover aria-label="Layers" placement="left bottom" className="w-[240px]">
-              <DropdownGroup label="Basemap">
-                <SegmentedControl
-                  aria-label="Basemap"
-                  selectedKeys={new Set([mapStyle])}
-                  onSelectionChange={(keys) => {
-                    const k = [...keys][0] as 'vector' | 'satellite' | undefined;
-                    if (k) setMapStyle(k);
-                  }}
-                  className="w-full"
-                >
-                  <SegmentedControlItem id="vector" className="flex-1">
-                    Map
-                  </SegmentedControlItem>
-                  <SegmentedControlItem id="satellite" className="flex-1">
-                    Satellite
-                  </SegmentedControlItem>
-                </SegmentedControl>
-              </DropdownGroup>
-              <DropdownGroup label="Legend">
-                <LegendRow swatch="h-1 w-6 rounded-full bg-cyan" label="Route" />
-                <LegendRow swatch="h-1 w-6 rounded-full bg-red" label="Leg with an error" />
-                <LegendRow swatch="h-0 w-6 border-t-2 border-dashed border-cyan" label="Return to home" />
-                <LegendRow swatch="size-3 rounded-sm border-2 border-dashed border-red bg-red-bg" label="Keep-out / no-fly zone" />
-                <LegendRow swatch="size-3 rounded-sm border-2 border-dashed border-blue bg-blue-bg" label="Keep-in zone" />
-                <LegendRow swatch="h-0 w-6 border-t-2 border-dashed border-green" label="Planner preview" />
-              </DropdownGroup>
+            <DropdownPopover aria-label="Map legend" placement="left bottom" className={cx('w-[232px]', MENU_PANEL)}>
+              <p className={cx(LABEL_MONO, 'px-2 pb-1 pt-1')}>Legend</p>
+              <LegendRow swatch={SWATCH.route} label="Route" />
+              <LegendRow swatch={SWATCH.routeError} label="Leg with an error" />
+              <LegendRow swatch={SWATCH.routeHome} label="Leg to or from home" />
+              <LegendRow swatch={SWATCH.waypoint} label="Waypoint" />
+              <LegendRow swatch={SWATCH.takeoff} label="Takeoff, home (square), landing (diamond)" />
+              <LegendRow swatch={SWATCH.keepOut} label="Keep-out or no-fly zone" />
+              <LegendRow swatch={SWATCH.keepIn} label="Keep-in zone" />
+              <LegendRow swatch={SWATCH.preview} label="Planner preview" />
             </DropdownPopover>
           </Dropdown>
         </div>

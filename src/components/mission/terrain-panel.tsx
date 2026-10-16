@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from 'react';
 import { RiCloseLine } from '@remixicon/react';
-import { Button } from '@/components/base/buttons/button';
 import { useMissionStore } from '@/lib/store/mission-store';
 import { useTerrainStore } from '@/lib/store/terrain-store';
 import { useUIStore } from '@/lib/store/ui-store';
 import { formatDistance } from '@/components/map/map-geo';
 import { cx } from '@/utils/cx';
+import { ICON_BUTTON } from '@/components/editor/editor-styles';
+import { Button as AriaButton } from 'react-aria-components';
 
 const W = 1000;
 const H = 160;
@@ -44,7 +45,22 @@ export function TerrainPanel() {
       .join(' ');
     const minIdx = samples.reduce((m, s, i) => (s.aglM < samples[m].aglM ? i : m), 0);
     const low = samples.map((s, i) => ({ s, i })).filter(({ s }) => s.aglM < minAgl);
-    return { total, x, y, flight, terrainPath, flightPath, floorPath, minIdx, low };
+    // Terrain under low-clearance stretches, redrawn in warn.
+    const lowRuns: string[] = [];
+    let run: string[] = [];
+    samples.forEach((s, i) => {
+      if (s.aglM < minAgl) run.push(`${run.length ? 'L' : 'M'}${x(s.distanceM).toFixed(1)},${y(s.terrainM).toFixed(1)}`);
+      if ((s.aglM >= minAgl || i === samples.length - 1) && run.length) {
+        lowRuns.push(run.length === 1 ? `${run[0]} l0.1,0` : run.join(' '));
+        run = [];
+      }
+    });
+    // Waypoint ticks: where one leg hands over to the next.
+    const ticks = samples
+      .filter((s, i) => i === 0 || s.itemIds.join() !== samples[i - 1].itemIds.join())
+      .map((s) => x(s.distanceM));
+    ticks.push(W);
+    return { total, x, y, flight, terrainPath, flightPath, floorPath, minIdx, low, lowRuns, ticks };
   }, [samples, minAgl]);
 
   const hovered = chart && hover !== null ? samples![hover] : null;
@@ -56,24 +72,27 @@ export function TerrainPanel() {
       aria-label="Terrain clearance"
       className="flex h-52 shrink-0 flex-col border-t border-separator-border bg-background-primary-default"
     >
-      <div className="flex h-10 shrink-0 items-center gap-4 px-4">
-        <h2 className="text-body-2-semibold text-text-primary">Terrain clearance</h2>
+      <div className="flex h-10 shrink-0 items-center gap-4 pl-4 pr-2">
+        <h2 className="text-[13px] font-medium text-text-primary">Terrain clearance</h2>
         {minSample && (
-          <span className={cx('font-mono text-caption-1-medium tabular-nums', minSample.aglM < minAgl ? 'text-red' : 'text-text-secondary')}>
+          <span className={cx('flex items-center gap-1.5 text-[12px] tabular-nums', minSample.aglM < minAgl ? 'text-fd-warn' : 'text-text-secondary')}>
+            {minSample.aglM < minAgl && <span aria-hidden className="size-1.5 rounded-full bg-fd-warn" />}
             Lowest {Math.round(minSample.aglM)} m AGL at {formatDistance(minSample.distanceM)} · minimum {minAgl} m
           </span>
         )}
         {hovered && (
-          <span className="hidden font-mono text-caption-1-regular tabular-nums text-text-secondary md:inline">
+          <span className="hidden text-[12px] tabular-nums text-text-tertiary md:inline">
             {formatDistance(hovered.distanceM)} · ground {Math.round(hovered.terrainM)} m · {Math.round(hovered.aglM)} m AGL
           </span>
         )}
         <div className="flex-1" />
-        <Button size="small" variant="ghost" iconOnly leadingIcon={RiCloseLine} aria-label="Close terrain panel" onClick={() => setTerrainOpen(false)} />
+        <AriaButton aria-label="Close terrain panel" onPress={() => setTerrainOpen(false)} className={ICON_BUTTON}>
+          <RiCloseLine className="size-4" aria-hidden />
+        </AriaButton>
       </div>
       <div className="relative min-h-0 flex-1 px-4 pb-3">
         {!chart ? (
-          <p className="flex h-full items-center justify-center text-body-2-regular text-text-secondary" role="status">
+          <p className="flex h-full items-center justify-center text-[13px] text-text-secondary" role="status">
             {status === 'loading'
               ? 'Looking up terrain…'
               : status === 'error'
@@ -105,11 +124,14 @@ export function TerrainPanel() {
               focusMap({ kind: 'point', point: s.pos });
             }}
           >
-            <path d={chart.terrainPath} className="fill-background-tertiary-default stroke-text-tertiary" vectorEffect="non-scaling-stroke" strokeWidth={1} />
-            <path d={chart.floorPath} className="fill-none stroke-amber" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" strokeWidth={1} />
-            <path d={chart.flightPath} className="fill-none stroke-cyan" vectorEffect="non-scaling-stroke" strokeWidth={2} />
-            {chart.low.map(({ s, i }) => (
-              <circle key={i} cx={chart.x(s.distanceM)} cy={chart.y(chart.flight[i])} r={3} className="fill-red" vectorEffect="non-scaling-stroke" />
+            <path d={chart.terrainPath} className="fill-fd-surface-2 stroke-fd-ink-3" vectorEffect="non-scaling-stroke" strokeWidth={1} />
+            {chart.lowRuns.map((d, i) => (
+              <path key={i} d={d} className="fill-none stroke-fd-warn" vectorEffect="non-scaling-stroke" strokeWidth={2.5} strokeLinecap="round" />
+            ))}
+            <path d={chart.floorPath} className="fill-none stroke-fd-ink-3" strokeDasharray="3 4" vectorEffect="non-scaling-stroke" strokeWidth={1} />
+            <path d={chart.flightPath} className="fill-none stroke-fd-accent" vectorEffect="non-scaling-stroke" strokeWidth={2} />
+            {chart.ticks.map((tx, i) => (
+              <line key={`t${i}`} x1={tx} x2={tx} y1={H - 6} y2={H} className="stroke-fd-ink-2" vectorEffect="non-scaling-stroke" strokeWidth={1} />
             ))}
             {hover !== null && (
               <line
@@ -117,7 +139,7 @@ export function TerrainPanel() {
                 x2={chart.x(samples![hover].distanceM)}
                 y1={0}
                 y2={H}
-                className="stroke-text-secondary"
+                className="stroke-fd-ink-2"
                 strokeWidth={1}
                 vectorEffect="non-scaling-stroke"
               />

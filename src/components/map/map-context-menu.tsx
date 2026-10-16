@@ -8,6 +8,7 @@ import { useUIStore } from '@/lib/store/ui-store';
 import { PlannerAction } from '@/lib/mavlink/commands';
 import { round7 } from '@/lib/utils';
 import { cx } from '@/utils/cx';
+import { DATA_MONO, FLOAT_PANEL } from '@/components/editor/editor-styles';
 
 export interface ContextMenuState {
   x: number;
@@ -76,15 +77,15 @@ export function MapContextMenu({ state, onClose }: { state: ContextMenuState; on
       aria-label="Map actions"
       // Position follows the cursor; it can't be expressed as a static class.
       style={{ left, top }}
-      className="absolute z-20 flex w-56 flex-col gap-1 rounded-2xl border border-border-button-default bg-background-primary-default p-2 shadow-dropdown"
+      className={cx(FLOAT_PANEL, 'absolute z-20 flex w-56 flex-col gap-0.5 p-1.5')}
     >
       {items.map(({ icon: Icon, label, run }) => (
-        <button key={label} type="button" role="menuitem" onClick={act(run)} className={cx(MENU_ITEM, MENU_ITEM_INTERACTIVE, 'text-body-2-medium')}>
-          <Icon className="size-4 shrink-0 text-foreground-icon-secondary" aria-hidden />
+        <button key={label} type="button" role="menuitem" onClick={act(run)} className={cx(MENU_ITEM, MENU_ITEM_INTERACTIVE, 'rounded-md px-2 py-1.5 text-[14px]')}>
+          <Icon className="size-4 shrink-0 text-text-tertiary" aria-hidden />
           {label}
         </button>
       ))}
-      <p className="px-2 pb-1 font-mono text-caption-2-regular tabular-nums text-text-tertiary">
+      <p className={cx(DATA_MONO, 'border-t border-separator-border px-2 pb-1 pt-1.5 text-[11px] text-text-tertiary')}>
         {lat.toFixed(6)}, {lng.toFixed(6)}
       </p>
     </div>

@@ -23,6 +23,10 @@ import {
 import type { MissionItem } from '@/types/mission';
 import { formatDistance } from '@/components/map/map-geo';
 import { NumberField, Section, SelectField } from '../fields';
+import { ICON_BUTTON, INK_BUTTON } from '../editor-styles';
+import { cx } from '@/utils/cx';
+import { Button as AriaButton } from 'react-aria-components';
+import { QuietButton } from '@/components/editor/quiet-button';
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -51,21 +55,16 @@ function insertBeforeTerminal(mission: EditorMission, generated: MissionItem[]):
 
 function Stat({ label, value, tone }: { label: string; value: ReactNode; tone?: 'good' | 'bad' }) {
   return (
-    <div className="flex flex-col gap-0.5 rounded-lg border border-separator-border px-3 py-2">
-      <span className="text-caption-1-regular text-text-secondary">{label}</span>
-      <span
-        className={
-          tone === 'good'
-            ? 'font-mono text-body-2-semibold tabular-nums text-green'
-            : tone === 'bad'
-              ? 'font-mono text-body-2-semibold tabular-nums text-red'
-              : 'font-mono text-body-2-semibold tabular-nums text-text-primary'
-        }
-      >
-        {value}
-      </span>
+    <div className="flex flex-col gap-0.5 bg-background-primary-default px-3 py-2">
+      <dt className="text-[12px] text-text-tertiary">{label}</dt>
+      <dd className={cx('text-[14px] tabular-nums', tone === 'good' ? 'text-fd-ok' : tone === 'bad' ? 'text-fd-danger' : 'text-text-primary')}>{value}</dd>
     </div>
   );
+}
+
+/** Result figures: a hairline grid, not cards. */
+function Stats({ children }: { children: ReactNode }) {
+  return <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-fd-control border border-separator-border bg-separator-border [&>*:last-child:nth-child(odd)]:col-span-2">{children}</dl>;
 }
 
 function PanelFrame({
@@ -86,19 +85,21 @@ function PanelFrame({
   const openPlanPanel = useUIStore((s) => s.openPlanPanel);
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center gap-2 px-2 pb-2">
-        <Button size="small" variant="ghost" iconOnly leadingIcon={RiArrowLeftLine} aria-label="Back to waypoints" onClick={() => openPlanPanel(null)} />
-        <h2 className="text-headline-semibold text-text-primary">{title}</h2>
+      <div className="flex h-11 shrink-0 items-center gap-1 px-2">
+        <AriaButton aria-label="Back to waypoints" onPress={() => openPlanPanel(null)} className={ICON_BUTTON}>
+          <RiArrowLeftLine className="size-4" aria-hidden />
+        </AriaButton>
+        <h2 className="text-[14px] font-medium text-text-primary">{title}</h2>
       </div>
-      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 pb-4">
-        <p className="text-body-2-regular text-text-secondary">{description}</p>
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-4">
+        <p className="text-[13px] text-text-secondary">{description}</p>
         {children}
       </div>
       <div className="flex justify-end gap-2 border-t border-separator-border px-4 py-3">
         <Button size="small" variant="secondary" onClick={() => openPlanPanel(null)}>
           Cancel
         </Button>
-        <Button size="small" variant="primary" disabled={!canApply} onClick={onApply}>
+        <Button size="small" variant="secondary" disabled={!canApply} onClick={onApply} className={INK_BUTTON}>
           {applyLabel}
         </Button>
       </div>
@@ -162,7 +163,7 @@ function SurveyPanel({ mission }: { mission: EditorMission }) {
   if (!area) {
     return (
       <PanelFrame title="Survey area" description="Outline the area to cover on the map, then set altitude and spacing." applyLabel="Add survey" canApply={false} onApply={() => {}}>
-        <Button size="small" variant="primary" leadingIcon={RiShapeLine} onClick={() => setActiveTool('draw-area')}>
+        <Button size="small" variant="secondary" leadingIcon={RiShapeLine} onClick={() => setActiveTool('draw-area')} className="self-start">
           Draw area on map
         </Button>
       </PanelFrame>
@@ -199,7 +200,7 @@ function SurveyPanel({ mission }: { mission: EditorMission }) {
           <NumberField label="Line spacing" unit="m" value={spacingM} min={1} max={5000} onCommit={(v) => v && setSpacing(v)} />
         )}
         <div className="flex items-center justify-between gap-2">
-          <span className="text-body-2-medium text-text-primary">Best line direction</span>
+          <span className="text-[13px] font-medium text-text-primary">Best line direction</span>
           <Switch size="sm" isSelected={autoAngle} onChange={setAutoAngle} aria-label="Choose line direction automatically" />
         </div>
         {!autoAngle && (
@@ -209,20 +210,20 @@ function SurveyPanel({ mission }: { mission: EditorMission }) {
       </Section>
       <Section title="Preview">
         {result?.error ? (
-          <p className="text-body-2-regular text-red">{result.error}</p>
+          <p className="text-[13px] text-fd-danger">{result.error}</p>
         ) : s ? (
-          <div className="grid grid-cols-2 gap-2">
+          <Stats>
             <Stat label="Passes" value={s.lineCount} />
             <Stat label="Flight path" value={formatDistance(s.lengthM)} />
             <Stat label="Spacing" value={`${s.spacingM.toFixed(1)} m`} />
             <Stat label="Area" value={result!.areaM2 > 1e5 ? `${(result!.areaM2 / 1e4).toFixed(1)} ha` : `${Math.round(result!.areaM2)} m²`} />
             {s.triggerDistanceM != null && <Stat label="Photo every" value={`${s.triggerDistanceM.toFixed(1)} m`} />}
             <Stat label="Line bearing" value={`${Math.round(s.angleDeg)}°`} />
-          </div>
+          </Stats>
         ) : null}
-        <Button size="small" variant="ghost" leadingIcon={RiShapeLine} onClick={() => setActiveTool('draw-area')}>
+        <QuietButton icon={RiShapeLine} onPress={() => setActiveTool('draw-area')} className="self-start">
           Redraw area
-        </Button>
+        </QuietButton>
       </Section>
     </PanelFrame>
   );
@@ -257,18 +258,18 @@ function OptimisePanel({ mission }: { mission: EditorMission }) {
       canApply={result.changed && result.savedM > 0.5}
       onApply={apply}
     >
-      <div className="grid grid-cols-2 gap-2">
+      <Stats>
         <Stat label="Current" value={formatDistance(result.originalM)} />
         <Stat label="Optimised" value={formatDistance(result.optimisedM)} tone={result.savedM > 0.5 ? 'good' : undefined} />
         <Stat label="Saved" value={result.savedM > 0.5 ? `${formatDistance(result.savedM)} (${Math.round(result.savedFraction * 100)}%)` : 'Already optimal'} />
-      </div>
+      </Stats>
       {selectedId && (
         <div className="flex items-center justify-between gap-2">
-          <span className="text-body-2-medium text-text-primary">Keep the selected item in place</span>
+          <span className="text-[13px] font-medium text-text-primary">Keep the selected item in place</span>
           <Switch size="sm" isSelected={lockSelected} onChange={setLockSelected} aria-label="Keep the selected item in place" />
         </div>
       )}
-      <p className="text-caption-1-regular text-text-tertiary">The dashed line on the map shows the new route.</p>
+      <p className="text-[12px] text-text-tertiary">The dashed line on the map shows the new route.</p>
     </PanelFrame>
   );
 }
@@ -304,18 +305,18 @@ function AvoidPanel({ mission }: { mission: EditorMission }) {
       onApply={apply}
     >
       {zones.length === 0 ? (
-        <p className="text-body-2-regular text-text-secondary">This mission has no enabled zones. Draw one with the Zone tool (Z).</p>
+        <p className="text-[13px] text-text-secondary">This mission has no enabled zones. Draw one with the Zone tool (Z).</p>
       ) : (
         <>
           <NumberField label="Safety margin" unit="m" value={marginM} min={0} max={1000} onCommit={(v) => v !== null && setMargin(v)} />
-          <div className="grid grid-cols-2 gap-2">
+          <Stats>
             <Stat label="Detour points" value={result.insertedIds.length} />
             <Stat label="Added distance" value={formatDistance(result.addedM)} />
             <Stat label="Route now" value={formatDistance(before)} />
             <Stat label="Unresolved legs" value={result.unresolved.length} tone={result.unresolved.length ? 'bad' : undefined} />
-          </div>
+          </Stats>
           {!result.changed && result.unresolved.length === 0 && (
-            <p className="text-body-2-regular text-text-secondary">No leg crosses a zone. Nothing to change.</p>
+            <p className="text-[13px] text-text-secondary">No leg crosses a zone. Nothing to change.</p>
           )}
           {result.unresolved.length > 0 && (
             <ul className="flex flex-col gap-1">
@@ -324,7 +325,7 @@ function AvoidPanel({ mission }: { mission: EditorMission }) {
                   <button
                     type="button"
                     onClick={() => u.itemIds[0] && selectMissionItem(u.itemIds[u.itemIds.length - 1])}
-                    className="text-start text-body-2-regular text-red underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+                    className="text-start text-[13px] text-fd-danger underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus-ring"
                   >
                     {u.reason === 'endpoint_in_zone' ? 'A waypoint sits inside a zone: move it first.' : 'No way around was found for one leg.'}
                   </button>

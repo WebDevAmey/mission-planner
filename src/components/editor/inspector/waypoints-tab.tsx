@@ -20,6 +20,7 @@ import { COMMAND_SHORT_LABELS, PlannerAction, supportsCoordinates } from '@/lib/
 import { haversineM } from '@/lib/domain/geo';
 import { severityByItem, formatDistance } from '@/components/map/map-geo';
 import { cx } from '@/utils/cx';
+import { FOCUS_RING_INSET, LABEL_MONO, MENU_PANEL, ROW, ROW_SELECTED, TONE_TEXT } from '../editor-styles';
 import { PlanPanelHost } from '../planning/plan-panel-host';
 
 const ADD_OPTIONS: { action: PlannerAction; label: string }[] = [
@@ -35,17 +36,18 @@ const ADD_OPTIONS: { action: PlannerAction; label: string }[] = [
   { action: PlannerAction.DO_JUMP, label: 'Jump to item' },
 ];
 
-function ItemBadge({ n, kind, selected }: { n: number; kind: 'spatial' | 'command'; selected: boolean }) {
+/** Item number: spatial items get the map's waypoint circle; commands a plain number. */
+export function ItemBadge({ n, kind, selected }: { n: number; kind: 'spatial' | 'command'; selected: boolean }) {
   return (
     <span
       aria-hidden
       className={cx(
-        'inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full px-1 font-mono text-caption-1-semibold tabular-nums',
-        selected
-          ? 'bg-text-primary text-background-full'
-          : kind === 'spatial'
-            ? 'bg-cyan text-bg-base'
-            : 'border border-border-button-default text-text-secondary'
+        'inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 font-mono text-[11px] font-medium tabular-nums',
+        kind === 'spatial'
+          ? selected
+            ? 'bg-fd-accent text-fd-accent-ink'
+            : 'border-[1.5px] border-text-primary text-text-primary'
+          : 'text-text-tertiary'
       )}
     >
       {n}
@@ -110,9 +112,9 @@ export function WaypointsTab() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center gap-2 px-4 pb-3">
-        <span className="text-body-2-medium text-text-secondary">
-          {mission.items.length} item{mission.items.length === 1 ? '' : 's'}
+      <div className="flex h-11 shrink-0 items-center gap-2 px-3">
+        <span className="text-[13px] text-text-secondary">
+          <span className="tabular-nums text-text-primary">{mission.items.length}</span> item{mission.items.length === 1 ? '' : 's'}
         </span>
         <div className="flex-1" />
         <Dropdown isOpen={planOpen} onOpenChange={setPlanOpen}>
@@ -121,18 +123,18 @@ export function WaypointsTab() {
             <span className="px-0.5">Plan</span>
             <RiArrowDownSLine className="size-4" aria-hidden />
           </DropdownTrigger>
-          <DropdownPopover aria-label="Plan tools" placement="bottom end" className="w-[280px]">
+          <DropdownPopover aria-label="Plan tools" placement="bottom end" className={cx('w-[280px]', MENU_PANEL)}>
             <DropdownItem onSelect={() => plan('survey')} className="flex-col items-start gap-0">
-              <span className="text-body-2-medium">Survey area…</span>
-              <span className="text-caption-1-regular text-text-secondary">Lawnmower grid over a drawn polygon</span>
+              <span className="text-[14px]">Survey area…</span>
+              <span className="text-[12px] text-text-secondary">Lawnmower grid over a drawn polygon</span>
             </DropdownItem>
             <DropdownItem onSelect={() => plan('optimise')} className="flex-col items-start gap-0">
-              <span className="text-body-2-medium">Optimise order…</span>
-              <span className="text-caption-1-regular text-text-secondary">Shortest visiting order, keeps takeoff and landing</span>
+              <span className="text-[14px]">Optimise order…</span>
+              <span className="text-[12px] text-text-secondary">Shortest visiting order, keeps takeoff and landing</span>
             </DropdownItem>
             <DropdownItem onSelect={() => plan('avoid')} className="flex-col items-start gap-0">
-              <span className="text-body-2-medium">Route around zones…</span>
-              <span className="text-caption-1-regular text-text-secondary">Adds detours so no leg crosses a keep-out zone</span>
+              <span className="text-[14px]">Route around zones…</span>
+              <span className="text-[12px] text-text-secondary">Adds detours so no leg crosses a keep-out zone</span>
             </DropdownItem>
           </DropdownPopover>
         </Dropdown>
@@ -141,10 +143,10 @@ export function WaypointsTab() {
             <RiAddLine className="size-4" aria-hidden />
             <span className="px-0.5">Add</span>
           </DropdownTrigger>
-          <DropdownPopover aria-label="Add item" placement="bottom end" className="w-[240px]">
+          <DropdownPopover aria-label="Add item" placement="bottom end" className={cx('w-[240px]', MENU_PANEL)}>
             <DropdownGroup label={selectedId ? 'Insert after selected' : 'Add to end'}>
               {ADD_OPTIONS.map((o) => (
-                <DropdownItem key={o.action} onSelect={() => add(o.action)} className="px-2 py-1.5 text-body-2-medium">
+                <DropdownItem key={o.action} onSelect={() => add(o.action)} className="px-2 py-1.5 text-[14px]">
                   {o.label}
                 </DropdownItem>
               ))}
@@ -154,23 +156,30 @@ export function WaypointsTab() {
       </div>
 
       {mission.items.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 pb-10 text-center">
-          <p className="text-body-medium text-text-primary">No items yet</p>
-          <p className="text-body-2-regular text-text-secondary">Click the map with Add waypoint, outline a survey area, or start from a template.</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            <Button size="small" variant="primary" onClick={() => setActiveTool('add-wp')}>
+        <div className="flex flex-1 flex-col items-start gap-3 px-4 pb-10 pt-6">
+          <p className="text-[14px] font-medium text-text-primary">No items yet</p>
+          <p className="max-w-[36ch] text-[13px] text-text-secondary">Click the map with the Waypoint tool, outline a survey area, or start from a template.</p>
+          <div className="flex flex-wrap gap-2">
+            <Button size="small" variant="secondary" onClick={() => setActiveTool('add-wp')}>
               Add waypoints
             </Button>
             <Button size="small" variant="secondary" onClick={() => setActiveTool('draw-area')}>
               Survey area
             </Button>
-            <Button size="small" variant="ghost" onClick={() => setTemplatePickerOpen(true)}>
+            <Button size="small" variant="secondary" onClick={() => setTemplatePickerOpen(true)}>
               Template
             </Button>
           </div>
         </div>
       ) : (
-        <ol aria-label="Mission items" className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+        <>
+        <div aria-hidden className={cx(LABEL_MONO, 'flex h-7 shrink-0 items-center gap-2 border-y border-separator-border bg-background-secondary-default pl-[54px] pr-3')}>
+          <span className="flex-1">Item</span>
+          <span className="w-12 text-end">Alt</span>
+          <span className="w-14 text-end">Leg</span>
+          <span className="w-4" />
+        </div>
+        <ol aria-label="Mission items" className="min-h-0 flex-1 overflow-y-auto pb-2">
           {rows.map(({ item, index, spatial, legM }) => {
             const selected = item.id === selectedId;
             const sev = severity.get(item.id);
@@ -194,7 +203,7 @@ export function WaypointsTab() {
                   setDragOver(null);
                   if (from !== null && from !== index) reorder(from, index);
                 }}
-                className={cx('group rounded-lg', dragOver === index && 'ring-2 ring-inset ring-border-focus-ring')}
+                className={cx('group border-b border-separator-border/60', dragOver === index && 'ring-2 ring-inset ring-border-focus-ring')}
               >
                 <button
                   type="button"
@@ -204,32 +213,34 @@ export function WaypointsTab() {
                     if (spatial) focusMap({ kind: 'point', point: [item.longitude!, item.latitude!] });
                   }}
                   onDoubleClick={() => setInspectorTab('item')}
-                  className={cx(
-                    'flex min-h-11 w-full items-center gap-3 rounded-lg px-2 py-1.5 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus-ring',
-                    selected ? 'bg-background-primary-hover' : 'hover:bg-background-primary-hover'
-                  )}
+                  className={cx(ROW, FOCUS_RING_INSET, 'pl-1', selected ? ROW_SELECTED : 'hover:bg-background-primary-hover')}
                 >
-                  <RiDraggable className="size-4 shrink-0 cursor-grab text-foreground-icon-tertiary opacity-0 group-hover:opacity-100" aria-hidden />
+                  <RiDraggable className="size-3.5 shrink-0 cursor-grab text-text-tertiary opacity-0 group-hover:opacity-100" aria-hidden />
                   <ItemBadge n={index + 1} kind={spatial ? 'spatial' : 'command'} selected={selected} />
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-body-2-medium text-text-primary">{COMMAND_SHORT_LABELS[item.command] ?? item.name}</span>
-                    <span className="truncate font-mono text-caption-1-regular tabular-nums text-text-secondary">
-                      {item.altitude != null && supportsCoordinates(item.action) ? `${Math.round(item.altitude)} m` : ''}
-                      {legM != null ? ` · ${formatDistance(legM)}` : ''}
-                      {!supportsCoordinates(item.action) ? commandSummary(item.action, item.parameters) : ''}
-                    </span>
+                  <span className="min-w-0 flex-1 truncate text-text-primary">
+                    {COMMAND_SHORT_LABELS[item.command] ?? item.name}
+                    {!supportsCoordinates(item.action) && (
+                      <span className="text-text-tertiary"> {commandSummary(item.action, item.parameters)}</span>
+                    )}
                   </span>
-                  {sev === 'error' && <RiErrorWarningLine className="size-4 shrink-0 text-red" aria-label="Has errors" />}
-                  {sev === 'warning' && <RiAlertLine className="size-4 shrink-0 text-amber" aria-label="Has warnings" />}
+                  <span className="w-12 shrink-0 text-end text-[13px] tabular-nums text-text-secondary">
+                    {item.altitude != null && supportsCoordinates(item.action) ? `${Math.round(item.altitude)} m` : ''}
+                  </span>
+                  <span className="w-14 shrink-0 text-end text-[13px] tabular-nums text-text-tertiary">{legM != null ? formatDistance(legM) : ''}</span>
+                  <span className="flex w-4 shrink-0 justify-end">
+                    {sev === 'error' && <RiErrorWarningLine className={cx('size-3.5', TONE_TEXT.danger)} aria-label="Has errors" />}
+                    {sev === 'warning' && <RiAlertLine className={cx('size-3.5', TONE_TEXT.warn)} aria-label="Has warnings" />}
+                  </span>
                 </button>
               </li>
             );
           })}
         </ol>
+        </>
       )}
 
-      <div className="border-t border-separator-border px-4 py-2">
-        <Button size="small" variant="ghost" leadingIcon={RiTableLine} onClick={() => setParamTableOpen(true)} className="w-full justify-start">
+      <div className="shrink-0 border-t border-separator-border px-2 py-1.5">
+        <Button size="small" variant="secondary" leadingIcon={RiTableLine} onClick={() => setParamTableOpen(true)} className="w-full justify-start border-transparent shadow-none">
           Open parameter table
         </Button>
       </div>
