@@ -1,32 +1,34 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   RiAddLine,
   RiErrorWarningLine,
-  RiLogoutBoxRLine,
+  RiGridLine,
+  RiListCheck,
   RiMailLine,
   RiRefreshLine,
-  RiRouteLine,
   RiSearchLine,
-  RiSettings3Line,
   RiUpload2Line,
 } from '@remixicon/react';
-import { Button, ButtonLink } from '@/components/base/buttons/button';
+import { Button } from '@/components/base/buttons/button';
 import { Input } from '@/components/base/input/input';
-import { SelectField } from '@/components/editor/fields';
+import { Select, SelectItem } from '@/components/base/select/select';
+import { SegmentedControl, SegmentedControlItem } from '@/components/base/segmented-control/segmented-control';
+import { AppShell } from '@/components/app-shell/app-shell';
 import { ToastContainer } from '@/components/common/toast';
 import { LegacyImportPrompt } from '@/components/common/legacy-import-prompt';
 import { ExportAnywayDialog } from '@/components/editor/export/export-menu';
 import type { ExportFormatInfo } from '@/components/editor/export/exporters';
 import { MissionCard, MissionCardSkeleton, type CardAction } from '@/components/dashboard/mission-card';
+import { MissionTable, MissionTableSkeleton } from '@/components/dashboard/mission-table';
+import { EmptyRouteFigure } from '@/components/dashboard/empty-route-figure';
 import { DeleteDialog, ExportDialog, NewMissionDialog, RenameDialog, type NewMissionInput } from '@/components/dashboard/dashboard-dialogs';
 import { serverExport } from '@/components/dashboard/server-export';
 import type { MissionSummary } from '@/components/dashboard/types';
 import type { Issue } from '@/lib/domain/validate';
 import { useUIStore } from '@/lib/store/ui-store';
-import { signOut } from '@/lib/store/local-data';
 
 interface CurrentUser {
   id: string;
@@ -41,6 +43,38 @@ const SORTS: { value: Sort; label: string }[] = [
   { value: 'created', label: 'Newest' },
   { value: 'name', label: 'Name' },
 ];
+
+/* View toggle (grid / table), remembered per browser. Read through
+ * useSyncExternalStore so the server render and hydration both use 'grid'. */
+type View = 'grid' | 'table';
+const VIEW_KEY = 'fd:dashboard-view';
+const VIEW_EVENT = 'fd:dashboard-view-change';
+
+function readView(): View {
+  try {
+    return window.localStorage.getItem(VIEW_KEY) === 'table' ? 'table' : 'grid';
+  } catch {
+    return 'grid';
+  }
+}
+
+function subscribeView(onChange: () => void) {
+  window.addEventListener(VIEW_EVENT, onChange);
+  window.addEventListener('storage', onChange);
+  return () => {
+    window.removeEventListener(VIEW_EVENT, onChange);
+    window.removeEventListener('storage', onChange);
+  };
+}
+
+function writeView(view: View) {
+  try {
+    window.localStorage.setItem(VIEW_KEY, view);
+  } catch {
+    // Storage blocked: the toggle still works for this page view.
+  }
+  window.dispatchEvent(new Event(VIEW_EVENT));
+}
 
 async function errorOf(res: Response, fallback: string): Promise<string> {
   const data = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -59,8 +93,8 @@ function VerificationBanner() {
     }
   };
   return (
-    <div role="status" className="flex flex-wrap items-center gap-3 rounded-2lg border border-separator-border bg-background-secondary-default px-4 py-3">
-      <RiMailLine className="size-5 shrink-0 text-amber" aria-hidden />
+    <div role="status" className="flex flex-wrap items-center gap-3 rounded-fd-control border border-separator-border bg-background-primary-default px-4 py-3">
+      <RiMailLine className="size-[18px] shrink-0 text-fd-warn" aria-hidden />
       <p className="min-w-0 flex-1 text-body-2-regular text-text-primary">
         {state === 'sent'
           ? 'Verification email sent. Check your inbox.'
@@ -85,6 +119,13 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<Sort>('updated');
+  const storedView = useSyncExternalStore(subscribeView, readView, () => 'grid' as View);
+  const [view, setViewState] = useState<View | null>(null);
+  const activeView = view ?? storedView;
+  const setView = (v: View) => {
+    setViewState(v);
+    writeView(v);
+  };
 
   const [newOpen, setNewOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -112,6 +153,11 @@ export default function DashboardPage() {
       }
       setError(null);
       setMissions((await missionsRes.json()).missions);
+      // "New mission" from the command palette on another page lands here with ?new=1.
+      if (new URLSearchParams(window.location.search).get('new') === '1') {
+        setNewOpen(true);
+        router.replace('/dashboard');
+      }
     } catch {
       setError('Could not reach the server. Check your connection.');
       setMissions([]);
@@ -251,77 +297,108 @@ export default function DashboardPage() {
 
   /* --------------------------------------------------------- render */
 
-  return (
-    <div className="min-h-dvh bg-background-primary-default text-text-primary">
-      <header className="sticky top-0 z-20 border-b border-separator-border bg-background-primary-default">
-        <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6">
-          <span className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-accent-600 text-white">
-              <RiRouteLine className="size-[18px]" aria-hidden />
-            </span>
-            <span className="text-body-semibold text-text-primary">Flight Deck</span>
-          </span>
-          <div className="flex-1" />
-          {user && <span className="hidden truncate text-body-2-regular text-text-secondary sm:inline">{user.name || user.email}</span>}
-          <ButtonLink href="/settings" size="small" variant="ghost" leadingIcon={RiSettings3Line}>
-            <span className="hidden sm:inline">Settings</span>
-          </ButtonLink>
-          <Button size="small" variant="ghost" leadingIcon={RiLogoutBoxRLine} onClick={() => void signOut('/')}>
-            <span className="hidden sm:inline">Sign out</span>
-          </Button>
-        </div>
-      </header>
+  const openImport = () => fileRef.current?.click();
+  const empty = missions !== null && missions.length === 0 && !error;
+  const loading = shown === null;
 
-      <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">
+  return (
+    <AppShell
+      user={user}
+      missions={missions?.map((m) => ({ id: m.id, name: m.name })) ?? null}
+      onNewMission={() => setNewOpen(true)}
+      onImport={openImport}
+    >
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".plan,.waypoints,.json,.txt"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          if (f) void importFile(f);
+        }}
+      />
+      <main id="main" className="mx-auto flex max-w-[1280px] flex-col gap-6 px-4 pt-8 pb-16 sm:px-6 sm:pt-10">
         {user && !user.emailVerified && <VerificationBanner />}
         <LegacyImportPrompt serverMissions={error ? null : missions} onImported={loadAll} />
 
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-headline-semibold text-text-primary">Missions</h1>
-            <p className="text-body-2-regular text-text-secondary">Plan, check and export ArduPilot and PX4 missions.</p>
-          </div>
-          <div className="flex gap-2">
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".plan,.waypoints,.json,.txt"
-              className="sr-only"
-              tabIndex={-1}
-              aria-hidden
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = '';
-                if (f) void importFile(f);
-              }}
-            />
-            <Button size="medium" variant="secondary" leadingIcon={RiUpload2Line} disabled={importing} onClick={() => fileRef.current?.click()}>
-              {importing ? 'Importing…' : 'Import file'}
-            </Button>
-            <Button size="medium" variant="primary" leadingIcon={RiAddLine} onClick={() => setNewOpen(true)}>
-              New mission
-            </Button>
-          </div>
+        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+          <h1 className="flex items-baseline gap-2.5 text-title-1-medium text-text-primary">
+            Missions
+            {missions && missions.length > 0 && (
+              <span className="text-title-3-regular tabular-nums text-text-tertiary">
+                <span className="sr-only">(</span>
+                {missions.length}
+                <span className="sr-only">)</span>
+              </span>
+            )}
+          </h1>
+          {!empty && (
+            <div className="flex gap-2">
+              <Button size="small" variant="secondary" leadingIcon={RiUpload2Line} disabled={importing} onClick={openImport}>
+                {importing ? 'Importing…' : 'Import'}
+              </Button>
+              <Button size="small" variant="primary" leadingIcon={RiAddLine} onClick={() => setNewOpen(true)}>
+                New mission
+              </Button>
+            </div>
+          )}
         </div>
 
         {missions && missions.length > 0 && (
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-wrap items-center gap-2 border-b border-separator-border pb-4">
             <Input
               aria-label="Search missions"
               placeholder="Search missions"
               leadingIcon={RiSearchLine}
               value={query}
               onChange={setQuery}
-              className="w-full sm:w-72"
+              className="w-full sm:w-64"
             />
-            <SelectField label="Sort by" value={sort} options={SORTS} onChange={setSort} className="w-48" />
+            <Select
+              aria-label="Sort missions"
+              size="sm"
+              selectedKey={sort}
+              onSelectionChange={(k) => {
+                const opt = SORTS.find((o) => o.value === k);
+                if (opt) setSort(opt.value);
+              }}
+              triggerClassName="h-9 min-w-[168px]"
+            >
+              {SORTS.map((o) => (
+                <SelectItem key={o.value} id={o.value} textValue={o.label}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </Select>
+            <div className="flex-1" />
+            <SegmentedControl
+              aria-label="View"
+              selectedKeys={new Set([activeView])}
+              onSelectionChange={(keys) => {
+                const v = [...keys][0];
+                if (v === 'grid' || v === 'table') setView(v);
+              }}
+            >
+              <SegmentedControlItem id="grid" aria-label="Grid view" className="gap-1.5 text-body-2-medium!">
+                <RiGridLine className="size-4" aria-hidden />
+                <span className="hidden sm:inline">Grid</span>
+              </SegmentedControlItem>
+              <SegmentedControlItem id="table" aria-label="Table view" className="gap-1.5 text-body-2-medium!">
+                <RiListCheck className="size-4" aria-hidden />
+                <span className="hidden sm:inline">Table</span>
+              </SegmentedControlItem>
+            </SegmentedControl>
           </div>
         )}
 
         {error && (
-          <div role="alert" className="flex items-center gap-3 rounded-2lg border border-red bg-red-bg px-4 py-3">
-            <RiErrorWarningLine className="size-5 shrink-0 text-red" aria-hidden />
-            <p className="flex-1 text-body-2-regular text-text-primary">{error}</p>
+          <div role="alert" className="flex flex-wrap items-center gap-3 rounded-fd-control border border-fd-danger/40 bg-background-primary-default px-4 py-3">
+            <RiErrorWarningLine className="size-[18px] shrink-0 text-fd-danger" aria-hidden />
+            <p className="min-w-0 flex-1 text-body-2-regular text-text-primary">{error}</p>
             <Button
               size="small"
               variant="secondary"
@@ -336,36 +413,55 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {shown === null ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" aria-busy="true" aria-label="Loading missions">
-            {Array.from({ length: 6 }, (_, i) => (
-              <MissionCardSkeleton key={i} />
-            ))}
+        {loading ? (
+          <div aria-busy="true" aria-label="Loading missions">
+            {activeView === 'table' ? (
+              <MissionTableSkeleton />
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {Array.from({ length: 8 }, (_, i) => (
+                  <MissionCardSkeleton key={i} />
+                ))}
+              </div>
+            )}
           </div>
-        ) : missions!.length === 0 && !error ? (
-          <div className="flex flex-col items-center gap-4 rounded-2lg border border-dashed border-separator-border px-6 py-16 text-center">
-            <span className="flex size-12 items-center justify-center rounded-full bg-background-secondary-default">
-              <RiRouteLine className="size-6 text-text-secondary" aria-hidden />
-            </span>
-            <div className="flex flex-col gap-1">
-              <h2 className="text-body-semibold text-text-primary">No missions yet</h2>
-              <p className="max-w-sm text-body-2-regular text-text-secondary">
-                Create a mission from a template, or import a .plan, .waypoints or Flight Deck file.
-              </p>
+        ) : empty ? (
+          <section
+            aria-labelledby="empty-title"
+            className="flex max-w-[880px] flex-col items-start gap-6 rounded-fd-control border border-separator-border bg-background-primary-default p-6 sm:flex-row sm:items-center sm:gap-10 sm:p-10"
+          >
+            <EmptyRouteFigure className="w-full max-w-[280px] shrink-0 sm:w-[240px]" />
+            <div className="flex max-w-[44ch] flex-col items-start gap-4">
+              <div className="flex flex-col gap-1.5">
+                <h2 id="empty-title" className="text-title-3-medium text-text-primary">
+                  No missions yet
+                </h2>
+                <p className="text-body-2-regular text-text-secondary text-pretty">
+                  Start a mission and place waypoints on the map, begin from a survey or orbit template, or import a
+                  .plan or .waypoints file from QGroundControl or Mission Planner.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button size="small" variant="primary" leadingIcon={RiAddLine} onClick={() => setNewOpen(true)}>
+                  New mission
+                </Button>
+                <Button size="small" variant="secondary" leadingIcon={RiUpload2Line} disabled={importing} onClick={openImport}>
+                  {importing ? 'Importing…' : 'Import a .plan file'}
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button size="small" variant="secondary" leadingIcon={RiUpload2Line} onClick={() => fileRef.current?.click()}>
-                Import file
-              </Button>
-              <Button size="small" variant="primary" leadingIcon={RiAddLine} onClick={() => setNewOpen(true)}>
-                New mission
-              </Button>
-            </div>
-          </div>
+          </section>
         ) : shown.length === 0 && missions!.length > 0 ? (
-          <p className="py-12 text-center text-body-2-regular text-text-secondary">No missions match “{query}”.</p>
+          <div className="flex flex-col items-center gap-3 py-16 text-center">
+            <p className="text-body-2-regular text-text-secondary">No missions match “{query}”.</p>
+            <Button size="small" variant="ghost" onClick={() => setQuery('')}>
+              Clear search
+            </Button>
+          </div>
+        ) : shown.length === 0 ? null : activeView === 'table' ? (
+          <MissionTable missions={shown} onAction={onAction} />
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {shown.map((m) => (
               <MissionCard key={m.id} mission={m} onAction={onAction} />
             ))}
@@ -388,6 +484,6 @@ export default function DashboardPage() {
         }}
       />
       <ToastContainer />
-    </div>
+    </AppShell>
   );
 }

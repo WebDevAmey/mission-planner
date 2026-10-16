@@ -1,8 +1,8 @@
 'use client';
 
-import { Component, ErrorInfo, ReactNode } from 'react';
-import { TriangleAlert } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { RiRefreshLine } from '@remixicon/react';
+import { Button } from '@/components/base/buttons/button';
 
 interface Props {
   children: ReactNode;
@@ -26,12 +26,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught:', error, errorInfo);
-    // Log to error reporting service
     this.logErrorToService(error, errorInfo);
   }
 
   private logErrorToService(error: Error, errorInfo: ErrorInfo) {
-    // Implement your error logging service here
     console.error('Error details:', {
       error: error.message,
       stack: error.stack,
@@ -42,21 +40,27 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      return this.props.fallback || (
-        <div className="flex min-h-screen items-center justify-center bg-background p-4">
-          <div className="max-w-md rounded-lg border border-red/40 bg-bg-panel p-8 text-center">
-            <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-red/40 bg-red-bg text-red">
-              <TriangleAlert size={20} />
+      return (
+        this.props.fallback || (
+          <div className="flex min-h-dvh items-center justify-center bg-background-full p-4 text-text-primary">
+            <div role="alert" className="flex w-full max-w-md flex-col items-start gap-4 rounded-fd-control border border-separator-border bg-background-primary-default p-6">
+              <div className="flex flex-col gap-1.5">
+                <h2 className="text-title-3-medium text-text-primary">Something went wrong</h2>
+                <p className="text-body-2-regular text-text-secondary">
+                  This screen stopped working. Reloading usually fixes it; your saved missions are not affected.
+                </p>
+              </div>
+              {this.state.error?.message && (
+                <p className="w-full break-words rounded-sm bg-background-secondary-default px-3 py-2 font-mono text-caption-1-regular text-text-secondary">
+                  {this.state.error.message}
+                </p>
+              )}
+              <Button variant="secondary" size="small" leadingIcon={RiRefreshLine} onClick={() => window.location.reload()}>
+                Reload
+              </Button>
             </div>
-            <h2 className="mb-2 font-sans text-lg font-semibold text-text">Something went wrong</h2>
-            <p className="mb-5 font-mono text-[12px] text-text-dim">
-              {this.state.error?.message || 'An unexpected error occurred'}
-            </p>
-            <Button variant="primary" className="mx-auto font-sans" onClick={() => window.location.reload()}>
-              Reload Application
-            </Button>
           </div>
-        </div>
+        )
       );
     }
 
