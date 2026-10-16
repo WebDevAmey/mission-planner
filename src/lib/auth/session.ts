@@ -3,7 +3,18 @@ import { generateToken, hashToken } from '@/lib/auth/tokens';
 import { toIsoString } from '@/lib/db/serialize';
 
 export const SESSION_COOKIE = 'mps_session';
-export const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60; // 30 days
+export const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60; // 30 days, absolute
+/** A session unused for this long is dead even before its absolute expiry. */
+export const SESSION_IDLE_TIMEOUT_MS = 14 * 24 * 60 * 60 * 1000;
+
+/** Last activity: lastSeenAt, or creation for a session never seen since. */
+function lastActiveMs(s: { lastSeenAt: unknown; createdAt: unknown }): number {
+  return new Date((s.lastSeenAt ?? s.createdAt) as string).getTime();
+}
+
+export function isSessionLive(s: { expiresAt: unknown; lastSeenAt: unknown; createdAt: unknown }, now = Date.now()): boolean {
+  return new Date(s.expiresAt as string).getTime() > now && now - lastActiveMs(s) <= SESSION_IDLE_TIMEOUT_MS;
+}
 
 export interface SessionUser {
   id: string;
@@ -30,8 +41,8 @@ export async function createSession(
     tokenHash: hashToken(token),
     userId,
     expiresAt: toIsoString(expiresAt),
-    userAgent: meta?.userAgent ?? null,
-    ipAddress: meta?.ipAddress ?? null,
+    userAgent: meta?.userAgent?.slice(0, 512) ?? null,
+    ipAddress: meta?.ipAddress?.slice(0, 64) ?? null,
   });
 
   return { token, expiresAt };
@@ -46,8 +57,8 @@ export interface ResolvedSession {
 }
 
 /** Resolves a raw session-cookie token to its session and user, or null if the
- * token is missing, unknown, or expired. Expired sessions are opportunistically
- * cleaned up rather than left to accumulate. */
+ * token is missing, unknown, expired, or idle for longer than
+ * SESSION_IDLE_TIMEOUT_MS. Dead sessions are deleted on sight. */
 export async function getSession(token: string | undefined | null): Promise<ResolvedSession | null> {
   if (!token) return null;
 
@@ -58,7 +69,7 @@ export async function getSession(token: string | undefined | null): Promise<Reso
   if (!session || !session.user) return null;
 
   const now = Date.now();
-  if (new Date(session.expiresAt).getTime() <= now) {
+  if (!isSessionLive(session, now)) {
     await db.orm.public.Session.where({ id: session.id }).delete();
     return null;
   }
@@ -103,10 +114,12 @@ export async function deleteSessionById(userId: string, sessionId: string): Prom
 }
 
 export async function listSessionsForUser(userId: string) {
-  return db.orm.public.Session.where({ userId })
-    .where((s) => s.expiresAt.gt(toIsoString(new Date())))
+  const now = Date.now();
+  const rows = await db.orm.public.Session.where({ userId })
+    .where((s) => s.expiresAt.gt(toIsoString(new Date(now))))
     .orderBy((s) => s.createdAt.desc())
     .all();
+  return rows.filter((s) => isSessionLive(s, now));
 }
 
 export function sessionCookieOptions(expiresAt: Date) {

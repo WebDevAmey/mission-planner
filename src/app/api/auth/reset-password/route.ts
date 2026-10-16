@@ -1,11 +1,10 @@
-import { cookies } from 'next/headers';
 import { db } from '@/prisma/db';
 import { resetPasswordSchema } from '@/lib/validation/auth';
 import { hashPassword } from '@/lib/auth/password';
 import { hashToken } from '@/lib/auth/tokens';
-import { createSession, deleteAllSessionsForUser, SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from '@/lib/auth/session';
+import { deleteAllSessionsForUser } from '@/lib/auth/session';
+import { startSession } from '@/lib/auth/guard';
 import { isSameOriginRequest } from '@/lib/http/same-origin';
-import { getClientIp } from '@/lib/http/client-ip';
 import { toIsoString } from '@/lib/db/serialize';
 import { AUTH_MAX_BODY_BYTES, readJsonBody } from '@/lib/http/api';
 
@@ -57,21 +56,7 @@ export async function POST(request: Request) {
   // A compromised password shouldn't leave an attacker's existing session alive.
   await deleteAllSessionsForUser(record.userId);
 
-  const ip = getClientIp(request);
-  const { token: sessionToken, expiresAt } = await createSession(record.userId, {
-    userAgent: request.headers.get('user-agent'),
-    ipAddress: ip,
-  });
-
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, sessionToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: SESSION_MAX_AGE_SECONDS,
-    expires: expiresAt,
-  });
+  await startSession(record.userId, request);
 
   return Response.json({ ok: true });
 }

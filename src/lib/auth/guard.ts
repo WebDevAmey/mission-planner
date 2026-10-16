@@ -1,5 +1,15 @@
 import { cookies } from 'next/headers';
-import { getSession, getSessionUser, SESSION_COOKIE, type ResolvedSession, type SessionUser } from '@/lib/auth/session';
+import {
+  createSession,
+  deleteSessionByToken,
+  getSession,
+  getSessionUser,
+  SESSION_COOKIE,
+  sessionCookieOptions,
+  type ResolvedSession,
+  type SessionUser,
+} from '@/lib/auth/session';
+import { getClientIp } from '@/lib/http/client-ip';
 
 /** Reads and verifies the session cookie for the current request. Every
  * mission/account route handler calls this itself rather than trusting
@@ -31,4 +41,21 @@ export class UnauthorizedError extends Error {
     super('Unauthorized');
     this.name = 'UnauthorizedError';
   }
+}
+
+/**
+ * Issues a fresh session for `userId` and sets the cookie, first revoking any
+ * session this browser already holds (switching accounts or re-logging in must
+ * not leave the old token valid server-side). Used by login, signup, password
+ * reset and password change.
+ */
+export async function startSession(userId: string, request: Request): Promise<void> {
+  const cookieStore = await cookies();
+  const previous = cookieStore.get(SESSION_COOKIE)?.value;
+  if (previous) await deleteSessionByToken(previous);
+  const { token, expiresAt } = await createSession(userId, {
+    userAgent: request.headers.get('user-agent'),
+    ipAddress: getClientIp(request),
+  });
+  cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions(expiresAt));
 }

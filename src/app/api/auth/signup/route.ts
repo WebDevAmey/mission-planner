@@ -1,8 +1,7 @@
-import { cookies } from 'next/headers';
 import { db } from '@/prisma/db';
 import { signupSchema } from '@/lib/validation/auth';
 import { hashPassword } from '@/lib/auth/password';
-import { createSession, SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from '@/lib/auth/session';
+import { startSession } from '@/lib/auth/guard';
 import { generateToken, hashToken } from '@/lib/auth/tokens';
 import { checkRateLimit, normalizeIdentifier, recordAttempt } from '@/lib/auth/rate-limit';
 import { isSameOriginRequest } from '@/lib/http/same-origin';
@@ -74,20 +73,7 @@ export async function POST(request: Request) {
 
   const { delivered } = await sendVerificationEmail(user.email, verifyUrl);
 
-  const { token: sessionToken, expiresAt } = await createSession(user.id, {
-    userAgent: request.headers.get('user-agent'),
-    ipAddress: ip,
-  });
-
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, sessionToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: SESSION_MAX_AGE_SECONDS,
-    expires: expiresAt,
-  });
+  await startSession(user.id, request);
 
   await Promise.all(keys.map((k) => recordAttempt(k, 'signup', true)));
 

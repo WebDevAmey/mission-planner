@@ -1,11 +1,10 @@
-import { cookies } from 'next/headers';
 import { db } from '@/prisma/db';
 import { apiError, authorize, readJsonBody, validationError } from '@/lib/http/api';
 import { changePasswordSchema } from '@/lib/validation/account';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { checkRateLimit, recordAttempt } from '@/lib/auth/rate-limit';
-import { createSession, deleteAllSessionsForUser, SESSION_COOKIE, sessionCookieOptions } from '@/lib/auth/session';
-import { getClientIp } from '@/lib/http/client-ip';
+import { deleteAllSessionsForUser } from '@/lib/auth/session';
+import { startSession } from '@/lib/auth/guard';
 import { toIsoString } from '@/lib/db/serialize';
 
 /**
@@ -42,12 +41,7 @@ export async function POST(request: Request) {
   await db.orm.public.PasswordResetToken.where({ userId: user.id }).deleteAll();
 
   await deleteAllSessionsForUser(user.id);
-  const { token, expiresAt } = await createSession(user.id, {
-    userAgent: request.headers.get('user-agent'),
-    ipAddress: getClientIp(request),
-  });
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions(expiresAt));
+  await startSession(user.id, request);
 
   return Response.json({ ok: true });
 }
