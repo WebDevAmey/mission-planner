@@ -77,8 +77,26 @@ const DEFAULT_SETTINGS = {
   altitudeReference: 'relative' as const,
 };
 
-const cloneMission = (mission: EditorMission): EditorMission =>
-  JSON.parse(JSON.stringify(mission)) as EditorMission;
+const PARAM_KEYS = ['param1', 'param2', 'param3', 'param4', 'param5', 'param6', 'param7'] as const;
+
+/** Whether normalising produced exactly the fields `normalizeMissionItem` may change. */
+const sameNormalised = (a: MissionItem, b: MissionItem): boolean =>
+  a.sequence === b.sequence &&
+  a.command === b.command &&
+  a.name === b.name &&
+  a.latitude === b.latitude &&
+  a.longitude === b.longitude &&
+  a.altitude === b.altitude &&
+  PARAM_KEYS.every((k) => a.parameters[k] === b.parameters[k]);
+
+/**
+ * `resequenceMissionItems`, but items that come out unchanged keep their object identity,
+ * so an edit to one waypoint doesn't hand every row, marker and memo a "new" item.
+ */
+export function resequenceStable(items: MissionItem[], settings: EditorSettings): MissionItem[] {
+  const next = resequenceMissionItems(items, settings);
+  return next.map((item, i) => (sameNormalised(item, items[i]) ? items[i] : item));
+}
 
 const createEmptyMission = (name: string): EditorMission => ({
   id: uuidv4(),
@@ -99,13 +117,15 @@ const withHistory = (
   updater: (draft: EditorMission) => EditorMission,
   label = 'Edit'
 ): void => {
-  const baseMission = cloneMission(currentMission);
-  const nextMission = updater(baseMission);
+  // Updaters return new objects (they never mutate the draft), so the current document can
+  // be shared with history: no deep clone per edit, and unchanged items, zones and
+  // settings keep their identity across undo steps.
+  const nextMission = updater(currentMission);
 
   set({
     mission: {
       ...nextMission,
-      items: resequenceMissionItems(nextMission.items, nextMission.settings),
+      items: resequenceStable(nextMission.items, nextMission.settings),
       updatedAt: new Date().toISOString(),
     },
     past: [...get().past, currentMission].slice(-HISTORY_LIMIT),
