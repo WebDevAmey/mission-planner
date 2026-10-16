@@ -35,6 +35,15 @@ describe.skipIf(!hasDb)('session lifecycle', () => {
     expect(await db.orm.public.Session.where((s) => s.tokenHash.eq(tokenHash)).first()).toBeNull();
   });
 
+  it('the per-request session lookup does not load the password hash', async () => {
+    const { token } = await createSession(user.id);
+    const row = await db.orm.public.Session.where((s) => s.tokenHash.eq(hashToken(token)))
+      .include('user', (u) => u.select('id', 'email', 'name', 'emailVerified'))
+      .first();
+    expect(row?.user).not.toHaveProperty('passwordHash');
+    expect(await getSessionUser(token)).toEqual({ id: user.id, email: user.email, name: 'IT', emailVerified: false });
+  });
+
   it('a recently used session stays valid', async () => {
     const { token } = await createSession(user.id);
     await db.orm.public.Session.where((s) => s.tokenHash.eq(hashToken(token))).update({

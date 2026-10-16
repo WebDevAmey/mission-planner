@@ -63,7 +63,8 @@ export async function getSession(token: string | undefined | null): Promise<Reso
   if (!token) return null;
 
   const session = await db.orm.public.Session.where((s) => s.tokenHash.eq(hashToken(token)))
-    .include('user', (u) => u)
+    // Never load passwordHash on the per-request path.
+    .include('user', (u) => u.select('id', 'email', 'name', 'emailVerified'))
     .first();
 
   if (!session || !session.user) return null;

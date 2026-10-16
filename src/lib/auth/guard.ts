@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import {
   createSession,
@@ -16,17 +17,19 @@ import { getClientIp } from '@/lib/http/client-ip';
  * anything the client claims — proxy.ts blocks page navigation for signed-out
  * users, but route handlers are a separate trust boundary (see the Next.js
  * guidance to not rely on proxy alone for authorization). */
-export async function getCurrentUser(): Promise<SessionUser | null> {
+// cache(): a page and its layouts rendered in one request share one session lookup
+// (outside a React render, e.g. in route handlers, it simply calls through).
+export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   return getSessionUser(token);
-}
+});
 
 /** Like getCurrentUser, but also returns the session id (Settings › Sessions marks "this device"). */
-export async function getCurrentSession(): Promise<ResolvedSession | null> {
+export const getCurrentSession = cache(async (): Promise<ResolvedSession | null> => {
   const cookieStore = await cookies();
   return getSession(cookieStore.get(SESSION_COOKIE)?.value);
-}
+});
 
 export async function requireUser(): Promise<SessionUser> {
   const user = await getCurrentUser();
