@@ -35,9 +35,11 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (AUTH_PAGES.includes(pathname)) {
-    // Router prefetches (RSC) must not be redirected: the browser would follow the
-    // 307 without RSC headers and log a 404. The real navigation still redirects.
-    if (request.headers.get('next-router-prefetch') || request.headers.get('rsc')) return NextResponse.next();
+    // Only redirect document navigations. Router fetches and prefetches (RSC) must not be
+    // redirected: the browser follows the 307 without RSC headers and /dashboard?_rsc=…
+    // answers 404. Next strips the RSC headers before the proxy runs, so detect them
+    // through Sec-Fetch-Dest (every current browser sends it; "document" for page loads).
+    if (!isDocumentRequest(request)) return NextResponse.next();
     const next = request.nextUrl.searchParams.get('next');
     const safeNext = safeNextPath(next);
     if (authed) return NextResponse.redirect(new URL(safeNext ?? '/dashboard', request.url));
@@ -51,6 +53,13 @@ export default async function proxy(request: NextRequest) {
   }
 
   return NextResponse.next();
+}
+
+/** False for fetch()/RSC requests; true for page loads and for clients that send no Sec-Fetch-Dest. */
+function isDocumentRequest(request: NextRequest): boolean {
+  if (request.headers.get('next-router-prefetch') || request.headers.get('rsc')) return false;
+  const dest = request.headers.get('sec-fetch-dest');
+  return dest === null || dest === 'document' || dest === 'iframe';
 }
 
 export const config = {

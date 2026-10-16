@@ -75,4 +75,15 @@ describe.skipIf(!hasDb)('proxy with a session', () => {
     r.cookies.set(SESSION_COOKIE, user.token);
     expect((await proxy(r)).headers.get('location')).toBeNull();
   });
+
+  it('does not redirect router fetches of /login once Next has stripped the RSC headers', async () => {
+    // What the proxy really receives for a prefetch: no rsc/next-router-* headers, no _rsc.
+    const fetchReq = new NextRequest(`${BASE}/login`, { headers: { 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors' } });
+    fetchReq.cookies.set(SESSION_COOKIE, user.token);
+    expect((await proxy(fetchReq)).headers.get('location')).toBeNull();
+
+    const pageLoad = new NextRequest(`${BASE}/login`, { headers: { 'sec-fetch-dest': 'document', 'sec-fetch-mode': 'navigate' } });
+    pageLoad.cookies.set(SESSION_COOKIE, user.token);
+    expect(new URL((await proxy(pageLoad)).headers.get('location')!).pathname).toBe('/dashboard');
+  });
 });
