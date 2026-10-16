@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { apiError, authorize, readJsonBody, validationError } from '@/lib/http/api';
-import { TtlCache } from '@/lib/http/ttl-cache';
+import { TtlCache, WindowLimiter } from '@/lib/http/ttl-cache';
+import { fetchUpstreamJson, upstreamUrl } from '@/lib/http/upstream';
 
 /**
  * POST /api/geo/elevation `{ points: [{ lat, lng }] }` (1–100 points)
@@ -15,7 +16,9 @@ const bodySchema = z.object({
     .max(100),
 });
 
-const ELEVATION_URL = process.env.ELEVATION_URL || 'https://api.open-elevation.com/api/v1/lookup';
+const ELEVATION_URL = upstreamUrl(process.env.ELEVATION_URL, 'https://api.open-elevation.com/api/v1/lookup');
+/** The editor sends at most a few 100-point chunks per route change (debounced). */
+const perUser = new WindowLimiter(60, 60 * 1000);
 const cache = new TtlCache<number>(20000, 7 * 24 * 60 * 60 * 1000);
 
 const keyOf = (p: { lat: number; lng: number }) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
@@ -30,20 +33,27 @@ export async function POST(request: Request) {
   if (!parsed.success) return validationError(parsed.error);
   const { points } = parsed.data;
 
+  const wait = perUser.take(user.id);
+  if (wait > 0) {
+    const retryAfterS = Math.ceil(wait / 1000);
+    return apiError(429, 'RATE_LIMITED', 'Too many elevation lookups. Try again in a moment.', { retryAfterS }, {
+      headers: { 'Retry-After': String(retryAfterS) },
+    });
+  }
+
   const elevations: (number | null)[] = points.map((p) => cache.get(keyOf(p)) ?? null);
   const missing = points.map((p, i) => ({ p, i })).filter(({ i }) => elevations[i] === null);
 
   if (missing.length) {
     try {
-      const res = await fetch(ELEVATION_URL, {
+      const data = (await fetchUpstreamJson(ELEVATION_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ locations: missing.map(({ p }) => ({ latitude: p.lat, longitude: p.lng })) }),
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!res.ok) return apiError(502, 'UPSTREAM_FAILED', 'Elevation service is unavailable right now');
-      const data = (await res.json()) as { results?: { elevation?: number }[] };
-      const results = data.results ?? [];
+        timeoutMs: 10000,
+        maxBytes: 256 * 1024,
+      })) as { results?: { elevation?: number }[] } | null;
+      const results = Array.isArray(data?.results) ? data.results : [];
       missing.forEach(({ p, i }, j) => {
         const e = results[j]?.elevation;
         if (typeof e === 'number' && Number.isFinite(e)) {

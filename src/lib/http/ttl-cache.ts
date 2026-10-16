@@ -66,4 +66,35 @@ export class Spacing {
   }
 }
 
+/**
+ * Fixed-window request counter per key (e.g. 60 calls per minute per user).
+ * `take` returns 0 when allowed (and counts the call), otherwise the
+ * milliseconds until the window resets. Per instance, like the caches above.
+ */
+export class WindowLimiter {
+  private windows = new Map<string, { start: number; count: number }>();
+
+  constructor(
+    private readonly max: number,
+    private readonly windowMs: number,
+    private readonly maxKeys = 10000
+  ) {}
+
+  take(key: string, now = Date.now()): number {
+    let w = this.windows.get(key);
+    if (!w || now - w.start >= this.windowMs) {
+      w = { start: now, count: 0 };
+      this.windows.delete(key);
+      this.windows.set(key, w);
+      if (this.windows.size > this.maxKeys) {
+        const oldest = this.windows.keys().next().value;
+        if (oldest !== undefined) this.windows.delete(oldest);
+      }
+    }
+    if (w.count >= this.max) return w.start + this.windowMs - now;
+    w.count++;
+    return 0;
+  }
+}
+
 export const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));

@@ -1,18 +1,18 @@
 import { z } from 'zod';
 import { tool } from '@langchain/core/tools';
 import { getElevations } from '@/lib/services/terrain-service';
+import { fetchUpstreamJson } from '@/lib/http/upstream';
 
 export const geocodeTool = tool(
   async ({ query }: { query: string }) => {
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
-      const res = await fetch(url, {
+      const data = (await fetchUpstreamJson(url, {
         headers: { 'User-Agent': 'MPS-FlightDeck/0.1 (mission-planner)' },
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
-      const data = (await res.json()) as Array<{ lat: string; lon: string; display_name: string }>;
-      if (data.length === 0) return { ok: false, error: 'No match found for that location' };
+        timeoutMs: 8000,
+        maxBytes: 256 * 1024,
+      })) as Array<{ lat: string; lon: string; display_name: string }>;
+      if (!Array.isArray(data) || data.length === 0) return { ok: false, error: 'No match found for that location' };
       return {
         ok: true,
         data: {
