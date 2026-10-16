@@ -51,9 +51,24 @@ export function analyseMission(mission: EditorMission, terrain?: { itemIds: stri
   return { metrics, issues, errors: errorCount(issues), warnings: warningCount(issues), risk };
 }
 
+type TerrainSamples = Parameters<typeof analyseMission>[1];
+
+// Several inspector components call useMissionAnalysis at once; each useMemo would run the
+// full analysis again. Store snapshots are immutable, so share one result per (mission, samples).
+const shared = new WeakMap<EditorMission, { samples: TerrainSamples; result: MissionAnalysis }>();
+
+/** `analyseMission`, computed once per mission snapshot and terrain profile. */
+export function analyseMissionShared(mission: EditorMission, samples: TerrainSamples): MissionAnalysis {
+  const hit = shared.get(mission);
+  if (hit && hit.samples === samples) return hit.result;
+  const result = analyseMission(mission, samples);
+  shared.set(mission, { samples, result });
+  return result;
+}
+
 /** Memoised analysis of the mission open in the editor (null while none is loaded). */
 export function useMissionAnalysis(): MissionAnalysis | null {
   const mission = useMissionStore((s) => s.mission);
   const samples = useTerrainStore((s) => s.samples);
-  return useMemo(() => (mission ? analyseMission(mission, samples) : null), [mission, samples]);
+  return useMemo(() => (mission ? analyseMissionShared(mission, samples) : null), [mission, samples]);
 }

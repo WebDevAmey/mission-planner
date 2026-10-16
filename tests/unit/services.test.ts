@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { PlannerAction } from '@/lib/mavlink/commands';
 import { checkGeofences } from '@/lib/services/geofence-checker';
 import { computeViolationCount } from '@/lib/services/risk-scorer';
 import { computeMissionMetrics } from '@/lib/services/metrics-service';
 import { exportMissionAsPlan, missionSanityCheck } from '@/lib/services/mission-builder';
 import { optimiseRoute } from '@/lib/services/route-optimizer';
+import * as svc from '@/lib/services/terrain-service';
 import { getGroundClearance } from '@/lib/services/terrain-service';
 import { runSentinelAudit } from '@/lib/agents/sentinel-audit';
 import type { MissionDraft } from '@/lib/agents/schemas';
@@ -90,5 +91,35 @@ describe('SENTINEL', () => {
     expect(r.report.findings.map((f) => f.code)).toContain('TERRAIN_CLEARANCE');
     const down = await runSentinelAudit(draft, { settings: SETTINGS, config: CONFIG, homePosition: null, elevations: async () => { throw new Error('x'); } });
     expect(down.report.findings.map((f) => f.code)).toContain('TERRAIN_UNAVAILABLE');
+  });
+});
+
+describe('terrain-service elevation cache', () => {
+  it('stays bounded and evicts the oldest entries first', async () => {
+    svc.clearElevationCache();
+    vi.stubGlobal('fetch', async (_url: string, init: RequestInit) => {
+      const { locations } = JSON.parse(String(init.body)) as { locations: { latitude: number }[] };
+      return new Response(JSON.stringify({ results: locations.map((l) => ({ elevation: l.latitude })) }));
+    });
+    try {
+      const total = svc.ELEVATION_CACHE_MAX + 500;
+      const pts = Array.from({ length: total }, (_, i) => ({ lat: i * 1e-4, lng: 0 }));
+      expect(await svc.getElevations(pts)).toEqual(pts.map((p) => p.lat));
+      expect(svc.elevationCacheSize()).toBe(svc.ELEVATION_CACHE_MAX);
+      // The newest point is still cached (no fetch), the oldest was evicted (fetched again).
+      let calls = 0;
+      vi.stubGlobal('fetch', async (_url: string, init: RequestInit) => {
+        calls++;
+        const { locations } = JSON.parse(String(init.body)) as { locations: { latitude: number }[] };
+        return new Response(JSON.stringify({ results: locations.map((l) => ({ elevation: l.latitude })) }));
+      });
+      await svc.getElevations([pts[total - 1]]);
+      expect(calls).toBe(0);
+      await svc.getElevations([pts[0]]);
+      expect(calls).toBe(1);
+    } finally {
+      vi.unstubAllGlobals();
+      svc.clearElevationCache();
+    }
   });
 });

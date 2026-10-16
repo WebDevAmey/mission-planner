@@ -10,10 +10,53 @@ import {
 } from '@/lib/domain/geo';
 import type { Zone } from './types';
 
-/** A zone in the local metric frame. */
+/** Axis-aligned bounding box in the local metric frame. */
+export interface Box {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+/**
+ * A zone in the local metric frame. `box` bounds the zone, padded by BOX_PAD_M so the
+ * cheap box tests below can only skip work whose exact answer is already "no".
+ */
 export type LocalZone =
-  | { zone: Zone; shape: 'circle'; c: Vec; r: number }
-  | { zone: Zone; shape: 'polygon'; poly: Vec[] };
+  | { zone: Zone; shape: 'circle'; c: Vec; r: number; box: Box }
+  | { zone: Zone; shape: 'polygon'; poly: Vec[]; box: Box };
+
+/** Far larger than the 1e-9 tolerances in the exact predicates, far below anything that matters. */
+const BOX_PAD_M = 1e-6;
+
+/** Bounding box of `points`, grown by `grow` metres plus a tiny pad. */
+export function boxOf(points: Vec[], grow = 0): Box {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const p of points) {
+    if (p.x < minX) minX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y > maxY) maxY = p.y;
+  }
+  const g = grow + BOX_PAD_M;
+  return { minX: minX - g, minY: minY - g, maxX: maxX + g, maxY: maxY + g };
+}
+
+const pointOutsideBox = (p: Vec, b: Box) => p.x < b.minX || p.x > b.maxX || p.y < b.minY || p.y > b.maxY;
+
+/** True when segment `ac` cannot touch anything inside box `b`. */
+export const segmentOutsideBox = (a: Vec, c: Vec, b: Box) =>
+  Math.max(a.x, c.x) < b.minX || Math.min(a.x, c.x) > b.maxX || Math.max(a.y, c.y) < b.minY || Math.min(a.y, c.y) > b.maxY;
+
+/** Euclidean gap between the bounding box of segment `ab` and `box` (0 when they overlap). A lower bound on any distance from the segment to what the box contains. */
+export function segmentBoxGap(a: Vec, b: Vec, box: Box): number {
+  const dx = Math.max(0, box.minX - Math.max(a.x, b.x), Math.min(a.x, b.x) - box.maxX);
+  const dy = Math.max(0, box.minY - Math.max(a.y, b.y), Math.min(a.y, b.y) - box.maxY);
+  return Math.sqrt(dx * dx + dy * dy);
+}
 
 /** Usable geometry check (enabled with a complete shape). */
 export function hasGeometry(z: Zone): boolean {
@@ -28,16 +71,21 @@ export function zonePoints(z: Zone): LngLat[] {
 
 export function toLocalZone(z: Zone, proj: LocalProjection): LocalZone {
   if (z.shape === 'circle') {
-    return { zone: z, shape: 'circle', c: proj.toLocal([z.centerLng!, z.centerLat!]), r: z.radiusM! };
+    const c = proj.toLocal([z.centerLng!, z.centerLat!]);
+    const r = z.radiusM!;
+    return { zone: z, shape: 'circle', c, r, box: boxOf([c], r) };
   }
-  return { zone: z, shape: 'polygon', poly: openRing(z.vertices ?? []).map(proj.toLocal) };
+  const poly = openRing(z.vertices ?? []).map(proj.toLocal);
+  return { zone: z, shape: 'polygon', poly, box: boxOf(poly) };
 }
 
 export function pointInLocalZone(p: Vec, lz: LocalZone): boolean {
+  if (pointOutsideBox(p, lz.box)) return false;
   return lz.shape === 'circle' ? dist(p, lz.c) <= lz.r : pointInPolygon(p, lz.poly);
 }
 
 export function segmentHitsLocalZone(a: Vec, b: Vec, lz: LocalZone): boolean {
+  if (segmentOutsideBox(a, b, lz.box)) return false;
   return lz.shape === 'circle'
     ? segmentIntersectsCircle(a, b, lz.c, lz.r)
     : segmentIntersectsPolygon(a, b, lz.poly);

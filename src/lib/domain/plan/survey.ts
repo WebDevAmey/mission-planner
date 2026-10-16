@@ -56,6 +56,12 @@ export function cameraFootprint(cam: CameraSpec, altitudeM: number): { widthM: n
   };
 }
 
+/**
+ * Each pass becomes two waypoints and a mission holds at most 2,000 items, so more passes
+ * than this can never be saved; stop before building (and previewing) them.
+ */
+export const MAX_SURVEY_LINES = 1000;
+
 const clampOverlap = (x: number | undefined, d: number) => Math.min(0.95, Math.max(0, x ?? d));
 
 export function surveySpacing(p: Pick<SurveyParams, 'spacingM' | 'camera' | 'sideOverlap' | 'frontOverlap' | 'altitudeM'>): {
@@ -104,6 +110,11 @@ export function generateSurvey(params: SurveyParams): SurveyResult {
   const ymax = Math.max(...ys);
   const height = ymax - ymin;
   const n = Math.max(1, Math.ceil(height / spacingM - 1e-9));
+  if (n > MAX_SURVEY_LINES) {
+    throw new Error(
+      `This area needs ${n.toLocaleString('en-US')} passes at ${Math.round(spacingM * 10) / 10} m spacing; a mission holds at most ${(MAX_SURVEY_LINES * 2).toLocaleString('en-US')} waypoints. Increase the spacing or split the area.`
+    );
+  }
   const y0 = ymin + (height - (n - 1) * spacingM) / 2;
   const ext = Math.max(0, params.turnaroundM ?? 0);
 

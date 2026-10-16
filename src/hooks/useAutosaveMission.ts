@@ -3,18 +3,21 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useMissionStore } from '@/lib/store/mission-store';
 import { hasUnsavedChanges, useSaveStore } from '@/lib/store/save-store';
-import { buildMissionPatch } from '@/hooks/mission-payload';
+import { buildAutosaveBody, missionPatchParts, type PatchParts } from '@/hooks/mission-payload';
 import type { EditorMission } from '@/lib/store/editor-types';
 
 const DEBOUNCE_MS = 900;
 const MAX_BACKOFF_MS = 30_000;
 
-/** Content fingerprint of what the server would store (no version, no timestamps). */
-const fingerprint = (mission: EditorMission) => JSON.stringify(buildMissionPatch(mission, null));
+/** Content fingerprint of what the server would store (no version, no timestamps); cached per snapshot. */
+const fingerprint = (mission: EditorMission) => missionPatchParts(mission).fingerprint;
 
 /**
  * Debounced whole-document autosave (TECHNICAL_SPEC §5.3):
  * - at most one PATCH in flight; edits made meanwhile trigger one follow-up save;
+ * - items and zones are only sent when they changed since the last save (the base
+ *   version guarantees the server still holds that save), and the server is asked
+ *   for a minimal response, so a name edit on a 2,000-item mission stays small;
  * - network/5xx failures retry with exponential backoff (1 s … 30 s);
  * - 4xx failures stop and show the reason; 409 enters the conflict state;
  * - `beforeunload` warns while anything is unsaved.
@@ -25,6 +28,8 @@ export function useAutosaveMission(missionId: string | null, initialVersion: num
   const setSave = useSaveStore((s) => s.set);
 
   const savedRef = useRef<string | null>(null);
+  /** Per-part JSON of the last document the server confirmed (null = unknown, send everything). */
+  const savedPartsRef = useRef<PatchParts['json'] | null>(null);
   const loadedIdRef = useRef<string | null>(null);
   const inFlightRef = useRef<Promise<boolean> | null>(null);
   const followUpRef = useRef(false);
@@ -46,7 +51,8 @@ export function useAutosaveMission(missionId: string | null, initialVersion: num
       const current = useMissionStore.getState().mission;
       if (!current || !missionId || current.id !== missionId) return Promise.resolve(true);
 
-      const json = fingerprint(current);
+      const parts = missionPatchParts(current);
+      const json = parts.fingerprint;
       if (!force && json === savedRef.current) {
         setSave({ status: 'saved', error: null });
         return Promise.resolve(true);
@@ -54,7 +60,8 @@ export function useAutosaveMission(missionId: string | null, initialVersion: num
 
       clearTimer();
       setSave({ status: 'saving' });
-      const body = buildMissionPatch(current, useSaveStore.getState().serverVersion);
+      // Overwrite after a conflict sends everything: the server holds someone else's version.
+      const body = buildAutosaveBody(parts, useSaveStore.getState().serverVersion, force ? null : savedPartsRef.current);
 
       const scheduleRetry = (message: string) => {
         const delay = Math.min(MAX_BACKOFF_MS, 1000 * 2 ** attemptsRef.current);
@@ -67,7 +74,7 @@ export function useAutosaveMission(missionId: string | null, initialVersion: num
         try {
           const res = await fetch(`/api/missions/${missionId}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
             body: JSON.stringify(body),
           });
           const data = (await res.json().catch(() => null)) as {
@@ -80,6 +87,7 @@ export function useAutosaveMission(missionId: string | null, initialVersion: num
           if (res.ok) {
             attemptsRef.current = 0;
             savedRef.current = json;
+            savedPartsRef.current = parts.json;
             const version = data?.mission?.version ?? data?.version;
             const latest = useMissionStore.getState().mission;
             setSave({
@@ -154,6 +162,7 @@ export function useAutosaveMission(missionId: string | null, initialVersion: num
     if (loadedIdRef.current !== missionId) {
       loadedIdRef.current = missionId;
       savedRef.current = fingerprint(mission);
+      savedPartsRef.current = missionPatchParts(mission).json;
       return;
     }
     if (fingerprint(mission) === savedRef.current) return;

@@ -1,7 +1,20 @@
 import { haversineDistance } from '@/lib/utils';
 import { aglM, sampleSpacingM } from '@/lib/domain/metrics';
 
+/** Process-wide cache; bounded so a long-running server can't grow it without limit. */
+export const ELEVATION_CACHE_MAX = 20_000;
 const elevationCache = new Map<string, number>();
+
+function remember(key: string, elevation: number): void {
+  if (elevationCache.size >= ELEVATION_CACHE_MAX && !elevationCache.has(key)) {
+    // Maps iterate in insertion order: drop the oldest entry.
+    const oldest = elevationCache.keys().next().value;
+    if (oldest !== undefined) elevationCache.delete(oldest);
+  }
+  elevationCache.set(key, elevation);
+}
+
+export const elevationCacheSize = (): number => elevationCache.size;
 
 function cacheKey(lat: number, lng: number): string {
   return `${lat.toFixed(7)},${lng.toFixed(7)}`;
@@ -56,7 +69,7 @@ export async function getElevations(
       for (let i = 0; i < chunk.length; i++) {
         const elev = data.results[i]?.elevation ?? 0;
         results[chunk[i].idx] = elev;
-        elevationCache.set(cacheKey(chunk[i].lat, chunk[i].lng), elev);
+        remember(cacheKey(chunk[i].lat, chunk[i].lng), elev);
       }
     } catch {
       // Leave as 0 on error; caller shows warning

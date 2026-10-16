@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { PlannerAction } from '@/lib/mavlink/commands';
 import { createProjection, rotate, segmentIntersectsPolygon, type LngLat } from '@/lib/domain/geo';
-import { avoidZones, generateSurvey, optimiseRoute, routeLengthM, surveyToItems } from '@/lib/domain/plan';
+import { MAX_SURVEY_LINES, avoidZones, generateSurvey, openPathLength, optimiseRoute, routeLengthM, solveOpenPath, surveyToItems } from '@/lib/domain/plan';
+import { EXACT_TSP_MAX_POINTS } from '@/lib/domain/plan/tsp';
 import { validateMission } from '@/lib/domain/validate';
 import type { Zone } from '@/lib/domain/zones';
 import { SETTINGS, item, plan } from './fixtures';
@@ -72,6 +73,15 @@ describe('survey', () => {
   });
 });
 
+describe('survey limits', () => {
+  it('refuses areas that need more passes than a mission can hold, before building them', () => {
+    const big = [ll(0, 0), ll(20000, 0), ll(20000, 20000), ll(0, 20000)];
+    expect(() => generateSurvey({ polygon: big, altitudeM: 60, spacingM: 1 })).toThrow(/needs [0-9,]+ passes/);
+    const ok = generateSurvey({ polygon: big, altitudeM: 60, spacingM: 20000 / (MAX_SURVEY_LINES - 1) });
+    expect(ok.lineCount).toBeLessThanOrEqual(MAX_SURVEY_LINES);
+  });
+});
+
 describe('optimiseRoute', () => {
   it('never lengthens the route; keeps takeoff first and RTL last; attached items move with their waypoint', () => {
     const r = rng(42);
@@ -110,6 +120,26 @@ describe('optimiseRoute', () => {
     expect(res.items[j.parameters.param1 - 1].id).toBe(a.id);
     expect(validateMission({ ...m, items: res.items }).filter((i) => i.code.startsWith('DO_JUMP'))).toEqual([]);
   });
+
+  it('large inputs use the candidate-list search: fast, a permutation, never longer than the start', () => {
+    const r = rng(11);
+    const n = 1500;
+    expect(n).toBeGreaterThan(EXACT_TSP_MAX_POINTS);
+    const pts = Array.from({ length: n }, () => ({ x: r() * 5000, y: r() * 5000 }));
+    const s = { x: 0, y: 0 };
+    const identity = pts.map((_, i) => i);
+    const t0 = performance.now();
+    const fromNN = solveOpenPath(s, pts, s);
+    const fromIdentity = solveOpenPath(s, pts, s, identity);
+    // ~0.5 s on an idle machine; the exhaustive search took minutes at this size.
+    expect(performance.now() - t0).toBeLessThan(20000);
+    for (const order of [fromNN, fromIdentity]) {
+      expect([...order].sort((a, b) => a - b)).toEqual(identity);
+    }
+    expect(openPathLength(s, pts, s, fromIdentity)).toBeLessThan(openPathLength(s, pts, s, identity) * 0.2);
+    // Random points: a good tour is a small fraction of the random order.
+    expect(openPathLength(s, pts, s, fromNN)).toBeLessThan(openPathLength(s, pts, s, identity) * 0.2);
+  }, 30000);
 
   it('keeps locked items in place', () => {
     const pts = [[0, 1000], [1000, 0], [1000, 1000], [0, 2000]].map(([x, y]) => item(PlannerAction.WAYPOINT, ...latlng(x, y)));
