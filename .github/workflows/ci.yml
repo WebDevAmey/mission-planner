@@ -18,7 +18,7 @@ env:
 
 jobs:
   checks:
-    name: Lint, typecheck, unit tests, build
+    name: Lint, typecheck, unit tests, design lint, build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -33,6 +33,10 @@ jobs:
       - run: pnpm lint --max-warnings=0
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Design lint
+        run: |
+          command -v rg >/dev/null || (sudo apt-get update -q && sudo apt-get install -yq ripgrep)
+          pnpm design:lint
       - name: Build
         run: pnpm build
         env:

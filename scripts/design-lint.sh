@@ -5,6 +5,12 @@ set -uo pipefail
 
 cd "$(dirname "$0")/.."
 
+# Without rg every check below would silently find nothing and pass.
+if ! command -v rg >/dev/null 2>&1; then
+  echo "design-lint: ripgrep (rg) is required but was not found on PATH" >&2
+  exit 2
+fi
+
 SCOPE=(src/components src/app)
 
 # Allow-list (paths are rg globs, relative to the repo root):
