@@ -135,6 +135,28 @@ describe.skipIf(!hasDb)('missions API', () => {
     expect((await ok.json()).mission.version).toBe(3);
   });
 
+  it('Prefer: return=minimal answers with id, version, updatedAt and summary only', async () => {
+    signInAs(alice);
+    const res = await PATCH(
+      req('PATCH', `/api/missions/${missionId}`, { baseVersion: 3, name: 'fresh' }, {
+        headers: { prefer: 'return=minimal' },
+      }),
+      ctx(missionId)
+    );
+    expect(res.status).toBe(200);
+    const { ok, mission } = await res.json();
+    expect(ok).toBe(true);
+    expect(Object.keys(mission).sort()).toEqual(['id', 'summary', 'updatedAt', 'version']);
+    expect(mission).toMatchObject({ id: missionId, version: 4 });
+    expect(mission.summary.waypointCount).toBe(3);
+    // The stored row matches what a fresh read returns.
+    const fresh = await (await getOne(req('GET', `/api/missions/${missionId}`), ctx(missionId))).json();
+    expect(fresh.mission.version).toBe(4);
+    expect(fresh.mission.name).toBe('fresh');
+    expect(fresh.mission.updatedAt).toBe(mission.updatedAt);
+    expect(fresh.mission.summary).toEqual(mission.summary);
+  });
+
   it('413 over 2,000 items', async () => {
     signInAs(alice);
     const items = Array.from({ length: 2001 }, (_, i) => waypoint(i, 47, 8));
@@ -166,7 +188,7 @@ describe.skipIf(!hasDb)('missions API', () => {
     expect(res.status).toBe(200);
     const { missions } = await res.json();
     expect(missions).toHaveLength(1);
-    expect(missions[0]).toMatchObject({ id: missionId, waypointCount: 3, version: 3 });
+    expect(missions[0]).toMatchObject({ id: missionId, waypointCount: 3, version: 4 });
     expect(missions[0].distanceM).toBeGreaterThan(0);
     expect((await listGET(req('GET', '/api/missions?sort=bogus'))).status).toBe(400);
     signInAs(bob);

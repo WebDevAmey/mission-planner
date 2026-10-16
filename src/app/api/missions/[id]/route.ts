@@ -6,7 +6,6 @@ import {
   asDbMission,
   getOwnedFullMission,
   getOwnedMission,
-  loadFullMission,
   saveMissionDocument,
 } from '@/lib/missions/repo';
 import { db } from '@/prisma/db';
@@ -30,6 +29,8 @@ export async function GET(request: Request, { params }: Ctx) {
 /**
  * PATCH /api/missions/:id — whole-document save.
  * Body: `{ baseVersion?, name?, description?, homePosition?, settings?, limits?, items?, zones?, vehicleType?, status? }`
+ * Responds `{ ok, mission: ApiMission }`; with `Prefer: return=minimal` only
+ * `{ ok, mission: { id, version, updatedAt, summary } }`.
  * 400 invalid · 404 not owner · 409 `{ currentVersion }` stale baseVersion · 413 too many items.
  */
 export async function PATCH(request: Request, { params }: Ctx) {
@@ -50,8 +51,9 @@ export async function PATCH(request: Request, { params }: Ctx) {
   const parsed = updateMissionSchema.safeParse(body.data);
   if (!parsed.success) return validationError(parsed.error);
 
+  let saved;
   try {
-    await saveMissionDocument(id, parsed.data);
+    saved = await saveMissionDocument(id, parsed.data);
   } catch (err) {
     if (err instanceof VersionConflictError) {
       return apiError(409, 'VERSION_CONFLICT', 'This mission was changed elsewhere', {
@@ -61,8 +63,22 @@ export async function PATCH(request: Request, { params }: Ctx) {
     throw err;
   }
 
-  const full = await loadFullMission(id);
-  return Response.json({ ok: true, mission: toMissionPlan(asDbMission(full!)) });
+  const mission = toMissionPlan(asDbMission(saved));
+  if (prefersMinimal(request)) {
+    const { id: savedId, version, updatedAt, summary } = mission;
+    return Response.json({ ok: true, mission: { id: savedId, version, updatedAt, summary } });
+  }
+  return Response.json({ ok: true, mission });
+}
+
+/** RFC 7240 `Prefer: return=minimal` (autosave only needs the new version). */
+function prefersMinimal(request: Request): boolean {
+  const prefer = request.headers.get('prefer');
+  if (!prefer) return false;
+  return prefer
+    .toLowerCase()
+    .split(/[,;]/)
+    .some((token) => token.trim().replace(/\s+/g, '') === 'return=minimal');
 }
 
 /** DELETE /api/missions/:id → `{ ok: true }`. Children cascade via FKs. */
