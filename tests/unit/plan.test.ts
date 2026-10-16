@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { PlannerAction } from '@/lib/mavlink/commands';
 import { createProjection, rotate, segmentIntersectsPolygon, type LngLat } from '@/lib/domain/geo';
-import { avoidZones, generateSurvey, optimiseRoute, routeLengthM, surveyToItems } from '@/lib/domain/plan';
+import { avoidZones, generateSurvey, openPathLength, optimiseRoute, routeLengthM, solveOpenPath, surveyToItems } from '@/lib/domain/plan';
+import { EXACT_TSP_MAX_POINTS } from '@/lib/domain/plan/tsp';
 import { validateMission } from '@/lib/domain/validate';
 import type { Zone } from '@/lib/domain/zones';
 import { SETTINGS, item, plan } from './fixtures';
@@ -109,6 +110,25 @@ describe('optimiseRoute', () => {
     const j = res.items.find((i) => i.id === jump.id)!;
     expect(res.items[j.parameters.param1 - 1].id).toBe(a.id);
     expect(validateMission({ ...m, items: res.items }).filter((i) => i.code.startsWith('DO_JUMP'))).toEqual([]);
+  });
+
+  it('large inputs use the candidate-list search: fast, a permutation, never longer than the start', () => {
+    const r = rng(11);
+    const n = 1500;
+    expect(n).toBeGreaterThan(EXACT_TSP_MAX_POINTS);
+    const pts = Array.from({ length: n }, () => ({ x: r() * 5000, y: r() * 5000 }));
+    const s = { x: 0, y: 0 };
+    const identity = pts.map((_, i) => i);
+    const t0 = performance.now();
+    const fromNN = solveOpenPath(s, pts, s);
+    const fromIdentity = solveOpenPath(s, pts, s, identity);
+    expect(performance.now() - t0).toBeLessThan(5000);
+    for (const order of [fromNN, fromIdentity]) {
+      expect([...order].sort((a, b) => a - b)).toEqual(identity);
+    }
+    expect(openPathLength(s, pts, s, fromIdentity)).toBeLessThan(openPathLength(s, pts, s, identity) * 0.2);
+    // Random points: a good tour is a small fraction of the random order.
+    expect(openPathLength(s, pts, s, fromNN)).toBeLessThan(openPathLength(s, pts, s, identity) * 0.2);
   });
 
   it('keeps locked items in place', () => {
