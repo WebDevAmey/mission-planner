@@ -30,7 +30,13 @@ export async function POST(request: Request) {
   const { email, password } = parsed.data;
   const identifier = normalizeIdentifier(email);
 
-  if (!(await checkRateLimit(identifier, 'login'))) {
+  const ip = getClientIp(request);
+  const ipKey = ip ? `ip:${normalizeIdentifier(ip)}` : null;
+  const [emailAllowed, ipAllowed] = await Promise.all([
+    checkRateLimit(identifier, 'login'),
+    ipKey ? checkRateLimit(ipKey, 'login_ip') : true,
+  ]);
+  if (!emailAllowed || !ipAllowed) {
     return Response.json(
       { ok: false, error: 'Too many attempts. Try again later.' },
       { status: 429 }
@@ -47,11 +53,13 @@ export async function POST(request: Request) {
   const valid = user ? await verifyPassword(password, user.passwordHash) : await verifyPassword(password, DUMMY_HASH);
 
   if (!user || !valid) {
-    await recordAttempt(identifier, 'login', false);
+    await Promise.all([
+      recordAttempt(identifier, 'login', false),
+      ipKey ? recordAttempt(ipKey, 'login_ip', false) : undefined,
+    ]);
     return Response.json({ ok: false, error: GENERIC_ERROR }, { status: 401 });
   }
 
-  const ip = getClientIp(request);
   const { token, expiresAt } = await createSession(user.id, {
     userAgent: request.headers.get('user-agent'),
     ipAddress: ip,

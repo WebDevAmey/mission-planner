@@ -4,6 +4,7 @@ vi.mock('next/headers', () => import('./next-headers-mock'));
 
 import { db } from '@/prisma/db';
 import { POST as forgotPOST } from '@/app/api/auth/forgot-password/route';
+import { POST as loginPOST } from '@/app/api/auth/login/route';
 import { POST as resetPOST } from '@/app/api/auth/reset-password/route';
 import { POST as passwordPOST } from '@/app/api/account/password/route';
 import { generateToken, hashToken } from '@/lib/auth/tokens';
@@ -105,5 +106,33 @@ describe.skipIf(!hasDb)('password reset tokens', () => {
       await db.orm.public.AuthAttempt.where((a) => a.identifier.eq(`user:${fresh.id}`)).deleteAll();
       await deleteUser(fresh);
     }
+  });
+});
+
+describe.skipIf(!hasDb)('login throttling', () => {
+  const ip = '203.0.113.77';
+
+  afterAll(async () => {
+    await db.orm.public.AuthAttempt.where((a) => a.identifier.eq(`ip:${ip}`)).deleteAll();
+  });
+
+  it('caps failed logins per IP across many emails (credential stuffing)', async () => {
+    signInAs(null);
+    await db.orm.public.AuthAttempt.createAndCount(
+      Array.from({ length: 50 }, () => ({ identifier: `ip:${ip}`, kind: 'login_ip', success: false }))
+    );
+    const res = await loginPOST(
+      req('POST', '/api/auth/login', { email: `fresh-${Date.now()}@example.test`, password: 'whatever-password' }, { headers: { 'x-forwarded-for': ip } })
+    );
+    expect(res.status).toBe(429);
+  });
+
+  it('records a failed login against the IP as well as the email', async () => {
+    signInAs(null);
+    const other = '203.0.113.78';
+    await loginPOST(req('POST', '/api/auth/login', { email: `x-${Date.now()}@example.test`, password: 'nope-nope-nope' }, { headers: { 'x-forwarded-for': other } }));
+    const rows = await db.orm.public.AuthAttempt.where((a) => a.identifier.eq(`ip:${other}`)).all();
+    expect(rows.length).toBe(1);
+    await db.orm.public.AuthAttempt.where((a) => a.identifier.eq(`ip:${other}`)).deleteAll();
   });
 });

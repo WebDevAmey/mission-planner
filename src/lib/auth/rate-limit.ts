@@ -10,6 +10,7 @@ import { toIsoString } from '@/lib/db/serialize';
 
 export type AuthAttemptKind =
   | 'login'
+  | 'login_ip'
   | 'signup'
   | 'forgot_password'
   | 'resend_verification'
@@ -27,6 +28,8 @@ const HOUR = 60 * 60 * 1000;
 
 const POLICIES: Record<AuthAttemptKind, RateLimitPolicy> = {
   login: { windowMs: 15 * 60 * 1000, maxAttempts: 10 },
+  // IP-wide ceiling on failures across all emails (credential stuffing, S6).
+  login_ip: { windowMs: 15 * 60 * 1000, maxAttempts: 50 },
   signup: { windowMs: HOUR, maxAttempts: 5, countSuccess: true },
   // Every request is recorded as a success, so this must count successes to ever trip.
   forgot_password: { windowMs: HOUR, maxAttempts: 5, countSuccess: true },
