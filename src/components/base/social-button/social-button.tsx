@@ -94,12 +94,12 @@ const styles = sortCx({
   // of providers should line up without a wrapper doing the work, and
   // `fullWidth` opts out.
   size: {
-    medium: "h-9 w-[300px] rounded-2lg px-3 text-body-medium",
-    small: "h-8 w-[250px] rounded-lg px-2.5 text-body-medium",
+    medium: "h-9 w-[300px] rounded-md px-3 text-body-medium",
+    small: "h-8 w-[250px] rounded-md px-2.5 text-body-medium",
   },
   iconOnlySize: {
-    medium: "size-9 w-9 rounded-2lg px-0",
-    small: "size-8 w-8 rounded-lg px-0",
+    medium: "size-9 w-9 rounded-md px-0",
+    small: "size-8 w-8 rounded-md px-0",
   },
   // A touch under the base Button's icon sizes (20/18): a brand mark is
   // denser than a line icon and reads heavier at the same box.
@@ -112,14 +112,14 @@ const styles = sortCx({
     // brand colour into a darker stop, with the system's own button shadow.
     // A flat fill read as a foreign control next to BoardUI's own buttons.
     // The gradient itself is set inline, since it is per-brand.
-    colorful: "text-white shadow-xs",
+    colorful: "text-white",
     black:
-      "bg-neutral-950 text-white shadow-xs hover:bg-neutral-800 active:bg-neutral-900",
+      "bg-neutral-950 text-white hover:bg-neutral-800 active:bg-neutral-900",
     // Matches the system's secondary button, so it sits in a form beside the
     // rest of BoardUI without looking like a different family.
     white: [
       "bg-background-primary-default text-text-primary",
-      "border border-border-button-default shadow-xs",
+      "border border-border-button-default",
       "hover:bg-background-primary-hover hover:border-border-button-hover",
       "active:bg-background-primary-active active:border-border-button-active",
     ].join(" "),

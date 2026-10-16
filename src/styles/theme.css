@@ -908,6 +908,7 @@
   --radius-fd-overlay: var(--fd-radius-overlay);
 
   --shadow-fd-float: var(--fd-shadow-float);
+  --shadow-float:    var(--fd-shadow-float); /* alias: shadow-float */
 
   --ease-fd: var(--fd-ease);
 }

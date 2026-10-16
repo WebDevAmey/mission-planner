@@ -8,7 +8,7 @@ const VARIANT_CLASSES: Record<BadgeVariant, string> = {
   amber: 'badge-amber',
   red: 'badge-red',
   blue: 'badge-blue',
-  neutral: 'bg-bg-hover text-text-dim',
+  neutral: 'bg-fd-surface-2 text-fd-ink-2',
 };
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
