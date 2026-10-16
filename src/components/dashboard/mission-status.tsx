@@ -5,10 +5,10 @@ import type { MissionSummary } from './types';
 type Tone = 'ok' | 'warn' | 'danger' | 'muted';
 
 const DOT: Record<Tone, string> = {
-  ok: 'bg-(color:--fd-ok)',
-  warn: 'bg-(color:--fd-warn)',
-  danger: 'bg-(color:--fd-danger)',
-  muted: 'bg-(color:--fd-ink-3)',
+  ok: 'bg-fd-ok',
+  warn: 'bg-fd-warn',
+  danger: 'bg-fd-danger',
+  muted: 'bg-fd-ink-3',
 };
 
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;

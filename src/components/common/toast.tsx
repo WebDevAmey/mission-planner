@@ -16,10 +16,10 @@ export interface ToastItemProps {
 }
 
 const DOT: Record<ToastTone, string> = {
-  success: 'bg-(color:--fd-ok)',
-  error: 'bg-(color:--fd-danger)',
-  warning: 'bg-(color:--fd-warn)',
-  info: 'bg-(color:--fd-ink-3)',
+  success: 'bg-fd-ok',
+  error: 'bg-fd-danger',
+  warning: 'bg-fd-warn',
+  info: 'bg-fd-ink-3',
 };
 
 /** One toast: hairline surface, float shadow, a status dot plus text (never colour alone). */
@@ -28,8 +28,8 @@ export function ToastItem({ tone, title, description, action, onDismiss }: Toast
     <div
       role={tone === 'error' ? 'alert' : 'status'}
       className={cx(
-        'pointer-events-auto motion-safe:animate-[fadeIn_200ms_cubic-bezier(.2,.8,.2,1)] flex w-full items-start gap-3 rounded-2lg border border-separator-border',
-        'bg-background-primary-default py-3 ps-3.5 pe-2 shadow-(--fd-shadow-float)'
+        'pointer-events-auto motion-safe:animate-[fadeIn_200ms_cubic-bezier(.2,.8,.2,1)] flex w-full items-start gap-3 rounded-fd-overlay border border-separator-border',
+        'bg-background-primary-default py-3 ps-3.5 pe-2 shadow-fd-float'
       )}
     >
       <span aria-hidden className={cx('mt-1.5 size-2 shrink-0 rounded-full', DOT[tone])} />
@@ -41,7 +41,7 @@ export function ToastItem({ tone, title, description, action, onDismiss }: Toast
         <button
           type="button"
           onClick={action.onClick}
-          className="h-7 shrink-0 rounded-md px-2 text-body-2-medium text-text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+          className="h-7 shrink-0 rounded-fd-control px-2 text-body-2-medium text-text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus-ring"
         >
           {action.label}
         </button>
@@ -50,7 +50,7 @@ export function ToastItem({ tone, title, description, action, onDismiss }: Toast
         type="button"
         aria-label="Dismiss"
         onClick={onDismiss}
-        className="flex size-7 shrink-0 items-center justify-center rounded-md text-foreground-icon-secondary outline-none hover:bg-background-secondary-default hover:text-foreground-icon-primary focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+        className="flex size-7 shrink-0 items-center justify-center rounded-fd-control text-foreground-icon-secondary outline-none hover:bg-background-secondary-default hover:text-foreground-icon-primary focus-visible:ring-2 focus-visible:ring-border-focus-ring"
       >
         <RiCloseLine className="size-4" aria-hidden />
       </button>

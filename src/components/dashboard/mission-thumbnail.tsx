@@ -127,7 +127,7 @@ export function MissionThumbnail({
         {line && (
           <>
             <polyline points={line} className="fill-none stroke-background-primary-default" strokeWidth={5} strokeLinejoin="round" strokeLinecap="round" />
-            <polyline points={line} className="fill-none stroke-(color:--fd-accent)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+            <polyline points={line} className="fill-none stroke-fd-accent" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
           </>
         )}
         {proj &&

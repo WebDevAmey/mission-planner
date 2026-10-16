@@ -44,7 +44,7 @@ export function AppShell({ user, missions, onNewMission, onImport, children }: A
     <div className="min-h-dvh bg-background-full text-text-primary">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-3 focus:z-[1100] focus:rounded-md focus:bg-background-primary-default focus:px-3 focus:py-2 focus:text-body-2-medium focus:ring-2 focus:ring-border-focus-ring"
+        className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-3 focus:z-[1100] focus:rounded-fd-control focus:bg-background-primary-default focus:px-3 focus:py-2 focus:text-body-2-medium focus:ring-2 focus:ring-border-focus-ring"
       >
         Skip to content
       </a>
@@ -53,7 +53,7 @@ export function AppShell({ user, missions, onNewMission, onImport, children }: A
           <Link
             href="/dashboard"
             aria-label="Flight Deck, missions"
-            className="-ms-1.5 flex h-11 shrink-0 items-center rounded-md px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+            className="-ms-1.5 flex h-11 shrink-0 items-center rounded-fd-control px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring"
           >
             <FlightDeckMark className="size-6 text-text-primary sm:hidden" />
             <FlightDeckLogo className="hidden sm:inline-flex" />
@@ -88,9 +88,9 @@ export function AppShell({ user, missions, onNewMission, onImport, children }: A
             aria-label="Search missions and commands"
             aria-keyshortcuts="Meta+K Control+K"
             className={cx(
-              'flex size-11 items-center justify-center rounded-md text-foreground-icon-secondary outline-none transition-colors duration-150',
+              'flex size-11 items-center justify-center rounded-fd-control text-foreground-icon-secondary outline-none transition-colors duration-150',
               'hover:bg-background-secondary-default focus-visible:ring-2 focus-visible:ring-border-focus-ring',
-              'md:h-8 md:w-64 md:justify-start md:gap-2 md:border md:border-separator-border md:bg-background-primary-default md:px-2.5 md:hover:border-(color:--fd-line-strong) md:hover:bg-background-primary-default'
+              'md:h-8 md:w-64 md:justify-start md:gap-2 md:border md:border-separator-border md:bg-background-primary-default md:px-2.5 md:hover:border-fd-line-strong md:hover:bg-background-primary-default'
             )}
           >
             <RiSearchLine className="size-4 shrink-0" aria-hidden />

@@ -93,8 +93,8 @@ function VerificationBanner() {
     }
   };
   return (
-    <div role="status" className="flex flex-wrap items-center gap-3 rounded-md border border-separator-border bg-background-primary-default px-4 py-3">
-      <RiMailLine className="size-[18px] shrink-0 text-(color:--fd-warn)" aria-hidden />
+    <div role="status" className="flex flex-wrap items-center gap-3 rounded-fd-control border border-separator-border bg-background-primary-default px-4 py-3">
+      <RiMailLine className="size-[18px] shrink-0 text-fd-warn" aria-hidden />
       <p className="min-w-0 flex-1 text-body-2-regular text-text-primary">
         {state === 'sent'
           ? 'Verification email sent. Check your inbox.'
@@ -396,8 +396,8 @@ export default function DashboardPage() {
         )}
 
         {error && (
-          <div role="alert" className="flex flex-wrap items-center gap-3 rounded-md border border-(color:--fd-danger)/40 bg-background-primary-default px-4 py-3">
-            <RiErrorWarningLine className="size-[18px] shrink-0 text-(color:--fd-danger)" aria-hidden />
+          <div role="alert" className="flex flex-wrap items-center gap-3 rounded-fd-control border border-fd-danger/40 bg-background-primary-default px-4 py-3">
+            <RiErrorWarningLine className="size-[18px] shrink-0 text-fd-danger" aria-hidden />
             <p className="min-w-0 flex-1 text-body-2-regular text-text-primary">{error}</p>
             <Button
               size="small"
@@ -428,7 +428,7 @@ export default function DashboardPage() {
         ) : empty ? (
           <section
             aria-labelledby="empty-title"
-            className="flex flex-col items-start gap-6 rounded-md border border-separator-border bg-background-primary-default p-6 sm:flex-row sm:items-center sm:gap-10 sm:p-10"
+            className="flex max-w-[880px] flex-col items-start gap-6 rounded-fd-control border border-separator-border bg-background-primary-default p-6 sm:flex-row sm:items-center sm:gap-10 sm:p-10"
           >
             <EmptyRouteFigure className="w-full max-w-[280px] shrink-0 sm:w-[240px]" />
             <div className="flex max-w-[44ch] flex-col items-start gap-4">

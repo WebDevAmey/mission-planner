@@ -8,7 +8,7 @@ export function SkeletonBlock({ className }: { className?: string }) {
 export function SkeletonLoader() {
   return (
     <div className="flex flex-col gap-4" aria-hidden>
-      <SkeletonBlock className="h-32 rounded-md" />
+      <SkeletonBlock className="h-32 rounded-fd-control" />
       <div className="flex flex-col gap-2">
         <SkeletonBlock className="h-4 w-3/4" />
         <SkeletonBlock className="h-4 w-1/2" />

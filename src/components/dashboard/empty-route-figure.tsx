@@ -39,7 +39,7 @@ export function EmptyRouteFigure({ className }: { className?: string }) {
         />
         <polyline
           points={`48,122 ${wps.map((p) => p.join(',')).join(' ')}`}
-          className="fill-none stroke-(color:--fd-accent)"
+          className="fill-none stroke-fd-accent"
           strokeWidth={2}
           strokeLinejoin="round"
           strokeLinecap="round"

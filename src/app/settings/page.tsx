@@ -110,7 +110,7 @@ function Section({
 }
 
 function Dot({ tone }: { tone: 'ok' | 'warn' }) {
-  return <span aria-hidden className={cx('size-1.5 shrink-0 rounded-full', tone === 'ok' ? 'bg-(color:--fd-ok)' : 'bg-(color:--fd-warn)')} />;
+  return <span aria-hidden className={cx('size-1.5 shrink-0 rounded-full', tone === 'ok' ? 'bg-fd-ok' : 'bg-fd-warn')} />;
 }
 
 export default function SettingsPage() {
@@ -271,8 +271,8 @@ export default function SettingsPage() {
         <h1 className="mb-8 text-title-1-medium text-text-primary">Settings</h1>
 
         {loadError && (
-          <div role="alert" className="mb-8 flex items-center gap-3 rounded-md border border-(color:--fd-danger)/40 bg-background-primary-default px-4 py-3">
-            <RiErrorWarningLine className="size-[18px] shrink-0 text-(color:--fd-danger)" aria-hidden />
+          <div role="alert" className="mb-8 flex items-center gap-3 rounded-fd-control border border-fd-danger/40 bg-background-primary-default px-4 py-3">
+            <RiErrorWarningLine className="size-[18px] shrink-0 text-fd-danger" aria-hidden />
             <p className="min-w-0 flex-1 text-body-2-regular text-text-primary">{loadError}</p>
             <Button size="small" variant="secondary" onClick={() => window.location.reload()}>
               Retry
@@ -286,7 +286,7 @@ export default function SettingsPage() {
               <div key={i} className="flex flex-col gap-4 border-t border-separator-border py-8 first:border-t-0 first:pt-0">
                 <SkeletonBlock className="h-5 w-32" />
                 <SkeletonBlock className="h-3.5 w-72 max-w-full" />
-                <SkeletonBlock className="h-9 w-full rounded-md" />
+                <SkeletonBlock className="h-9 w-full rounded-fd-control" />
               </div>
             ))}
           </div>
@@ -297,7 +297,7 @@ export default function SettingsPage() {
                 <Input label="Name" value={name} onChange={setName} maxLength={120} placeholder="Your name" />
                 <div className="flex flex-col gap-1.5">
                   <span className="text-body-2-medium text-text-primary">Email</span>
-                  <div className="flex flex-col gap-2 rounded-md border border-separator-border bg-background-secondary-default px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-2 rounded-fd-control border border-separator-border bg-background-secondary-default px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
                     <span className="min-w-0 truncate text-body-2-regular text-text-primary">{profile.email}</span>
                     <span className="flex shrink-0 items-center gap-3">
                       {profile.emailVerified ? (
@@ -378,9 +378,9 @@ export default function SettingsPage() {
 
             <Section id="sessions" title="Sessions" description="Devices signed in to your account.">
               {sessions === null ? (
-                <SkeletonBlock className="h-16 w-full rounded-md" />
+                <SkeletonBlock className="h-16 w-full rounded-fd-control" />
               ) : (
-                <ul className="divide-y divide-separator-border overflow-hidden rounded-md border border-separator-border bg-background-primary-default">
+                <ul className="divide-y divide-separator-border overflow-hidden rounded-fd-control border border-separator-border bg-background-primary-default">
                   {sessions.map((s) => {
                     const device = describeDevice(s.userAgent);
                     const DeviceIcon = device.mobile ? RiSmartphoneLine : RiComputerLine;
@@ -395,12 +395,7 @@ export default function SettingsPage() {
                           <p className="text-caption-1-regular tabular-nums text-text-secondary">
                             Signed in {formatDate(s.createdAt)}
                             {s.lastSeenAt ? ` · Active ${formatDate(s.lastSeenAt)}` : ''}
-                            {s.ipAddress ? (
-                              <>
-                                {' · '}
-                                <span className="font-mono">{s.ipAddress}</span>
-                              </>
-                            ) : null}
+                            {s.ipAddress ? ` · ${s.ipAddress}` : ''}
                           </p>
                         </div>
                         {!s.current && (
@@ -424,7 +419,7 @@ export default function SettingsPage() {
             </Section>
 
             <Section id="danger" title="Danger zone" description="Actions here cannot be undone.">
-              <div className="flex flex-col gap-4 rounded-md border border-(color:--fd-danger)/50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-4 rounded-fd-control border border-fd-danger/50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="text-body-2-medium text-text-primary">Delete account</p>
                   <p className="mt-0.5 text-body-2-regular text-text-secondary text-pretty">

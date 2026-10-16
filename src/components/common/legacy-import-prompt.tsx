@@ -130,7 +130,7 @@ export function LegacyImportPrompt({
     <div
       role="region"
       aria-label="Import local data"
-      className="flex flex-col gap-3 rounded-md border border-separator-border bg-background-primary-default p-4 sm:flex-row sm:items-center"
+      className="flex flex-col gap-3 rounded-fd-control border border-separator-border bg-background-primary-default p-4 sm:flex-row sm:items-center"
     >
       <div className="flex min-w-0 flex-1 items-start gap-3">
         <RiHardDrive2Line className="mt-0.5 size-[18px] shrink-0 text-foreground-icon-secondary" aria-hidden />
@@ -141,7 +141,7 @@ export function LegacyImportPrompt({
             {plan.zoneCount > 0 && plan.missions.length > 0 ? ' (zones are added to each imported mission)' : ''}; then the local copy is removed.
           </p>
           {error && (
-            <p role="alert" className="mt-2 text-body-2-regular text-(color:--fd-danger)">
+            <p role="alert" className="mt-2 text-body-2-regular text-fd-danger">
               {error}
             </p>
           )}

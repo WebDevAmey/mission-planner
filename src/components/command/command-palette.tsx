@@ -52,7 +52,7 @@ export interface CommandPaletteProps {
 
 const itemClass = ({ isFocused, isPressed }: { isFocused: boolean; isPressed: boolean }) =>
   cx(
-    'flex h-10 cursor-pointer items-center gap-3 rounded-md px-2.5 text-body-2-regular text-text-primary outline-none',
+    'flex h-10 cursor-pointer items-center gap-3 rounded-fd-control px-2.5 text-body-2-regular text-text-primary outline-none',
     isFocused && 'bg-background-secondary-default',
     isPressed && 'bg-background-secondary-hover'
   );
@@ -133,7 +133,7 @@ export function CommandPalette({ isOpen, onOpenChange, missions, onNewMission, o
         )
       }
     >
-      <Modal className="w-full max-w-[560px] overflow-hidden rounded-2lg border border-separator-border bg-background-primary-default shadow-(--fd-shadow-float) outline-none">
+      <Modal className="w-full max-w-[560px] overflow-hidden rounded-fd-overlay border border-separator-border bg-background-primary-default shadow-fd-float outline-none">
         <Dialog aria-label="Command palette" className="outline-none">
           <Autocomplete filter={contains}>
             <SearchField aria-label="Search missions and commands" autoFocus className="flex items-center gap-2.5 border-b border-separator-border px-3.5">

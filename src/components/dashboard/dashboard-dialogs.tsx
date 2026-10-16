@@ -105,7 +105,7 @@ export function NewMissionDialog({
           Location{needsHome ? '' : <span className="font-normal text-text-tertiary"> (optional)</span>}
         </span>
         {place ? (
-          <div className="flex items-center gap-2 rounded-md border border-separator-border bg-background-secondary-default py-1.5 ps-3 pe-1.5">
+          <div className="flex items-center gap-2 rounded-fd-control border border-separator-border bg-background-secondary-default py-1.5 ps-3 pe-1.5">
             <RiCheckLine className="size-4 shrink-0 text-text-secondary" aria-hidden />
             <span className="min-w-0 flex-1 truncate text-body-2-regular text-text-primary">{place.label}</span>
             <Button size="xs" variant="ghost" onClick={() => setPlace(null)}>
@@ -129,16 +129,16 @@ export function NewMissionDialog({
                 onChange={setQuery}
                 className="flex-1"
               />
-              <Button type="submit" size="medium" variant="secondary" disabled={searching || !query.trim()}>
+              <Button type="submit" size="medium" variant="secondary" className="shrink-0" disabled={searching || !query.trim()}>
                 {searching ? 'Searching…' : 'Search'}
               </Button>
             </form>
             <Button size="small" variant="ghost" leadingIcon={RiMapPinLine} onClick={locate} className="self-start">
               Use my location
             </Button>
-            {searchError && <p className="text-caption-1-regular text-(color:--fd-danger)">{searchError}</p>}
+            {searchError && <p className="text-caption-1-regular text-fd-danger">{searchError}</p>}
             {results && (
-              <ul className="flex max-h-40 flex-col overflow-y-auto rounded-md border border-separator-border" aria-label="Search results">
+              <ul className="flex max-h-40 flex-col overflow-y-auto rounded-fd-control border border-separator-border" aria-label="Search results">
                 {results.length === 0 && <li className="px-3 py-2 text-body-2-regular text-text-secondary">No places found</li>}
                 {results.map((r, i) => (
                   <li key={i} className="border-b border-separator-border last:border-b-0">
@@ -259,7 +259,7 @@ export function ExportDialog({
               disabled={busy}
               onClick={() => mission && onPick(mission, f)}
               className={cx(
-                'flex w-full items-start gap-3 rounded-md px-2 py-2 text-start outline-none transition-colors duration-150',
+                'flex w-full items-start gap-3 rounded-fd-control px-2 py-2 text-start outline-none transition-colors duration-150',
                 'hover:bg-background-secondary-default focus-visible:ring-2 focus-visible:ring-border-focus-ring disabled:opacity-50'
               )}
             >

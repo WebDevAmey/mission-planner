@@ -32,7 +32,7 @@ export function MissionActionsMenu({
       <DropdownTrigger
         aria-label={`More actions for ${mission.name}`}
         className={cx(
-          'flex size-8 shrink-0 items-center justify-center rounded-md text-foreground-icon-secondary transition-colors duration-150',
+          'flex size-8 shrink-0 items-center justify-center rounded-fd-control text-foreground-icon-secondary transition-colors duration-150',
           'hover:bg-background-secondary-default hover:text-foreground-icon-primary',
           className
         )}
@@ -44,7 +44,7 @@ export function MissionActionsMenu({
         <DropdownItem onSelect={act('duplicate')}>Duplicate</DropdownItem>
         <DropdownItem onSelect={act('export')}>Export…</DropdownItem>
         <DropdownDivider />
-        <DropdownItem onSelect={act('delete')} className="text-(color:--fd-danger)">
+        <DropdownItem onSelect={act('delete')} className="text-fd-danger">
           Delete…
         </DropdownItem>
       </DropdownPopover>
@@ -69,8 +69,8 @@ export function MissionCard({ mission, onAction }: { mission: MissionSummary; on
   return (
     <article
       className={cx(
-        'group relative flex flex-col overflow-hidden rounded-md border border-separator-border bg-background-primary-default',
-        'transition-colors duration-150 hover:border-(color:--fd-line-strong) has-[a:focus-visible]:border-(color:--fd-line-strong)'
+        'group relative flex flex-col overflow-hidden rounded-fd-control border border-separator-border bg-background-primary-default',
+        'transition-colors duration-150 hover:border-fd-line-strong has-[a:focus-visible]:border-fd-line-strong'
       )}
     >
       <MissionThumbnail id={mission.id} version={mission.version} hasGeometry={!!mission.bbox} className="border-b border-separator-border" />
@@ -80,7 +80,7 @@ export function MissionCard({ mission, onAction }: { mission: MissionSummary; on
             <Link
               href={href}
               className={cx(
-                'outline-none after:absolute after:inset-0 after:rounded-md after:content-[""]',
+                'outline-none after:absolute after:inset-0 after:rounded-fd-control after:content-[""]',
                 'focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-border-focus-ring'
               )}
             >
@@ -122,7 +122,7 @@ export function MissionCard({ mission, onAction }: { mission: MissionSummary; on
 
 export function MissionCardSkeleton() {
   return (
-    <div className="flex flex-col overflow-hidden rounded-md border border-separator-border bg-background-primary-default" aria-hidden>
+    <div className="flex flex-col overflow-hidden rounded-fd-control border border-separator-border bg-background-primary-default" aria-hidden>
       <SkeletonBlock className="aspect-[32/15] rounded-none" />
       <div className="flex flex-col gap-2.5 px-4 pt-3.5 pb-4">
         <SkeletonBlock className="h-4 w-2/3" />

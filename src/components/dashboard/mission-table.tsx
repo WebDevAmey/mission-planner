@@ -15,7 +15,7 @@ const NUM = 'text-end! tabular-nums';
 export function MissionTable({ missions, onAction }: { missions: MissionSummary[]; onAction: (a: CardAction, m: MissionSummary) => void }) {
   const router = useRouter();
   return (
-    <div className="overflow-hidden rounded-md border border-separator-border bg-background-primary-default">
+    <div className="overflow-hidden rounded-fd-control border border-separator-border bg-background-primary-default">
       <Table
         aria-label="Missions"
         size="sm"
@@ -31,7 +31,7 @@ export function MissionTable({ missions, onAction }: { missions: MissionSummary[
           <TableColumn className={`${HEAD} text-end!`}>Est. time</TableColumn>
           <TableColumn className={HEAD}>Checks</TableColumn>
           <TableColumn className={`${HEAD} text-end!`}>Updated</TableColumn>
-          <TableColumn className="w-12">
+          <TableColumn className="relative w-12">
             <span className="sr-only">Actions</span>
           </TableColumn>
         </TableHeader>
@@ -63,7 +63,7 @@ export function MissionTable({ missions, onAction }: { missions: MissionSummary[
 
 export function MissionTableSkeleton({ rows = 6 }: { rows?: number }) {
   return (
-    <div className="overflow-hidden rounded-md border border-separator-border bg-background-primary-default" aria-hidden>
+    <div className="overflow-hidden rounded-fd-control border border-separator-border bg-background-primary-default" aria-hidden>
       <div className="flex h-9 items-center gap-6 border-b border-separator-border bg-background-secondary-default px-3">
         <SkeletonBlock className="h-2.5 w-16" />
         <div className="flex-1" />

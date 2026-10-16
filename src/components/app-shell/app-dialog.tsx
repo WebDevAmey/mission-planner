@@ -53,8 +53,8 @@ export function AppDialog({ open, onClose, title, description, size = 'sm', tone
     >
       <Modal
         className={cx(
-          'w-full overflow-hidden rounded-2lg border bg-background-primary-default text-text-primary shadow-(--fd-shadow-float) outline-none',
-          tone === 'danger' ? 'border-(color:--fd-danger)/40' : 'border-separator-border',
+          'w-full overflow-hidden rounded-fd-overlay border bg-background-primary-default text-text-primary shadow-fd-float outline-none',
+          tone === 'danger' ? 'border-fd-danger/40' : 'border-separator-border',
           WIDTH[size]
         )}
       >
@@ -73,7 +73,7 @@ export function AppDialog({ open, onClose, title, description, size = 'sm', tone
                   aria-label="Close"
                   disabled={busy}
                   onClick={close}
-                  className="-me-1.5 -mt-1 flex size-8 shrink-0 items-center justify-center rounded-md text-foreground-icon-secondary outline-none transition-colors duration-150 hover:bg-background-secondary-default hover:text-foreground-icon-primary focus-visible:ring-2 focus-visible:ring-border-focus-ring disabled:opacity-50"
+                  className="-me-1.5 -mt-1 flex size-8 shrink-0 items-center justify-center rounded-fd-control text-foreground-icon-secondary outline-none transition-colors duration-150 hover:bg-background-secondary-default hover:text-foreground-icon-primary focus-visible:ring-2 focus-visible:ring-border-focus-ring disabled:opacity-50"
                 >
                   <RiCloseLine className="size-[18px]" aria-hidden />
                 </button>

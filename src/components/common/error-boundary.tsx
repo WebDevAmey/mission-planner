@@ -43,7 +43,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         this.props.fallback || (
           <div className="flex min-h-dvh items-center justify-center bg-background-full p-4 text-text-primary">
-            <div role="alert" className="flex w-full max-w-md flex-col items-start gap-4 rounded-md border border-separator-border bg-background-primary-default p-6">
+            <div role="alert" className="flex w-full max-w-md flex-col items-start gap-4 rounded-fd-control border border-separator-border bg-background-primary-default p-6">
               <div className="flex flex-col gap-1.5">
                 <h2 className="text-title-3-medium text-text-primary">Something went wrong</h2>
                 <p className="text-body-2-regular text-text-secondary">
