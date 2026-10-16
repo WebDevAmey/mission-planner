@@ -1,6 +1,6 @@
 import { distPointSegment, distSegmentSegment, projectionFor, type LngLat } from '@/lib/domain/geo';
 import { missionLegs } from '@/lib/domain/mission';
-import { hasGeometry, isExclusion, toLocalZone, zonePoints, type Zone } from '@/lib/domain/zones';
+import { hasGeometry, isExclusion, segmentBoxGap, toLocalZone, zonePoints, type Zone } from '@/lib/domain/zones';
 import type { MissionPlan } from '@/types/mission';
 import type { Issue, MissionLimits } from './types';
 
@@ -45,11 +45,13 @@ export function computeRisk(
   if (excl.length > 0 && legs.length > 0) {
     const pts: LngLat[] = [...legs.flatMap((l) => [l.a, l.b]), ...excl.flatMap(zonePoints)];
     const proj = projectionFor(pts);
+    const local = excl.map((z) => toLocalZone(z, proj));
     for (const leg of legs) {
       const a = proj.toLocal(leg.a);
       const b = proj.toLocal(leg.b);
-      for (const z of excl) {
-        const lz = toLocalZone(z, proj);
+      for (const lz of local) {
+        // The box gap is a lower bound on this zone's clearance; skip zones that cannot lower the minimum.
+        if (segmentBoxGap(a, b, lz.box) - 1e-6 > minClear) continue;
         let d: number;
         if (lz.shape === 'circle') d = Math.max(0, distPointSegment(lz.c, a, b) - lz.r);
         else {
