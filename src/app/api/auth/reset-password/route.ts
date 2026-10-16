@@ -7,18 +7,16 @@ import { createSession, deleteAllSessionsForUser, SESSION_COOKIE, SESSION_MAX_AG
 import { isSameOriginRequest } from '@/lib/http/same-origin';
 import { getClientIp } from '@/lib/http/client-ip';
 import { toIsoString } from '@/lib/db/serialize';
+import { AUTH_MAX_BODY_BYTES, readJsonBody } from '@/lib/http/api';
 
 export async function POST(request: Request) {
   if (!isSameOriginRequest(request)) {
     return Response.json({ ok: false, error: 'Invalid request origin' }, { status: 403 });
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ ok: false, error: 'Invalid request body' }, { status: 400 });
-  }
+  const read = await readJsonBody(request, { maxBytes: AUTH_MAX_BODY_BYTES });
+  if (!read.ok) return read.response;
+  const body = read.data;
 
   const parsed = resetPasswordSchema.safeParse(body);
   if (!parsed.success) {

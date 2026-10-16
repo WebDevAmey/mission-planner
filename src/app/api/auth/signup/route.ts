@@ -9,6 +9,7 @@ import { isSameOriginRequest } from '@/lib/http/same-origin';
 import { getClientIp } from '@/lib/http/client-ip';
 import { sendVerificationEmail } from '@/lib/email/send';
 import { toIsoString } from '@/lib/db/serialize';
+import { AUTH_MAX_BODY_BYTES, readJsonBody } from '@/lib/http/api';
 
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -17,12 +18,9 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, error: 'Invalid request origin' }, { status: 403 });
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ ok: false, error: 'Invalid request body' }, { status: 400 });
-  }
+  const read = await readJsonBody(request, { maxBytes: AUTH_MAX_BODY_BYTES });
+  if (!read.ok) return read.response;
+  const body = read.data;
 
   const parsed = signupSchema.safeParse(body);
   if (!parsed.success) {

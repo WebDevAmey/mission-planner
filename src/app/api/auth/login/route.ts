@@ -7,6 +7,7 @@ import { checkRateLimit, normalizeIdentifier, recordAttempt } from '@/lib/auth/r
 import { isSameOriginRequest } from '@/lib/http/same-origin';
 import { getClientIp } from '@/lib/http/client-ip';
 import { maybeCleanupAuthTables } from '@/lib/auth/cleanup';
+import { AUTH_MAX_BODY_BYTES, readJsonBody } from '@/lib/http/api';
 
 const GENERIC_ERROR = 'Incorrect email or password';
 
@@ -15,12 +16,9 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, error: 'Invalid request origin' }, { status: 403 });
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ ok: false, error: 'Invalid request body' }, { status: 400 });
-  }
+  const read = await readJsonBody(request, { maxBytes: AUTH_MAX_BODY_BYTES });
+  if (!read.ok) return read.response;
+  const body = read.data;
 
   const parsed = loginSchema.safeParse(body);
   if (!parsed.success) {

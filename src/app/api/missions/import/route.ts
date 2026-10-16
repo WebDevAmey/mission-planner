@@ -1,7 +1,7 @@
 import { MissionImportError, parseMissionFile } from '@/lib/domain/export';
 import { toWaypointInput } from '@/lib/missions/payload';
 import { MAX_MISSION_ITEMS, MAX_MISSION_ZONES, waypointInputSchema, zoneInputSchema } from '@/lib/validation/mission';
-import { apiError, authorize, readJsonBody, validationError } from '@/lib/http/api';
+import { apiError, authorize, readBodyBytes, readJsonBody, validationError } from '@/lib/http/api';
 import { toMissionPlan, DEFAULT_SETTINGS } from '@/lib/missions/map';
 import { asDbMission, createMissionDocument, loadFullMission, type SettingsInput } from '@/lib/missions/repo';
 import { z } from 'zod';
@@ -23,9 +23,13 @@ async function readUpload(request: Request): Promise<{ filename: string; content
 
   const type = request.headers.get('content-type') ?? '';
   if (type.startsWith('multipart/form-data')) {
+    // Capped while streaming: a chunked upload has no Content-Length to check up front.
+    const bytes = await readBodyBytes(request, MAX_IMPORT_BYTES + 16 * 1024);
+    if (bytes === 'too_large') return apiError(413, 'PAYLOAD_TOO_LARGE', 'Import files are limited to 1 MB');
+    if (bytes === null) return apiError(400, 'INVALID_BODY', 'Could not read the uploaded file');
     let form: FormData;
     try {
-      form = await request.formData();
+      form = await new Response(bytes, { headers: { 'content-type': type } }).formData();
     } catch {
       return apiError(400, 'INVALID_BODY', 'Could not read the uploaded file');
     }
