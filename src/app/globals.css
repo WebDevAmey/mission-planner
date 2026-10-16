@@ -2,101 +2,95 @@
  * Flight Deck global styles.
  *
  * Layering:
- *   1. src/styles/globals.css  — Tailwind + BoardUI theme/typography/base
- *      (vendored from boardui.com; semantic tokens flip under `.dark`).
- *   2. The app @theme below    — the editor's existing tokens (bg-bg-base,
- *      text-text, text-text-dim, border-border-mid, green/amber/red, …).
- *   3. `.dark` overrides       — tune BoardUI's dark palette to the app's
- *      near-black base and WCAG AA text contrast.
+ *   1. src/styles/globals.css  — Tailwind + BoardUI theme/typography/base.
+ *      src/styles/theme.css holds the canonical --fd-* palette (DESIGN_SPEC §3)
+ *      for light (:root, default) and dark (.dark on <html>), and re-points the
+ *      BoardUI semantic tokens (background-*, text-*, border-*) to it.
+ *   2. The app @theme below    — legacy editor tokens (bg-bg-base, text-text,
+ *      text-text-dim, border-border-mid, green/amber/red, ...) re-pointed to the
+ *      fd values so existing call sites keep working in both themes. Prefer the
+ *      fd or BoardUI semantic names in new code.
  *
- * The app is dark-first: <html class="dark"> is set in app/layout.tsx.
- * Name clashes resolved deliberately:
- *   - --color-text-primary/-secondary/-tertiary now come from BoardUI (the
- *     app's old aliases with the same names were removed; values match).
- *   - --radius-sm/-md/-lg now use Tailwind/BoardUI defaults (4/6/8px) so
- *     BoardUI components render as designed.
- *   - --font-sans/--font-mono are re-pointed below to the next/font variables.
+ * Light is the default; the ThemeToggle adds `.dark` to <html>.
  */
 
 @import "../styles/globals.css";
 
 /* ============ DESIGN TOKENS ============ */
 
-@theme {
-  /* -------- ARDUPILOT AEROSPACE PALETTE -------- */
-
+/* `inline` so utilities read the live --fd-* value (flips with .dark). */
+@theme inline {
   /* Backgrounds */
-  --color-bg-base:    #0a0a0a;
-  --color-bg-panel:   #111111;
-  --color-bg-raised:  #161616;
-  --color-bg-hover:   #1e1e1e;
-  --color-bg-active:  #252525;
+  --color-bg-base:    var(--fd-bg);
+  --color-bg-panel:   var(--fd-surface);
+  --color-bg-raised:  var(--fd-surface-2);
+  --color-bg-hover:   var(--fd-surface-3);
+  --color-bg-active:  var(--fd-surface-3);
 
   /* Borders */
-  --color-border:     #1e1e1e;
-  --color-border-mid: #2a2a2a;
-  --color-border-hi:  #363636;
+  --color-border:     var(--fd-line);
+  --color-border-mid: var(--fd-line);
+  --color-border-hi:  var(--fd-line-strong);
 
-  /* Accent — Matrix Green (ArduPilot primary) */
-  --color-green:      #00ff41;
-  --color-green-dim:  #00cc33;
-  --color-green-bg:   rgba(0, 255, 65, 0.08);
+  /* "green" was the old matrix-green accent; every remaining use means
+   * success/OK, so it maps to --fd-ok. The accent is signal orange. */
+  --color-green:      var(--fd-ok);
+  --color-green-dim:  color-mix(in srgb, var(--fd-ok) 80%, var(--fd-ink));
+  --color-green-bg:   var(--fd-ok-tint);
 
   /* Status colors */
-  --color-amber:      #ffaa00;
-  --color-amber-bg:   rgba(255, 170, 0, 0.10);
-  --color-red:        #ff3333;
-  --color-red-bg:     rgba(255, 51, 51, 0.10);
-  --color-blue:       #2d7dd2;
-  --color-blue-bg:    rgba(45, 125, 210, 0.10);
-  --color-cyan:       #00aaff;
+  --color-amber:      var(--fd-warn);
+  --color-amber-bg:   var(--fd-warn-tint);
+  --color-red:        var(--fd-danger);
+  --color-red-bg:     var(--fd-danger-tint);
+  --color-blue:       var(--fd-info);
+  --color-blue-bg:    var(--fd-info-tint);
+  --color-cyan:       var(--fd-info);
 
   /* Text */
-  --color-text:       #e0e0e0;
-  --color-text-dim:   #888888;
-  --color-text-muted: #8a8a8a; /* WCAG AA on bg-base (was #444, ~2:1) */
-  --color-text-green: #00ff41;
-  --color-text-amber: #ffaa00;
-  --color-text-red:   #ff3333;
+  --color-text:       var(--fd-ink);
+  --color-text-dim:   var(--fd-ink-2);
+  --color-text-muted: var(--fd-ink-3);
+  --color-text-green: var(--fd-ok);
+  --color-text-amber: var(--fd-warn);
+  --color-text-red:   var(--fd-danger);
 
   /* Legacy compat aliases */
-  --color-bg-elevated:        #161616;
-  --color-border-subtle:      rgba(255, 255, 255, 0.06);
-  --color-border-strong:      rgba(255, 255, 255, 0.18);
-  --color-accent-blue:        #2d7dd2;
-  --color-accent-blue-dim:    rgba(45, 125, 210, 0.15);
-  --color-accent-green:       #00ff41;
-  --color-accent-amber:       #ffaa00;
-  --color-accent-red:         #ff3333;
-  --color-bg-panel-compat:    #111111;
+  --color-bg-elevated:        var(--fd-surface-2);
+  --color-border-subtle:      var(--fd-line);
+  --color-border-strong:      var(--fd-line-strong);
+  --color-accent-blue:        var(--fd-info);
+  --color-accent-blue-dim:    var(--fd-info-tint);
+  --color-accent-green:       var(--fd-ok);
+  --color-accent-amber:       var(--fd-warn);
+  --color-accent-red:         var(--fd-danger);
+  --color-bg-panel-compat:    var(--fd-surface);
 
-  /* -------- MARKETING SURFACE PALETTE --------
-   * Neutral/monochrome — for the landing + login pages (shadcn/beUI semantic
-   * tokens). Deliberately no blue/cyan glow: one considered accent (the
-   * app's own matrix green, used sparingly) instead of a decorative gradient. */
-  --color-background:          #0a0a0a;
-  --color-foreground:          #f2f1ec;
-  --color-card:                #121212;
-  --color-card-foreground:     #f2f1ec;
-  --color-primary:              #f2f1ec;
-  --color-primary-foreground:  #0a0a0a;
-  --color-secondary:           #1a1a1a;
-  --color-secondary-foreground: #f2f1ec;
-  --color-muted:                #161616;
-  --color-muted-foreground:    #8f8f89;
-  --color-accent:              #1a1a1a;
-  --color-accent-foreground:   #f2f1ec;
-  --color-destructive:         #ff3333;
-  --color-destructive-foreground: #f2f1ec;
-  /* border-border reuses --color-border (#1e1e1e) declared above — one border color, not two. */
-  --color-input:               #262626;
-  --color-ring:                #3a3a3a;
+  /* shadcn-style names used by a few marketing/auth/common components. */
+  --color-background:          var(--fd-bg);
+  --color-foreground:          var(--fd-ink);
+  --color-card:                var(--fd-surface);
+  --color-card-foreground:     var(--fd-ink);
+  --color-primary:             var(--fd-ink);
+  --color-primary-foreground:  var(--fd-surface);
+  --color-secondary:           var(--fd-surface-2);
+  --color-secondary-foreground: var(--fd-ink);
+  --color-muted:               var(--fd-surface-2);
+  --color-muted-foreground:    var(--fd-ink-2);
+  --color-accent:              var(--fd-surface-2);
+  --color-accent-foreground:   var(--fd-ink);
+  --color-destructive:         var(--fd-danger);
+  --color-destructive-foreground: var(--fd-accent-ink);
+  --color-input:               var(--fd-line-strong);
+  --color-ring:                var(--fd-focus);
+}
 
+@theme {
   /* -------- TYPOGRAPHY --------
-   * The actual font files are self-hosted by next/font/google in layout.tsx, which
-   * exposes them as the --font-inter / --font-jetbrains-mono variables below. */
-  --font-mono: var(--font-jetbrains-mono), "Fira Code", ui-monospace, monospace;
-  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+   * Geist Sans / Geist Mono, self-hosted by the `geist` package (next/font)
+   * in layout.tsx as --font-geist-sans / --font-geist-mono. */
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
 
   /* -------- SPACING (4px grid) -------- */
   --sp-1: 4px;
@@ -142,31 +136,18 @@
     50%       { transform: scale(1.1); }
   }
   @keyframes marker-flash {
-    0%        { transform: scale(1);   box-shadow: 0 1px 6px rgba(0,0,0,0.6); }
-    25%       { transform: scale(1.5); box-shadow: 0 0 20px rgba(0,255,65,0.9); }
-    75%       { transform: scale(1.2); box-shadow: 0 0 12px rgba(0,255,65,0.6); }
-    100%      { transform: scale(1);   box-shadow: 0 1px 6px rgba(0,0,0,0.6); }
+    0%        { transform: scale(1);    }
+    35%       { transform: scale(1.25); }
+    100%      { transform: scale(1);    }
   }
   @keyframes marker-drag-pulse {
-    0%, 100% { box-shadow: 0 2px 12px rgba(0,0,0,0.8), 0 0 0 rgba(0,255,65,0); }
-    50%      { box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 16px rgba(0,255,65,0.6); }
+    0%, 100% { transform: scale(1);    }
+    50%      { transform: scale(1.08); }
   }
   @keyframes slideInRight {
     from { transform: translateX(8px); opacity: 0; }
     to   { transform: translateX(0);   opacity: 1; }
   }
-}
-
-/* ============ BOARDUI DARK TUNING ============ */
-
-/* BoardUI's dark ramp uses neutral-600/-500 for secondary/tertiary text,
- * which fails AA on the app's near-black base. Lift both, and sit BoardUI's
- * page background on the app's base so both systems share one canvas. */
-.dark {
-  --color-background-full: var(--color-bg-base);
-  --color-text-secondary: var(--color-neutral-400);
-  --color-text-tertiary: color-mix(in srgb, var(--color-neutral-400) 55%, var(--color-neutral-500));
-  --color-text-placeholder: color-mix(in srgb, var(--color-neutral-400) 55%, var(--color-neutral-500));
 }
 
 /* ============ BASE ============ */
@@ -180,21 +161,34 @@
     background-color: var(--color-bg-base);
     color: var(--color-text);
     font-family: var(--font-sans);
-    font-size: 13px;
-    line-height: 1.45;
+    font-size: 14px;
+    line-height: 20px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  code, kbd, pre { font-family: var(--font-mono); font-size: 11px; }
+  h1, h2, h3 { text-wrap: balance; }
+  p { text-wrap: pretty; }
 
-  .data-value,
+  code, kbd, pre { font-family: var(--font-mono); font-size: 12px; }
+
+  /* Numbers are data: tabular figures in tables and anything marked as data. */
+  table, .tabular, [data-numeric], .data-value, .altitude, .speed {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Mono only for literal coordinates and IDs (DESIGN_SPEC D-17). */
   .coordinate,
-  .altitude,
-  .speed,
   .mission-id {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Focus: 2px accent ring, 2px offset, on every interactive element. */
+  :focus-visible {
+    outline: 2px solid var(--fd-focus);
+    outline-offset: 2px;
   }
 }
 
@@ -202,50 +196,50 @@
 
 @layer components {
 
-  /* ---- TOOLBAR BUTTON (ArduPilot tool strip) ---- */
+  /* ---- TOOLBAR BUTTON (editor tool rail) ---- */
   .toolbar-btn {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 40px;
     height: 40px;
-    border-radius: var(--radius-sm);
+    border-radius: var(--fd-radius-control);
     background-color: transparent;
     border: 1px solid transparent;
-    color: var(--color-text-dim);
+    color: var(--fd-ink-2);
     cursor: pointer;
-    transition: all 150ms ease;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 600;
+    transition: background-color var(--fd-dur-press) var(--fd-ease), color var(--fd-dur-press) var(--fd-ease), border-color var(--fd-dur-press) var(--fd-ease);
+    font-size: 11px;
+    font-weight: 500;
   }
   .toolbar-btn:hover {
-    background-color: var(--color-bg-hover);
-    color: var(--color-text);
-    border-color: var(--color-border-mid);
+    background-color: var(--fd-surface-2);
+    color: var(--fd-ink);
   }
   .toolbar-btn.active {
-    background-color: var(--color-green-bg);
-    border-color: var(--color-green);
-    color: var(--color-green);
+    background-color: var(--fd-surface-3);
+    border-color: var(--fd-line-strong);
+    color: var(--fd-ink);
   }
 
   /* ---- TABLE (Waypoint grid) ---- */
   .wp-table {
     width: 100%;
     border-collapse: collapse;
-    font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
   }
   .wp-table th {
-    background-color: var(--color-bg-raised);
-    color: var(--color-text-dim);
-    font-weight: 600;
-    font-size: 10px;
+    background-color: var(--fd-surface-2);
+    color: var(--fd-ink-3);
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 11px;
+    line-height: 14px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 4px 6px;
-    border-bottom: 1px solid var(--color-border-mid);
+    letter-spacing: 0.06em;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--fd-line);
     text-align: left;
     white-space: nowrap;
     position: sticky;
@@ -253,78 +247,121 @@
     z-index: 1;
   }
   .wp-table td {
-    padding: 3px 6px;
-    border-bottom: 1px solid var(--color-border);
-    color: var(--color-text);
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--fd-line);
+    color: var(--fd-ink);
     white-space: nowrap;
   }
-  .wp-table tr:hover td { background-color: var(--color-bg-hover); }
-  .wp-table tr.selected td { background-color: var(--color-green-bg); }
+  .wp-table tr:hover td { background-color: var(--fd-surface-2); }
+  .wp-table tr.selected td { background-color: var(--fd-accent-tint); }
 
-  /* ---- BADGES ---- */
+  /* ---- BADGES (flat) ---- */
   .badge {
     display: inline-block;
     padding: 1px 6px;
-    border-radius: var(--radius-sm);
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
+    border-radius: 4px;
+    font-size: 11px;
+    line-height: 16px;
+    font-weight: 500;
     white-space: nowrap;
   }
-  .badge-green  { background-color: var(--color-green-bg);  color: var(--color-green); }
-  .badge-amber  { background-color: var(--color-amber-bg);  color: var(--color-amber); }
-  .badge-red    { background-color: var(--color-red-bg);    color: var(--color-red);   }
-  .badge-blue   { background-color: var(--color-blue-bg);   color: var(--color-blue);  }
-  .badge-accent { background-color: var(--color-blue-bg);   color: var(--color-blue);  }
+  .badge-green  { background-color: var(--fd-ok-tint);     color: var(--fd-ok); }
+  .badge-amber  { background-color: var(--fd-warn-tint);   color: var(--fd-warn); }
+  .badge-red    { background-color: var(--fd-danger-tint); color: var(--fd-danger); }
+  .badge-blue   { background-color: var(--fd-info-tint);   color: var(--fd-info); }
+  .badge-accent { background-color: var(--fd-accent-tint); color: var(--fd-accent-press); }
+  .dark .badge-accent { color: var(--fd-accent); }
 
-  /* ---- STATUS DOTS ---- */
+  /* ---- STATUS DOTS (static: nothing loops) ---- */
   .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; }
-  .status-dot-active   { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: var(--color-green); animation: pulse-green 1.5s ease-in-out infinite; }
-  .status-dot-degraded { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: var(--color-amber); }
-  .status-dot-offline  { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: var(--color-red);   }
+  .status-dot-active   { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: var(--fd-ok); }
+  .status-dot-degraded { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: var(--fd-warn); }
+  .status-dot-offline  { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: var(--fd-danger); }
 
   /* ---- CONTEXT MENU ---- */
   .context-menu {
     position: fixed;
-    background-color: var(--color-bg-raised);
-    border: 1px solid var(--color-border-mid);
-    border-radius: var(--radius-md);
+    background-color: var(--fd-surface);
+    border: 1px solid var(--fd-line);
+    border-radius: var(--fd-radius-overlay);
     padding: 4px;
     min-width: 180px;
     z-index: 9999;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-    animation: fadeIn 100ms ease;
+    box-shadow: var(--fd-shadow-float);
+    animation: fadeIn var(--fd-dur-pop) var(--fd-ease);
   }
   .context-menu-item {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 6px 10px;
-    border-radius: var(--radius-sm);
-    font-size: 12px;
-    color: var(--color-text);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--fd-ink);
     cursor: pointer;
-    transition: background 100ms ease;
+    transition: background-color var(--fd-dur-press) var(--fd-ease);
     white-space: nowrap;
   }
-  .context-menu-item:hover { background-color: var(--color-bg-active); color: var(--color-green); }
-  .context-menu-item.danger:hover { color: var(--color-red); }
-  .context-menu-sep { height: 1px; background-color: var(--color-border); margin: 4px 0; }
+  .context-menu-item:hover { background-color: var(--fd-surface-2); }
+  .context-menu-item.danger { color: var(--fd-danger); }
+  .context-menu-sep { height: 1px; background-color: var(--fd-line); margin: 4px 0; }
 
   /* ---- MARKER ANIMATIONS ---- */
-  .marker-flash { animation: marker-flash 600ms ease forwards; }
-  .marker-dragging { animation: marker-drag-pulse 800ms ease infinite; }
+  .marker-flash { animation: marker-flash 280ms var(--fd-ease) forwards; }
+  .marker-dragging { animation: marker-drag-pulse 800ms ease 1; }
 
   /* ---- TABLE ALTERNATE ROWS ---- */
-  .wp-table tr.row-alt td { background-color: rgba(255,255,255,0.015); }
-  .wp-table tr.row-alt:hover td { background-color: var(--color-bg-hover); }
-  .wp-table tr.selected.row-alt td { background-color: var(--color-green-bg); }
+  .wp-table tr.row-alt td { background-color: color-mix(in srgb, var(--fd-surface-2) 40%, transparent); }
+  .wp-table tr.row-alt:hover td { background-color: var(--fd-surface-2); }
+  .wp-table tr.selected.row-alt td { background-color: var(--fd-accent-tint); }
+}
+
+/* ============ FLIGHT DECK UTILITIES ============ */
+
+/* Corner ticks: 8px L-brackets at the four corners of a frame (§3.3). Used on
+ * the hero product frame, the final CTA and featured figures only. Draws with
+ * two pseudo-elements and background images, so the frame keeps its border. */
+@utility fd-ticks {
+  position: relative;
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    pointer-events: none;
+    --fd-tick: var(--fd-ink-3);
+    background:
+      linear-gradient(var(--fd-tick), var(--fd-tick)) top left / 8px 1px no-repeat,
+      linear-gradient(var(--fd-tick), var(--fd-tick)) top left / 1px 8px no-repeat,
+      linear-gradient(var(--fd-tick), var(--fd-tick)) top right / 8px 1px no-repeat,
+      linear-gradient(var(--fd-tick), var(--fd-tick)) top right / 1px 8px no-repeat;
+  }
+  &::after {
+    background:
+      linear-gradient(var(--fd-tick), var(--fd-tick)) bottom left / 8px 1px no-repeat,
+      linear-gradient(var(--fd-tick), var(--fd-tick)) bottom left / 1px 8px no-repeat,
+      linear-gradient(var(--fd-tick), var(--fd-tick)) bottom right / 8px 1px no-repeat,
+      linear-gradient(var(--fd-tick), var(--fd-tick)) bottom right / 1px 8px no-repeat;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Global reduced motion: fades only, no movement or draw-on. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ============ SCROLLBARS ============ */
 
-::-webkit-scrollbar       { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background-color: var(--color-bg-panel); }
-::-webkit-scrollbar-thumb { background-color: var(--color-border-mid); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background-color: var(--color-border-hi); }
+::-webkit-scrollbar       { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background-color: transparent; }
+::-webkit-scrollbar-thumb { background-color: var(--fd-line); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--fd-line-strong); }

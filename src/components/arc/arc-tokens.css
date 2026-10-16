@@ -367,9 +367,9 @@
 /* Flight Deck alignment: ARC speaks the app's type and surfaces. */
 :where(.arc-scope),
 :where(arc-accordion, arc-marquee, arc-cta-banner, arc-feature-card, arc-animated-number, arc-gradient-text, arc-card, arc-stat, arc-badge, arc-value-card, arc-empty-state) {
-  --font-body-family: var(--font-inter);
+  --font-body-family: var(--font-geist-sans);
   --font-body-fallback: system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --bg-base: var(--color-bg-base);
   --bg-card: var(--color-background-secondary-default);
   --text-primary: var(--color-text-primary);
